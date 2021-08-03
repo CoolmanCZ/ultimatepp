@@ -1,5 +1,13 @@
 # Ultimate++
 
+This Ultimate++ fork contains basic GIT integration with the Ultimate++ IDE.
+
+## GitHub actions build status
+|branch  | status|
+|---     |---    |
+|master  | [![Build Status](https://github.com/CoolmanCZ/ultimatepp/actions/workflows/upp.yml/badge.svg?branch=master)](https://github.com/CoolmanCZ/ultimatepp/actions/workflows/upp.yml)  |
+
+## About
 ![alt text](uppbox/uppweb/Resources/Images/Logo.png?raw=true "Ultimate++ Logo")
 
 Ultimate++ is a C++ cross-platform rapid application development framework focused on programmers productivity. It includes a set of libraries (GUI, SQL, etc.), and an integrated development environment.
