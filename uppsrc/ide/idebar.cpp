@@ -434,15 +434,74 @@ void Ide::ProjectRepo(Bar& menu)
 	menu.Add("Synchronize everything..", IdeImg::svn(), THISBACK(SyncRepo));
 }
 
+void Ide::ProjectGit(Bar& menu)
+{
+	bool enable = CheckGit();
+	bool b = IsGitDir(PackagePath(actualpackage));
+
+	if(!menu.IsToolBar()) {
+		menu.Add(enable && !b && (idestate == EDITING), "GIT init repository", GitImg::GitInit(), THISBACK(ExecuteGitInitRepository))
+		.Help("Initialize actual package directory as a Git repository");
+		menu.Separator();
+		menu.Add(enable, "GIT config", GitImg::GitConfig(), THISBACK(ExecuteGitConfig))
+			.Help("Configure GIT parameters");
+		menu.Add(enable && git_dirs, "GIT history", GitImg::GitSearch(), THISBACK(ExecuteGitHistory))
+			.Help("Show GIT repository history");
+		menu.Add(enable && git_dirs, "GIT update status", GitImg::GitStatus(), THISBACK(ExecuteGitUpdateStatus))
+			.Help("Show difference status between local and remote branches");
+		menu.Separator();
+		menu.Add(enable && b && (idestate == EDITING), "GIT status", GitImg::GitStatus(), THISBACK(ExecuteGitStatus))
+			.Help("Status of the branch");
+		menu.Add(enable && git_dirs, "GIT fetch", GitImg::GitFetch(), THISBACK(ExecuteGitFetch))
+			.Help("Fetch request");
+		menu.Add(enable && git_dirs && (idestate == EDITING), "GIT merge", GitImg::GitMerge(), THISBACK(ExecuteGitMerge))
+			.Help("Merge repository ");
+		menu.Add(enable && b && (idestate == EDITING), "GIT stash", GitImg::GitStash(), THISBACK(ExecuteGitStash))
+			.Help("Stash changes in the main project");
+		menu.Add(enable && b && (idestate == EDITING), "GIT stash apply", GitImg::GitUnstash(), THISBACK(ExecuteGitStashApply))
+			.Help("Apply stashed changes in the main project");
+	}
+		menu.Add(enable && git_dirs && (idestate == EDITING), "GIT commit", GitImg::GitCommit(), THISBACK(ExecuteGitCommit))
+			.Help("Commit changes");
+	if(!menu.IsToolBar()) {
+		menu.Add(enable && git_dirs && (idestate == EDITING), "GIT push", GitImg::GitPush(), THISBACK(ExecuteGitPush))
+			.Help("Push request");
+		menu.Add(enable && git_dirs && (idestate == EDITING), "GIT branch", GitImg::GitBranch(), THISBACK(ExecuteGitConfigBranch))
+			.Help("Manage / Create branches");
+		menu.Separator();
+		if (patchpending) {
+			menu.Add(enable && idestate == EDITING, "GIT patch apply/abort", GitImg::GitDiffAbort(), THISBACK(ExecuteGitPatchAbort))
+				.Help("Restore the original branch and abort the patching operation");
+		} else {
+			menu.Add(enable && idestate == EDITING, "GIT patch apply/abort", GitImg::GitDiffApply(), THISBACK(ExecuteGitPatchApply))
+				.Help("Apply GIT patch from the file");
+		}
+		menu.Separator();
+	}
+		menu.Add(enable && b && editfile_repo == GIT_DIR && !editfile_isfolder, AK_REPODIFF, GitImg::GitSearchHistory(), THISBACK(ExecuteGitFileHistory))
+			.Help("Show GIT history of the file");
+		menu.Add(enable && b && editfile_repo == GIT_DIR && !editfile_isfolder, AK_GITBLAME, GitImg::GitSearchBlame(), THISBACK(ExecuteGitBlame))
+			.Help("Show what revision and which author has later modified each row of the edited file.");
+}
+
 void Ide::Project(Bar& menu)
 {
 	if(menu.IsToolBar() && !debugger && !IsEditorMode())
 	{
 		mainconfiglist.Enable(idestate == EDITING);
 		buildmode.Enable(idestate == EDITING);
-		menu.Add(mainconfiglist, HorzLayoutZoom(180));
+		gitbranchlist.Enable(idestate == EDITING);
+
+		ProjectGit(menu);
 		menu.Gap(4);
-		menu.Add(buildmode, HorzLayoutZoom(180));
+		if (editfile_repo == GIT_DIR) {
+			menu.Add(CheckGit() && idestate == EDITING, gitbranchlist, HorzLayoutZoom(100));
+		}
+		menu.Separator();
+
+		menu.Add(mainconfiglist, HorzLayoutZoom(100));
+		menu.Gap(4);
+		menu.Add(buildmode, HorzLayoutZoom(150));
 		menu.Separator();
 	}
 	if(!IsEditorMode()) {
@@ -838,6 +897,8 @@ void Ide::MainMenu(Bar& menu)
 	menu.Add("Project", THISBACK(Project))
 		.Help("Package organizer, custom steps, configuration manager");
 	if(!IsEditorMode()) {
+		menu.Add("GIT", THISBACK(ProjectGit))
+			.Help("Manage GIT repositories");
 		menu.Add("Build", THISBACK(BuildMenu))
 			.Help("Building & debugging, minor build options, showing errors");
 		menu.Add("Debug", THISBACK(DebugMenu))

@@ -10,6 +10,7 @@
 #include <ide/Browser/Browser.h>
 #include <TabBar/TabBar.h>
 #include <CodeEditor/CodeEditor.h>
+#include <ugit/Git.h>
 #include <ide/IconDes/IconDes.h>
 #include <ide/Java/Java.h>
 #include <ide/LayDes/LayDes.h>
@@ -84,7 +85,7 @@ protected:
 		int               msecs;
 		int               raw_msecs;
 	};
-	
+
 	struct Finisher {
 		int               serial;
 		Event<>           cb;
@@ -135,7 +136,7 @@ public:
 	Vector<String> PickErrors()               { Vector<String> e = pick(error_keys); error_keys.Clear(); return pick(e); }
 	void Wait(int slot);
 	bool Wait();
-	
+
 	void OnFinish(Event<>  cb);
 
 	void WrapText(bool w)                     { wrap_text = w; }
@@ -182,11 +183,11 @@ private:
 	DropList   lang;
 	bool       internal;
 	bool       showwords, all;
-	
+
 	VectorMap<String, VectorMap<String, Index<String> > > map;
 	Index<String> lang_list;
 	Vector<int>   spos;
-	
+
 	static  Index<String> idelink;
 
 	void OpenTopic();
@@ -321,12 +322,12 @@ struct FindInFilesDlg : WithFindInFilesLayout<TopWindow> {
 	WString itext;
 
 	virtual bool Key(dword key, int count);
-	
+
 	void Setup(bool replace);
 	void Sync();
 
 	typedef FindInFilesDlg CLASSNAME;
-	
+
 	FindInFilesDlg();
 };
 
@@ -453,7 +454,6 @@ public:
 	int        idestate;
 	int        debuglock;
 	int        hydra1_threads;
-	
 	int        chstyle;
 
 	One<IdeDesigner> designer;
@@ -551,6 +551,8 @@ public:
 
 	DropList   mainconfiglist;
 	String     mainconfigname;
+
+	DropList   gitbranchlist;
 
 	int          build_time;
 
@@ -660,7 +662,7 @@ public:
 	bool	astyle_EmptyLineFill;
 	bool	astyle_TabSpaceConversionMode;
 	WString	astyle_TestBox;
-	
+
 	// Formats a string of code with a given formatter
 	WString FormatCodeString(WString const &Src, astyle::ASFormatter &Formatter);
 
@@ -693,17 +695,17 @@ public:
 	TopicCtrl     windoc;
 
 	int           state_icon;
-	
+
 	String        export_dir;
 	VectorMap<String, String> abbr;
-	
+
 	int           issaving;
 	int           isscanning;
-	
+
 	String        current_builder;
-	
+
 	bool          hlstyle_is_default = true; // default style reacts to dark / light theme settings
-	
+
 // ------------------------------------
 
 	Time      config_time;
@@ -726,7 +728,7 @@ public:
 	void      EditorEdit();
 	void      GotoBookmark(const Bookmark& b);
 	bool      IsHistDiff(int i);
-	
+
 	void      IdePaste(String& s);
 
 	bool      HasFileData(const String& file);
@@ -775,7 +777,7 @@ public:
 	void      TriggerAssistSync();
 
 	void      AKEditor();
-	
+
 	void      PackageMenu(Bar& menu);
 
 	void      UscFile(const String& file);
@@ -798,7 +800,7 @@ public:
 
 	void      GotoPos(String path, int line);
 	void      GotoCpp(const CppItem& pos);
-	
+
 	void      LoadAbbr();
 	void      SaveAbbr();
 
@@ -873,7 +875,7 @@ public:
 		bool  Next(ArrayCtrl& ctrl, int d);
 		void  FindNextError();
 		void  FindPrevError();
-	
+
 	void      EditSpecial(Bar& menu);
 		void  TranslateString();
 		void  SwapChars()               { editor.SwapChars(); }
@@ -961,7 +963,7 @@ public:
 		void  LaunchAndroidSDKManager(const AndroidSDK& androidSDK);
 		void  LaunchAndroidAVDManager(const AndroidSDK& androidSDK);
 		void  LauchAndroidDeviceMonitor(const AndroidSDK& androidSDK);
-	
+
 	void      BrowseMenu(Bar& menu);
 		void  CheckCodeBase();
 		void  RescanCode();
@@ -1021,6 +1023,31 @@ public:
 	void      OnMainConfigList();
 	void      SetMainConfigList();
 
+	void	  ProjectGit(Bar& menu);
+		void  ExecuteGitInitRepository();
+		void  ExecuteGitConfig();
+		void  ExecuteGitHistory();
+		void  ExecuteGitStatus();
+		void  ExecuteGitFetch();
+		void  ExecuteGitCommit();
+		void  ExecuteGitStash();
+		void  ExecuteGitStashApply();
+		void  ExecuteGitMerge();
+		void  ExecuteGitPush();
+		void  ExecuteGitConfigBranch();
+		void  ExecuteGitPatchApply();
+		void  ExecuteGitPatchAbort();
+		void  ExecuteGitFileHistory();
+		void  ExecuteGitBlame();
+		void  ExecuteGitDiff();
+		void  ExecuteGitUpdateStatus();
+	void ProcessCommandOutput(const Vector<String>& output);
+
+	void      SetGitFilePos(String filename, int filepos);
+	void      SyncGitBranchList();
+	void      OnGitBranchList();
+	void      SetGitBranchList();
+
 	void      FileProperties();
 
 	void      CustomSteps();
@@ -1028,7 +1055,7 @@ public:
 	void      CycleFiles();
 
 	void      Renumber();
-	
+
 	String    GetTargetLogPath();
 	String    GetIdeLogPath();
 	void      OpenLog(const String& logFilePath);
@@ -1047,7 +1074,7 @@ public:
 		String                    upp;
 		bool                      is_java;
 		bool                      init;
-		
+
 		void Clear()            { init = false; file.Clear(); wspc_paths.Clear(); }
 	};
 
@@ -1059,10 +1086,10 @@ public:
 		int    kind;
 		String message;
 		String error_pos;
-		
+
 		ErrorInfo() { lineno = linepos = kind = len = 0; }
 	};
-	
+
 	FindLineErrorCache error_cache;
 	void      ConsoleLine(const String& line, bool assist = false);
 	void      ConsoleRunEnd();
@@ -1080,7 +1107,7 @@ public:
 	void      ClearErrorsPane();
 	WString   FormatErrorLine(const String& text, int& linecy);
 	WString   FormatErrorLineEP(const String& text, const char *ep, int& linecy);
-	
+
 	struct FoundDisplay : Display {
 		virtual void Paint(Draw& w, const Rect& r, const Value& q, Color ink, Color paper, dword style) const;
 	};
@@ -1093,11 +1120,11 @@ public:
 		virtual void Paint(Draw& w, const Rect& r, const Value& q, Color ink, Color paper, dword style) const;
 		virtual Size GetStdSize(const Value& q) const;
 	};
-	
+
 	bool      FindLineError(int l);
 	void      GoToError(const ErrorInfo& f);
 	void      GoToError(ArrayCtrl& a);
-	
+
 	bool      FindLineError(const String& ln, FindLineErrorCache& cache, ErrorInfo& f);
 	void      FindError();
 	void	  ClearErrorEditor(String file);
@@ -1145,8 +1172,8 @@ public:
 	void      SetMenuBar();
 	void      SetToolBar();
 	TimeCallback delayed_toolbar;
-	
-	
+
+
 	void      UpdateFormat(CodeEditor& editor);
 	void      UpdateFormat();
 	void      ReadHlStyles(ArrayCtrl& hlstyle);
@@ -1222,9 +1249,9 @@ public:
 		void  MacroPackageFiles(EscEscape& e);
 		void  MacroAllPackages(EscEscape& e);
 		void  MacroTarget(EscEscape& e);
-	
+
 	String GetAndroidSdkPath();
-	
+
 	typedef   Ide CLASSNAME;
 
 	enum {

@@ -359,6 +359,7 @@ void Host::AddFlags(Index<String>& cfg)
 #ifdef PLATFORM_OSX11
 	cfg.Add("OSX11");
 #endif
+
 }
 
 const Vector<String>& Host::GetExecutablesDirs() const

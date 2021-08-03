@@ -233,6 +233,9 @@ struct SelectPackageDlg : public WithSelectPackageLayout<TopWindow> {
 	};
 };
 
+void AddGitFile(const String& file);
+bool DelGitFile(const String& file);
+bool RenameGitFile(const String& spath, const String& dpath);
 bool RenamePackageFs(const String& upp, const String& newname, bool duplicate = false);
 
 String SelectPackage(String& nest, const char *title, const char *startwith = NULL,
@@ -280,6 +283,8 @@ struct WorkspaceWork {
 	Package   actual;
 	bool      editormode;
 	bool      repo_dirs;
+	bool      git_dirs;
+	bool      patchpending;
 
 	struct Sepfo : Moveable<Sepfo> {
 		String package;
@@ -329,6 +334,7 @@ struct WorkspaceWork {
 	void   SyncErrorPackages();
 	void   Fetch(Package& p, const String& pkg);
 
+	Vector<String> GitDirs(bool actual = false);
 	Vector<String> RepoDirs(bool actual = false);
 
 	void SerializeFileSetup(Stream& s)                { s % filelist % package; }
@@ -381,6 +387,7 @@ struct WorkspaceWork {
 	void RemoveFile();
 	void DelFile();
 	void RenameFile();
+	void AddGitFiles(const Vector<String>& files);
 	void TogglePCH();
 	void ToggleIncludeable();
 
