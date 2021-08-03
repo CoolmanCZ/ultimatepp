@@ -1,0 +1,3 @@
+[submodule "upp_cmake"]
+	path = upp_cmake
+	url = https://github.com/CoolmanCZ/upp_cmake.git
