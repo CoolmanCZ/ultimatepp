@@ -10,6 +10,8 @@ TextDiffCtrl::TextDiffCtrl()
 {
 	left.SetLeft();
 	left.Gutter(30);
+	left.SetDiffBgColor(GreenDiffBg());
+	left.SetDiffBgColorBold(GreenDiffBgBold());
 	next.SetImage(DiffImg::Next());
 	prev.SetImage(DiffImg::Prev());
 	left.scroll.y.AddFrame(prev);
@@ -225,10 +227,26 @@ void DiffDlg::Write()
 		revert.Enable();
 		return;
 	}
-	if(PromptYesNo("Do you want to overwrite&[* " + DeQtf(editfile) + "] ?")) {
-		SaveFile(editfile, extfile);
-		Break(IDOK);
-		revert.Enable();
+	if (FileExists(editfile)) {
+		if (extfile.GetCount()) {
+			if (PromptYesNo("Do you want to overwrite&[* " + DeQtf(editfile) + "] ?")) {
+				SaveFile(editfile, extfile);
+				Break(IDOK);
+				revert.Enable();
+			}
+		} else {
+			if (PromptYesNo("Do you want to delete&[* " + DeQtf(editfile) + "] ?")) {
+				DeleteFile(editfile);
+				Break(IDOK);
+				revert.Enable();
+			}
+		}
+	} else {
+		if (PromptYesNo("Do you want to create&[* " + DeQtf(editfile) + "] ?")) {
+			SaveFile(editfile, extfile);
+			Break(IDOK);
+			revert.Enable();
+		}
 	}
 }
 

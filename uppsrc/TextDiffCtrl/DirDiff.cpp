@@ -185,7 +185,7 @@ bool DirDiffDlg::FileEqual(const String& f1, const String& f2, int& n)
 	{
 		n = (in1 ? DELETED_FILE : NEW_FILE);
 	}
-	
+
 	return false;
 }
 
@@ -197,7 +197,7 @@ void DirDiffDlg::Compare()
 
 	copyleft.Disable();
 	copyright.Disable();
-	
+
 	files.Clear();
 	Vector<String> f = fs.PickKeys();
 	Sort(f);
@@ -216,7 +216,7 @@ void DirDiffDlg::Compare()
 		if((IsNull(dlim) || FileGetTime(p1) >= dlim || FileGetTime(p2) >= dlim) && !FileEqual(p1, p2, n))
 			list.Add(MakeTuple(f[i], p1, p2, n));
 	}
-	
+
 	ShowResult();
 }
 
@@ -265,6 +265,10 @@ void DirDiffDlg::ClearFiles()
 {
 	files.Clear();
 	compare.Enable(!IsNull(dir1) && !IsNull(dir2));
+	dir1.FindAddList(~dir1);
+	dir2.FindAddList(~dir2);
+	copyleft.Disable();
+	copyright.Disable();
 }
 
 WString ExpandTabs(const wchar *text)

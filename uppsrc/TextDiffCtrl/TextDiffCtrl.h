@@ -9,6 +9,13 @@ namespace Upp {
 #define IMAGEFILE <TextDiffCtrl/Diff.iml>
 #include <Draw/iml_header.h>
 
+
+inline Color RedDiffBg()	{ return Blend(LtRed(), White(), 230); }
+inline Color RedDiffBgBold()	{ return Blend(LtRed(), White(), 192); }
+inline Color GreenDiffBg()	{ return Blend(LtGreen(), White(), 230); }
+inline Color GreenDiffBgBold()	{ return Blend(LtGreen(), White(), 192); }
+
+
 class TextSection
 {
 public:
@@ -66,6 +73,7 @@ private:
 		int    level;
 		String text_diff;
 		int    number_diff;
+		bool   left;
 	};
 	Array<Line>    lines;
 	int            maxwidth;
@@ -75,6 +83,8 @@ private:
 	Color          number_bg;
 	Color          gutter_fg;
 	Color          gutter_bg;
+	Color          diff_bg;
+	Color          diff_bg_bold;
 	Size           letter;
 	int            tabsize;
 	int            number_width;
@@ -110,6 +120,11 @@ public:
 
 	void           NumberBgColor(Color bg)  { number_bg = bg; Refresh(); }
 	Color          GetNumberBgColor() const { return number_bg; }
+
+	void           SetDiffBgColor(Color bg)		{ diff_bg = bg; Refresh(); }
+	Color          GetDiffBgColor() const		{ return diff_bg; }
+	void           SetDiffBgColorBold(Color bg)	{ diff_bg_bold = bg; Refresh(); }
+	Color          GetDiffBgColorBold() const	{ return diff_bg_bold; }
 
 	void           AutoHideSb(bool ssb=true){ scroll.AutoHide(ssb); }
 	void           ShowSb(bool ssb)         { scroll.ShowY(ssb); }
@@ -150,7 +165,7 @@ public:
 
 	void           ChangePaperColor(bool cpc) { change_paper_color = cpc; Refresh(); }
 	void           NoChangePaperColor()       { ChangePaperColor(false); }
-	
+
 	void           SetLeft()                  { left = true; }
 	
 	String         RemoveSelected(bool cr);
@@ -298,8 +313,8 @@ public:
 	void SetFont(Font fnt)                      { diff.SetFont(fnt); }
 	void Dir1(const String& dir)                { dir1 <<= dir; }
 	void Dir2(const String& dir)                { dir2 <<= dir; }
-	void Dir1AddList(const String& dir)         { dir1.AddList(dir); }
-	void Dir2AddList(const String& dir)         { dir2.AddList(dir); }
+	void Dir1AddList(const String& dir)         { dir1.FindAddList(dir); }
+	void Dir2AddList(const String& dir)         { dir2.FindAddList(dir); }
 
 	String GetLeftFile() const                  { return ~lfile; }
 	String GetRightFile() const                 { return ~rfile; }

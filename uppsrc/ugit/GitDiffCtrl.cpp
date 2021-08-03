@@ -136,8 +136,8 @@ void GitDiffCtrl::SetTwo(Vector<String>& ll, Vector<String>& rl)
 	Array<TextSection> sections = CompareLineMaps(ll, rl);
 
 	left.SetLeft();
-//	right.SetDiffBgColor(GreenDiffBg());
-//	right.SetDiffBgColorBold(GreenDiffBgBold());
+	right.SetDiffBgColor(GreenDiffBg());
+	right.SetDiffBgColorBold(GreenDiffBgBold());
 
 	int outln = left.GetCount();
 	int firstdiff = -1;
