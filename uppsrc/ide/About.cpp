@@ -70,6 +70,10 @@ String SplashCtrl::GenerateVersionNumber()
 #else
 	return IDE_VERSION;
 #endif
+#ifdef bmGIT_REVCOUNT
+	return AsString(atoi(bmGIT_REVCOUNT) + 2270);
+#endif
+	return IDE_VERSION;
 }
 
 Size SplashCtrl::MakeLogo(Ctrl& parent, Array<Ctrl>& ctrl)

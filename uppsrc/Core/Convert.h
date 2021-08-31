@@ -35,7 +35,7 @@ inline int64   StrInt64(const char *s) { return ScanInt64(s); }
 inline String  IntStr64(int64 i)       { return FormatInt64(i); }
 
 inline double  StrDbl(const char* s)   { return ScanDouble(s); }
-inline String  DblStr(double d)        { return FormatDouble(d, 10); }
+inline String  DblStr(double d)        { return IsNull(d) ? String() : FormatDouble(d); }
 
 inline double  IntDbl(int i)           { return IsNull(i) ? double(Null) : double(i); }
 inline int     DblInt(double d)        { return IsNull(d) ? int(Null) : fround(d); }
@@ -127,10 +127,10 @@ public:
 	double         GetMax() const                    { return maxval; }
 	bool           IsNotNull() const                 { return notnull; }
 
-	static double  GetDefaultMin()                   { return DOUBLE_NULL_LIM; }
-	static double  GetDefaultMax()                   { return -DOUBLE_NULL_LIM; }
+	static double  GetDefaultMin()                   { return -std::numeric_limits<double>::max(); }
+	static double  GetDefaultMax()                   { return std::numeric_limits<double>::max(); }
 
-	ConvertDouble(double minval = DOUBLE_NULL_LIM, double maxval = -DOUBLE_NULL_LIM,
+	ConvertDouble(double minval = GetDefaultMin(), double maxval = GetDefaultMax(),
 		          bool notnull = false);
 };
 

@@ -533,11 +533,12 @@ bool IsSvnDir2(const String& p)
 	return false;
 }
 
-Vector<String> SvnInfo(const String& package)
+Vector<String> RepoInfo(const String& package)
 {
 	Vector<String> info;
 	String d = GetFileFolder(PackagePath(package));
-	if(IsSvnDir2(d)) {
+	int repo = GetRepoKind(d);
+	if(repo == SVN_DIR) {
 		String v = Sys("svnversion " + d);
 		if(IsDigit(*v))
 			info.Add("#define bmSVN_REVISION " + AsCString(TrimBoth(v)));
@@ -550,6 +551,11 @@ Vector<String> SvnInfo(const String& package)
 				break;
 			}
 		}
+	}
+	if(repo == GIT_DIR) {
+		String v = Sys("git rev-list --count HEAD");
+		if(IsDigit(*v))
+			info.Add("#define bmGIT_REVCOUNT " + AsCString(TrimBoth(v)));
 	}
 	return info;
 }
@@ -572,8 +578,8 @@ void CppBuilder::SaveBuildInfo(const String& package)
 	info << "#define bmUSER    " << AsCString(GetUserName()) << "\r\n";
 
 	if(package == mainpackage) {
-		info << Join(SvnInfo(package), "\r\n");
-		info << Join(GitInfo(package), "\r\n");
+		info << Join(RepoInfo(package), "\r\n") << "\r\n";
+		info << Join(GitInfo(package), "\r\n") << "\r\n";
 	}
 }
 

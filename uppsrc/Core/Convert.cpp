@@ -150,61 +150,6 @@ int64 ScanInt64(const char *ptr)
 	return ScanInt<char, byte, uint64, int64, 10>(x, ptr, overflow) && !overflow ? x : Null;
 }
 
-double ScanDouble(const char *ptr, const char **endptr, bool accept_comma)
-{
-	double n;
-	ptr = ScanDbl<char, byte>(n, ptr, accept_comma ? ',' : '.');
-	if(ptr && endptr)
-		*endptr = ptr;
-	return ptr ? n : Null;
-}
-
-double ScanDouble(const wchar *ptr, const wchar **endptr, bool accept_comma)
-{
-	double n;
-	ptr = ScanDbl<wchar, word>(n, ptr, accept_comma ? ',' : '.');
-	if(ptr && endptr)
-		*endptr = ptr;
-	return ptr ? n : Null;
-}
-
-double ScanDouble(const char *ptr, const char **endptr)
-{
-	double n;
-	ptr = ScanDbl<char, byte>(n, ptr, ',');
-	if(ptr && endptr)
-		*endptr = ptr;
-	return ptr ? n : Null;
-}
-
-double ScanDouble(const wchar *ptr, const wchar **endptr)
-{
-	double n;
-	ptr = ScanDbl<wchar, word>(n, ptr, ',');
-	if(ptr && endptr)
-		*endptr = ptr;
-	return ptr ? n : Null;
-}
-
-double ScanDouble(const char *ptr)
-{
-	double n;
-	ptr = ScanDbl<char, byte>(n, ptr, ',');
-	return ptr ? n : Null;
-}
-
-double ScanDouble(const wchar *ptr)
-{
-	double n;
-	return ScanDbl<wchar, word>(n, ptr, ',') ? n : Null;
-}
-
-double Atof(const char *s)
-{
-	double n;
-	return ScanDbl<char, byte>(n, s, ',') ? n : 0;
-}
-
 Value StrIntValue(const char *s)
 {
 	if(s && *s) {
@@ -537,7 +482,7 @@ const ConvertInt& StdConvertInt() { static ConvertInt h; return h; }
 const ConvertInt& StdConvertIntNotNull() { static ConvertInt h(-INT_MAX, INT_MAX, true); return h; }
 
 const ConvertDouble& StdConvertDouble() { static ConvertDouble h; return h; }
-const ConvertDouble& StdConvertDoubleNotNull() { static ConvertDouble h(DOUBLE_NULL_LIM, -DOUBLE_NULL_LIM, true); return h; }
+const ConvertDouble& StdConvertDoubleNotNull() { static ConvertDouble h(-std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), true); return h; }
 
 const ConvertDate& StdConvertDate() { static ConvertDate h; return h; }
 const ConvertDate& StdConvertDateNotNull() { static ConvertDate h(Date(0, 0, 0), Date(3000, 12, 31), true); return h; }
