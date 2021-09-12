@@ -144,84 +144,62 @@ static const char s100[] =
     "90919293949596979899"
 ;
 
-force_inline
 int FormatDoubleDigits(const sF128& w, char *digits, int precision)
 { // produces exactly precision valid numbers of result, returns its E
 	ASSERT(precision > 0 && precision < 19);
-	static uint64 pd[21] {
-		1,
-		10,
-		100,
-		1000,
-		10000,
-		100000,
-		1000000,
-		10000000,
-		100000000,
-		1000000000,
-		10000000000,
-		100000000000,
-		1000000000000,
-		10000000000000,
-		100000000000000,
-		1000000000000000,
-		10000000000000000,
-		100000000000000000,
-		1000000000000000000,
-		10000000000000000000u,
-	};
 	
 	LHITCOUNT("FormatDoubleDigits");
 
-	int e10 = precision - ((19738 * w.exponent) >> 16); // log10 estimate
-	// note: better estimate with mantissa involved is possible but not really faster
-	uint64 u;
-	for(;;) { // until u fits required precision
-		LHITCOUNT("iteration");
-		sF128 v = w;
-		v.MulPow10(e10);
-		u = v.GetUint64();
-		ASSERT(u >= pd[precision - 1]);
-		if(u < pd[precision])
-			break;
-		e10--;
-	}
-	LTIMING("utoa64");
+	uint64 u, u1;
+	int e10;
 
-	auto D1 = [&](dword u) { *digits++ = char(u + '0'); };
+	auto FP = [&](uint64 limit) {
+		e10 = precision - ((19728 * w.exponent) >> 16); // log10 estimate
+		// note: better estimate with mantissa involved is possible but not really faster
+		for(;;) { // until u fits required precision
+			sF128 v = w;
+			v.MulPow10(e10);
+			u = v.GetUint64();
+			ASSERT(u >= limit / 10);
+			if(u < limit)
+				break;
+			e10--;
+		}
+	};
+
+	auto D1 = [&](dword u) { *digits++ = u + '0'; };
 	auto D2 = [&](dword u) { memcpy(digits, s100 + 2 * u, 2); digits += 2; };
-	auto D3 = [&](dword u) { D1(u / 100); D2(u % 100); };
-	auto D4 = [&](dword u) { D2(u / 100); D2(u % 100); };
+
+	auto D3 = [&](dword u) { int q = (5243 * u) >> 19; D1(q); D2(u - 100 * q); }; // bit faster than / % here
+	auto D4 = [&](dword u) { int q = (5243 * u) >> 19; D2(q); D2(u - 100 * q); };
+
 	auto D5 = [&](dword u) { D1(u / 10000); D4(u % 10000); };
 	auto D6 = [&](dword u) { D2(u / 10000); D4(u % 10000); };
 	auto D7 = [&](dword u) { D3(u / 10000); D4(u % 10000); };
 	auto D8 = [&](dword u) { D4(u / 10000); D4(u % 10000); };
 
+	auto U8 = [&] { u1 = u / 100000000; u = u % 100000000; };
+	auto U16 = [&] { u1 = u / 10000000000000000; u = u % 10000000000000000; };
+
 	switch(precision) {
-	case 1: D1((dword)u); break;
-	case 2: D2((dword)u); break;
-	case 3: D3((dword)u); break;
-	case 4: D4((dword)u); break;
-	case 5: D5((dword)u); break;
-	case 6: D6((dword)u); break;
-	case 7: D7((dword)u); break;
-	case 8: D8((dword)u); break;
-	case 9: D1(dword(u / 100000000)); D8(dword(u % 100000000)); break;
-	case 10: D2(dword(u / 100000000)); D8(dword(u % 100000000)); break;
-	case 11: D3(dword(u / 100000000)); D8(dword(u % 100000000)); break;
-	case 12: D4(dword(u / 100000000)); D8(dword(u % 100000000)); break;
-	case 13: D5(dword(u / 100000000)); D8(dword(u % 100000000)); break;
-	case 14: D6(dword(u / 100000000)); D8(dword(u % 100000000)); break;
-	case 15: D7(dword(u / 100000000)); D8(dword(u % 100000000)); break;
-	case 16: D8(dword(u / 100000000)); D8(dword(u % 100000000)); break;
-	default: // 17, 18
-		uint64 u1 = u / 10000000000000000;
-		u = u % 10000000000000000;
-		if(precision == 17)
-			D1((dword)u1);
-		else
-			D2((dword)u1);
-		D8(dword(u / 100000000)); D8(dword(u % 100000000));
+	case  1: FP(10); D1(u); break;
+	case  2: FP(100); D2(u); break;
+	case  3: FP(1000); D3(u); break;
+	case  4: FP(10000); D4(u); break;
+	case  5: FP(100000); D5(u); break;
+	case  6: FP(1000000); D6(u); break;
+	case  7: FP(10000000); D7(u); break;
+	case  8: FP(100000000); D8(u); break;
+	case  9: FP(1000000000); U8(); D1(u1); D8(u); break;
+	case 10: FP(10000000000); U8(); D2(u1); D8(u); break;
+	case 11: FP(100000000000); U8(); D3(u1); D8(u); break;
+	case 12: FP(1000000000000); U8(); D4(u1); D8(u); break;
+	case 13: FP(10000000000000); U8(); D5(u1); D8(u); break;
+	case 14: FP(100000000000000); U8(); D6(u1); D8(u); break;
+	case 15: FP(1000000000000000); U8(); D7(u1); D8(u); break;
+	case 16: FP(10000000000000000); U8(); D8(u1); D8(u); break;
+	case 17: FP(100000000000000000); U16(); D1(u1); U8(); D8(u1); D8(u); break;
+	case 18: FP(1000000000000000000u); U16(); D2(u1); U8(); D8(u1); D8(u); break;
 	}
 	return -e10;
 }
@@ -273,7 +251,7 @@ void tCat(char *&t, const char *s, int count)
 }
 
 force_inline
-bool do_sgn_inf_nan(char *&t, double x, dword flags = FD_SPECIAL)
+bool do_sgn_inf_nan(char *&t, double x, dword flags)
 {
 	LTIMING("do_sgn_inf_nan");
 	if(std::isinf(x)) {
@@ -299,7 +277,16 @@ bool do_sgn_inf_nan(char *&t, double x, dword flags = FD_SPECIAL)
 	else
 	if(flags & FD_SIGN)
 		*t++ = '+';
+	else
+	if(flags & FD_SIGN_SPACE)
+		*t++ = ' ';
 	return false;
+}
+
+force_inline
+void do_point(char *&t, dword flags)
+{
+	*t++ = flags & FD_COMMA ? ',' : '.';
 }
 
 char *FormatE(char *t, double x, int precision, dword flags)
@@ -309,7 +296,7 @@ char *FormatE(char *t, double x, int precision, dword flags)
 	if(!x) {
 		*t++ = '0';
 		if(precision) {
-			*t++ = flags & FD_COMMA ? ',' : '.';
+			do_point(t, flags);
 			tCat(t, '0', precision);
 		}
 		tCat(t, "e+00", 4);
@@ -319,11 +306,9 @@ char *FormatE(char *t, double x, int precision, dword flags)
 		precision++;
 		int ndigits = clamp(precision, 1, 18);
 		int exp = FormatDoubleDigits(x, digits, ndigits) + 1;
-		if(x < 0)
-			*t++ = '-';
 		*t++ = *digits;
 		if(precision > 1)
-			*t++ = flags & FD_COMMA ? ',' : '.';
+			do_point(t, flags);
 		tCat(t, digits + 1, ndigits - 1);
 		if(precision > 18)
 			tCat(t, '0', precision - 18);
@@ -367,11 +352,14 @@ char *FormatDouble_(char *t, double x, int precision, dword flags)
 			while(decimals > dp && digits[decimals - 1] == '0')
 				decimals--;
 		if(decimals > dp) {
-			*t++ = flags & FD_COMMA ? ',' : '.';
+			do_point(t, flags);
 			if(decimal_point < 0)
 				tCat(t, '0', -decimal_point);
 			tCat(t, digits + dp, decimals - dp);
 		}
+		else
+		if(flags & FD_POINT)
+			do_point(t, flags);
 	}
 	else {
 		*t++ = *digits;
@@ -380,9 +368,12 @@ char *FormatDouble_(char *t, double x, int precision, dword flags)
 			while(decimals > 1 && digits[decimals - 1] == '0')
 				decimals--;
 		if(decimals > 1) {
-			*t++ = flags & FD_COMMA ? ',' : '.';
+			do_point(t, flags);
 			tCat(t, digits + 1, decimals - 1);
 		}
+		else
+		if(flags & FD_POINT)
+			do_point(t, flags);
 		exp += precision - 1;
 		FormatE10(t, exp, flags);
 	}
@@ -403,7 +394,7 @@ String FormatDouble(double x, int precision, dword flags)
 
 char *FormatDouble(char *t, double x)
 {
-	return FormatDouble_(t, x, 17, FD_TOLERANCE(6)|FD_MINIMAL_EXP|FD_SPECIAL);
+	return FormatDouble_(t, x, 15, FD_TOLERANCE(6)|FD_MINIMAL_EXP|FD_SPECIAL);
 }
 
 String FormatDouble(double x)
@@ -412,9 +403,15 @@ String FormatDouble(double x)
 	return String(h, FormatDouble(h, x));
 }
 
+String FormatDoubleN(double x)
+{
+	char h[512];
+	return String(h, FormatDouble_(h, x, 15, FD_TOLERANCE(6)|FD_MINIMAL_EXP));
+}
+
 char *FormatG(char *t, double x, int precision, dword flags)
 {
-	return FormatDouble_(t, x, precision, FD_TOLERANCE(3)|FD_SPECIAL|FD_SIGN_EXP|flags);
+	return FormatDouble_(t, x, precision, flags);
 }
 
 String FormatG(double x, int precision, dword flags)
@@ -426,13 +423,16 @@ String FormatG(double x, int precision, dword flags)
 
 char *FormatF(char *t, double x, int precision, dword flags)
 {
-	if(do_sgn_inf_nan(t, x))
+	if(do_sgn_inf_nan(t, x, flags))
 		return t;
+	bool haspoint = false;
+	char *b = t;
 	if(!x) {
 		*t++ = '0';
 		if(precision) {
-			*t++ = flags & FD_COMMA ? ',' : '.';
+			do_point(t, flags);
 			tCat(t, '0', precision);
+			haspoint = true;
 		}
 	}
 	else {
@@ -452,15 +452,17 @@ char *FormatF(char *t, double x, int precision, dword flags)
 			int n = utoa64(u, digits);
 			if(precision >= n) {
 				*t++ = '0';
-				*t++ = flags & FD_COMMA ? ',' : '.';
+				do_point(t, flags);
 				tCat(t, '0', precision - n);
 				tCat(t, digits, n);
+				haspoint = true;
 			}
 			else {
 				tCat(t, digits, n - precision);
 				if(precision) {
-					*t++ = flags & FD_COMMA ? ',' : '.';
+					do_point(t, flags);
 					tCat(t, digits + n - precision, precision);
+					haspoint = true;
 				}
 			}
 		}
@@ -468,21 +470,35 @@ char *FormatF(char *t, double x, int precision, dword flags)
 			int e10 = FormatDoubleDigits(w, digits, 18);
 			if(e10 < 0) {
 				tCat(t, digits, 18 + e10);
-				if(precision)
-					*t++ = flags & FD_COMMA ? ',' : '.';
+				if(precision) {
+					do_point(t, flags);
+					haspoint = true;
+				}
 				tCat(t, digits + 18 + e10, -e10);
 				zeroes += precision + e10;
 			}
 			else {
 				tCat(t, digits, 18);
 				tCat(t, '0', e10);
-				if(precision)
-					*t++ = flags & FD_COMMA ? ',' : '.';
+				if(precision) {
+					do_point(t, flags);
+					haspoint = true;
+				}
 				zeroes += precision;
 			}
 		}
 		tCat(t, '0', zeroes);
 	}
+	if(!precision && (flags & FD_POINT))
+		do_point(t, flags);
+	else
+	if(!(flags & FD_ZEROS) && haspoint) {
+		while(t > b && *(t - 1) == '0')
+			t--;
+		if(t > b && *(t - 1) == '.')
+			t--;
+	}
+
 	return t;
 }
 
