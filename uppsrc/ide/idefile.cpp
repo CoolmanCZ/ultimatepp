@@ -413,7 +413,7 @@ void Ide::FlushFile() {
 			RefreshBrowser();
 	}
 	else
-	if(!editfile.IsEmpty()) {
+	if(!editfile.IsEmpty() && !editor.IsView()) {
 		FileData& fd = Filedata(editfile);
 		fd.undodata = editor.PickUndoData();
 		fd.filehash = EditorHash();
@@ -530,6 +530,7 @@ void Ide::EditFile0(const String& path, byte charset, int spellcheck_comments, c
 		edittime = ff.GetLastWriteTime();
 		if(edittime != fd.filetime || IsNull(fd.filetime))
 			fd.undodata.Clear();
+		view_file.SetBufferSize(256*1024);
 		view_file.Open(editfile);
 		if(view_file) {
 			if(tfile && editastext.Find(editfile) < 0) {
