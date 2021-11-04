@@ -6,6 +6,7 @@ struct UppHubNest : Moveable<UppHubNest> {
 	Vector<String>   packages;
 	String           description;
 	String           repo;
+	String           website;
 	String           status = "unknown";
 	String           category;
 	String           list_name;
@@ -160,8 +161,8 @@ void UppHubDlg::Menu(Bar& bar)
 		sep = true;
 	}
 
-	if(n && n->repo.StartsWith("https://")) {
-		bar.Add("Open " + n->name + " in Browser..", [=] { LaunchWebBrowser(n->repo); });
+	if(n && !n->website.IsEmpty()) {
+		bar.Add("Open " + n->name + " in Browser..", [=] { LaunchWebBrowser(n->website); });
 		sep = true;
 	}
 
@@ -279,7 +280,9 @@ void UppHubDlg::Sync()
 		qtf << "@(" << (int)c.GetR() << "." << (int)c.GetG() << "." << (int)c.GetB() << ")";
 	qtf << " Category: [* \1" << n->category << "\1], status: [* \1" << n->status << "\1], packages: [* \1" << Join(n->packages, " ") << "\1]";
 	if(Installed())
-		qtf << ", [*/ installed]";
+		qtf << "&Status: [* installed]";
+	if (!n->website.IsEmpty())
+		qtf << "&&Website: [^" << n->website << "^ " << n->website << "]";
 	qtf << "}}&&";
 	String s = readme.Get(n->readme, String());
 	if(s.GetCount()) {
@@ -372,6 +375,9 @@ void UppHubDlg::Load(int tier, const String& url)
 			};
 			Attr(n.description, "description");
 			Attr(n.repo, "repository");
+			Attr(n.website, "website");
+			if(IsNull(n.website))
+				n.website = TrimRight(".git", n.repo);
 			Attr(n.category, "category");
 			Attr(n.status, "status");
 			Attr(n.readme, "readme");
