@@ -666,10 +666,15 @@ void Ide::ScanFile(bool check_includes)
 	}
 }
 
-void Ide::EditFileAssistSync2()
+bool Ide::EditFileAssistSync2()
 {
-	editor.Annotate(editfile);
-	editor.SyncNavigator();
+	if(TryLockCodeBase()) {
+		editor.Annotate(editfile);
+		editor.SyncNavigator();
+		UnlockCodeBase();
+		return true;
+	}
+	return false;
 }
 
 void Ide::EditFileAssistSync()
@@ -686,13 +691,16 @@ void Ide::TriggerAssistSync()
 				String s = ~editor;
 				String fn = editfile;
 				file_scan++;
-				if(!CoWork::TrySchedule([=] {
+				if(Ctrl::GetEventLevel() == 0 && !CoWork::TrySchedule([=] {
 					StringStream ss(s);
-					CodeBaseScanFile(ss, editfile);
+					file_scanned = TryCodeBaseScanFile(ss, editfile);
 					file_scan--;
-					file_scanned = true;
-				}))
+					if(!file_scanned)
+						trigger_assist.KillSet(100, [=] { TriggerAssistSync(); });
+				})) {
 					file_scan--;
+					trigger_assist.KillSet(100, [=] { TriggerAssistSync(); });
+				}
 			}
 		});
 	}
@@ -1143,4 +1151,15 @@ String Ide::IdeGetNestFolder()
 		if(editfile.StartsWith(w[i]))
 			return w[i];
 	return Null;
+}
+
+void Ide::Duplicate()
+{
+	int l, h;
+	if(editor.GetSelection(l, h)) {
+		editor.NextUndo();
+		editor.SetSelection(h, editor.Insert(h, editor.GetSelection()) + h);
+	}
+	else
+		editor.DuplicateLine();
 }

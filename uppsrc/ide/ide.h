@@ -668,6 +668,9 @@ public:
 
 	// Formats editor's code with Ide format parameters
 	void FormatCode();
+	void FormatJSON_XML(bool xml);
+	void FormatJSON();
+	void FormatXML();
 
 	bool      browser_closeesc;
 	bool      bookmark_pos;
@@ -767,10 +770,10 @@ public:
 	void      PosSync();
 	String    IncludesMD5();
 
-	void      EditFileAssistSync2();
+	bool      EditFileAssistSync2();
 	void      EditFileAssistSync();
 	
-	TimeCallback     text_updated;
+	TimeCallback     text_updated, trigger_assist;
 	std::atomic<int> file_scan;
 	bool             file_scanned = false;
 
@@ -880,7 +883,7 @@ public:
 		void  TranslateString();
 		void  SwapChars()               { editor.SwapChars(); }
 		void  CopyWord()                { editor.CopyWord(); }
-		void  DuplicateLine()           { editor.DuplicateLine(); }
+		void  Duplicate();
 		void  AlterText(WString (*op)(const WString& in));
 		void  TextToUpper();
 		void  TextToLower();

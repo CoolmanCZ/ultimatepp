@@ -26,7 +26,9 @@ static thread_local int sGLockLevel = 0;
 bool DeadLockCheck()
 {
 	if(sGLockLevel) {
-		PostCallback([] { Exclamation("Internal error (deadlock on sGLock)"); });
+		PostCallback([] {
+			Exclamation("Internal error (deadlock on sGLock)");
+		});
 		return true;
 	}
 	return false;
@@ -36,6 +38,15 @@ void LockCodeBase()
 {
 	if(sGLockLevel++ == 0)
 		sGLock.Enter();
+}
+
+bool TryLockCodeBase()
+{
+	if(sGLockLevel == 0 && sGLock.TryEnter()) {
+		sGLockLevel++;
+		return true;
+	}
+	return false;
 }
 
 void UnlockCodeBase()
@@ -452,6 +463,16 @@ void CodeBaseScanFile(Stream& in, const String& fn)
 	Mutex::Lock __(CppBaseMutex);
 	CodeBaseScanFile0(in, fn);
 	FinishCodeBase();
+}
+
+bool TryCodeBaseScanFile(Stream& in, const String& fn)
+{
+	if(DeadLockCheck() || !CppBaseMutex.TryEnter())
+		return false;
+	CodeBaseScanFile0(in, fn);
+	FinishCodeBase();
+	CppBaseMutex.Leave();
+	return true;
 }
 
 void CodeBaseScanFile(const String& fn, bool auto_check)

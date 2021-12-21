@@ -65,7 +65,7 @@ class Font : public ValueType<Font, FONT_V, Moveable<Font> >{
 	const CommonFontInfo& Fi() const;
 	
 	friend void   sInitFonts();
-	friend String GetFontDataSys(Font font);
+	friend String GetFontDataSys(Font font, const char *table, int offset, int size);
 	
 public:
 	enum {
@@ -75,6 +75,7 @@ public:
 		SPECIAL     = 0x0010,
 		SERIFSTYLE  = 0x0020,
 		SCRIPTSTYLE = 0x0040,
+		COLORIMG    = 0x0080, // freetype color bitmap font (emojis)
 	};
 
 	static int    GetFaceCount();
@@ -182,7 +183,7 @@ public:
 	String GetTextFlags() const;
 	void   ParseTextFlags(const char *s);
 	
-	String GetData() const;
+	String GetData(const char *table = NULL, int offset = 0, int size = INT_MAX) const;
 	
 	void   Render(FontGlyphConsumer& sw, double x, double y, int ch) const;
 

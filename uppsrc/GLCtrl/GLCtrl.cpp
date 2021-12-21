@@ -12,6 +12,8 @@ extern void (*restore_gl_viewport__)();
 
 void GLCtrl::DoGLPaint()
 {
+	MemoryIgnoreLeaksBlock __;
+
 	glClearDepth(1);
 	glClearColor(1, 1, 1, 1);
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
@@ -30,6 +32,8 @@ void GLCtrl::Init()
 	Add(pane.SizePos());
 #endif
 	restore_gl_viewport__ = SetCurrentViewport;
+	MemoryIgnoreNonMainLeaks();
+	MemoryIgnoreNonUppThreadsLeaks(); // Linux drivers leak memory in threads
 }
 
 Image GLCtrl::MouseEvent(int event, Point p, int zdelta, dword keyflags)
@@ -47,6 +51,8 @@ void GLCtrl::SetCurrentViewport()
 
 void GLCtrl::StdView()
 {
+	MemoryIgnoreLeaksBlock __;
+
 	glShadeModel(GL_SMOOTH);
 	glClearColor(0.0f, 0.0f, 0.0f, 0.5f);
 	glClearDepth(1.0f);
