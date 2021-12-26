@@ -101,8 +101,6 @@ is your place]]
 ::l0/25r8/25 [s0;>%% [@(114)2 Let`'s go!]]
 ::^l8/25@2-2 [s4;i150;O0;%% [^http`:`/`/www`.ultimatepp`.org`/redmine`/projects`/upp^ Project 
 management (Redmine)]&]
-[s4;i150;O0;%% [^topic`:`/`/uppweb`/www`/svnInstall`$en`-us^ SVN install 
-and permissions]&]
 [s4;i150;O0;%% [^topic`:`/`/uppweb`/www`/GITRepository`_en`-us^ GIT 
 repository]&]
 [s4;i150;O0;%% [^topic`:`/`/uppweb`/www`/bugreports`$en`-us^ Bug reports 
@@ -125,8 +123,8 @@ ideas]]
 ::^l8/25r8/25t8/25b8/25R(165)-1 [s4;i150;O0;%% [^topic`:`/`/uppweb`/www`/download`$en`-us^ Download]&]
 [s4;i150;O0;%% [^https`:`/`/sourceforge`.net`/projects`/upp`/files`/latest`/download^ C
 urrent release]: [IRELEASE; release]&]
-[s4;i150;O0;%% [^topic`:`/`/uppweb`/www`/download`$en`-us^ Latest svn]: 
-[ILATESTSVN; latestsvn]]
+[s4;i150;O0;%% [^topic`:`/`/uppweb`/www`/download`$en`-us^ Latest git]: 
+[ILATESTGIT; latestgit]]
 ::=l0/25r0/25t0/15b0/15R0 [s0; ]
 ::r/0t8/25b8/25R(165)-1 [s0;*+34%% ]
 ::r/25t0/15b0/15R0 [s0; ]
