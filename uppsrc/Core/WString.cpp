@@ -261,7 +261,6 @@ WString::WString(const std::wstring& s)
 std::wstring WString::ToStd() const
 {
 	if(sizeof(wchar_t) == 4) {
-		const wchar *s = begin();
 		return std::wstring((const wchar_t *)begin(), GetCount());
 	}
 	if(sizeof(wchar_t) == 2) {
