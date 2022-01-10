@@ -239,6 +239,11 @@ uint64 mul64(uint64 a, uint64 b, uint64& hi)
 	return _umul128(a, b, &hi);
 }
 
+inline
+byte addc64(uint64& result, const uint64& value, byte carry) {
+	return _addcarry_u64(carry, result, value, &result);
+}
+
 #else
 
 force_inline

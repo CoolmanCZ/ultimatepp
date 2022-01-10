@@ -33,6 +33,13 @@ struct FontGlyphConsumer {
 
 class FontInfo;
 
+
+inline
+bool PreferColorEmoji(int c)
+{ // for these codepoints we prefer replacemnet color emoji even if glyphs is in the font
+	return c >= 0x2600 && c <= 0x27ef || c >= 0x1f004 && c <= 0x1f251 || c >= 0x1f300 && c <= 0x1faf6;
+}
+
 class Font : public ValueType<Font, FONT_V, Moveable<Font> >{
 	union {
 		int64 data;
@@ -96,11 +103,11 @@ public:
 		SANSSERIF,
 		MONOSPACE,
 	#ifdef PLATFORM_WIN32
-		SYMBOL,
-		WINGDINGS,
-		TAHOMA,
+		SYMBOL, // deprecated
+		WINGDINGS, // deprecated
+		TAHOMA, // deprecated
 	#endif
-		OTHER,
+		OTHER, // deprecated
 
 	// Backward compatibility:
 		ROMAN = SERIF,
@@ -970,6 +977,15 @@ IsJPGFnType GetIsJPGFn();
 #include "Cham.h"
 #include "DDARasterizer.h"
 #include "SDraw.h"
+
+enum {
+	CMAP_GLYPHS = 1,
+	CMAP_ALLOW_SYMBOL = 2,
+};
+
+bool ReadCmap(const char *ptr, int count, Event<int, int, int> range, dword flags = 0);
+bool ReadCmap(Font font, Event<int, int, int> range, dword flags = 0);
+bool GetPanoseNumber(Font font, byte *panose);
 
 }
 
