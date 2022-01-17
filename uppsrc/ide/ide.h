@@ -671,6 +671,7 @@ public:
 	void FormatJSON_XML(bool xml);
 	void FormatJSON();
 	void FormatXML();
+	void FormatJSON_XML_File(bool xml);
 
 	bool      browser_closeesc;
 	bool      bookmark_pos;
