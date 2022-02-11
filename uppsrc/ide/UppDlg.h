@@ -405,6 +405,7 @@ struct WorkspaceWork {
 
 	static bool IsAux(const String& p);
 	bool IsAux();
+	bool IsMeta();
 
 	void PackageMenu(Bar& bar);
 	void FileMenu(Bar& bar);

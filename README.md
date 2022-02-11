@@ -1,6 +1,6 @@
-# Ultimate++
+# U++
 
-This Ultimate++ fork contains basic GIT integration with the Ultimate++ IDE.
+This U++ fork contains basic GIT integration with the U++ IDE.
 
 ## GitHub actions build status
 |branch  | status|
@@ -8,9 +8,9 @@ This Ultimate++ fork contains basic GIT integration with the Ultimate++ IDE.
 |master  | [![Build Status](https://github.com/CoolmanCZ/ultimatepp/actions/workflows/upp.yml/badge.svg?branch=master)](https://github.com/CoolmanCZ/ultimatepp/actions/workflows/upp.yml)  |
 
 ## About
-![alt text](uppbox/uppweb/Resources/Images/Logo.png?raw=true "Ultimate++ Logo")
+![alt text](uppbox/uppweb/Resources/Images/Logo.png?raw=true "U++ Logo")
 
-Ultimate++ is a C++ cross-platform rapid application development framework focused on programmers productivity. It includes a set of libraries (GUI, SQL, etc.), and an integrated development environment.
+U++ is a C++ cross-platform rapid application development framework focused on programmers productivity. It includes a set of libraries (GUI, SQL, etc.), and an integrated development environment.
 
 Rapid development is achieved by the [smart and aggressive use of C++](https://www.ultimatepp.org/www$uppweb$overview$en-us.html) rather than through fancy code generators. In this respect, U++ competes with popular scripting languages while preserving C/C++ runtime characteristics.
 
@@ -20,7 +20,7 @@ TheIDE can work with GCC, Clang, MinGW and Visual C++ and contains a full featur
 
 U++ supports following platforms on the production level: **Windows**, **macOS**, **GNU/Linux** & **FreeBSD**.
 
-## What you can get with Ultimate++?
+## What you can get with U++?
 
 * A very effective C++ library for cross-platform development in source form.
 * A good integrated development environment, designed for developing large C++ applications.

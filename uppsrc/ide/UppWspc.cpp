@@ -896,6 +896,11 @@ bool WorkspaceWork::IsAux()
 	return IsAux(actualpackage);
 }
 
+bool WorkspaceWork::IsMeta()
+{
+	return actualpackage == METAPACKAGE;
+}
+
 void WorkspaceWork::InsertSpecialMenu(Bar& menu)
 {
 	bool isaux = IsAux();
