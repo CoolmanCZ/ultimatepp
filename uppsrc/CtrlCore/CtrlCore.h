@@ -82,7 +82,7 @@ typedef ImageDraw SystemImageDraw;
 void SetSurface(Draw& w, const Rect& dest, const RGBA *pixels, Size srcsz, Point poff);
 void SetSurface(Draw& w, int x, int y, int cx, int cy, const RGBA *pixels);
 
-enum {
+enum CtrlCoreFlags {
 	K_DELTA        = 0x200000,
 	K_CHAR_LIM     = 0x200000, // lower that this, key in Key is Unicode codepoint
 
@@ -109,10 +109,21 @@ enum {
 	IK_DBL_CLICK   = 0x40000001, // this is just to get the info that the entry is equal to dbl-click to the menu
 
 	K_MOUSE_FORWARD = 0x80000001,
-	K_MOUSE_BACKWARD = 0x80000002,
+	K_MOUSE_BACKWARD = 0x80000002
 };
 
 #include "MKeys.h"
+
+//C++20 requires these
+inline constexpr dword operator|(CtrlCoreFlags flag, CtrlCoreKeys key)
+{
+	return (int)flag | (int)key;
+}
+
+inline constexpr dword operator|(CtrlCoreKeys key, CtrlCoreFlags flag)
+{
+	return (int)flag | (int)key;
+}
 
 bool GetShift();
 bool GetCtrl();
@@ -293,9 +304,6 @@ public:
 
 	PasteClip();
 };
-
-String  Unicode__(const WString& w);
-WString Unicode__(const String& s);
 
 void GuiPlatformAdjustDragImage(ImageBuffer& b);
 
