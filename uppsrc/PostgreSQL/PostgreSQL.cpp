@@ -218,22 +218,22 @@ Vector<String> PostgreSQLSession::EnumData(char type, const char *schema)
 	return vec;
 }
 
-Vector<String> PostgreSQLSession::EnumTables(String database)
+Vector<String> PostgreSQLSession::EnumTables(String schema)
 {
-	return EnumData('r', database);
+	return EnumData('r', schema);
 }
 
-Vector<String> PostgreSQLSession::EnumViews(String database)
+Vector<String> PostgreSQLSession::EnumViews(String schema)
 {
-	return EnumData('v', database);
+	return EnumData('v', schema);
 }
 
-Vector<String> PostgreSQLSession::EnumSequences(String database)
+Vector<String> PostgreSQLSession::EnumSequences(String schema)
 {
-	return EnumData('S', database);
+	return EnumData('S', schema);
 }
 
-Vector<SqlColumnInfo> PostgreSQLSession::EnumColumns(String database, String table)
+Vector<SqlColumnInfo> PostgreSQLSession::EnumColumns(String schema, String table)
 {
 	/* database means schema here - support for schemas is a something to fix in sql interface */
 
@@ -250,7 +250,7 @@ Vector<SqlColumnInfo> PostgreSQLSession::EnumColumns(String database, String tab
 	                  "and n.nspname = '%s' "
 	                  "and a.attnum > 0 "
 	                  "and a.attisdropped = '0' "
-	                "order by a.attnum", table, database), *this);
+	                "order by a.attnum", table, schema), *this);
 	sql.Execute();
 	while(sql.Fetch())
 	{
@@ -302,7 +302,7 @@ void PostgreSQLSession::ExecTrans(const char * statement)
 {
 	if(trace)
 		*trace << statement << UPP::EOL;
-	
+
 	int itry = 0;
 
 	do {
@@ -357,13 +357,13 @@ bool PostgreSQLSession::Open(const char *connect)
 	}
 
 	if(PQstatus(conn) != CONNECTION_OK)
-	{	
+	{
 		SetError(FromSystemCharset(PQerrorMessage(conn)), "Opening database");
 		Close();
 		return false;
 	}
 	level = 0;
-	
+
 	if(PQclientEncoding(conn)) {
 		if(PQsetClientEncoding(conn, "UTF8")) {
 			SetError("Cannot set UTF8 charset", "Opening database");
@@ -373,7 +373,7 @@ bool PostgreSQLSession::Open(const char *connect)
 	}
 	else
 		charset = CHARSET_DEFAULT;
-	
+
 	DoKeepAlive();
 
 	LLOG( String("Postgresql client encoding: ") + pg_encoding_to_char( PQclientEncoding(conn) ) );
@@ -400,7 +400,7 @@ bool PostgreSQLSession::ReOpen()
 	}
 	DoKeepAlive();
 	level = 0;
-	return true;	
+	return true;
 }
 
 void PostgreSQLSession::Close()
@@ -592,7 +592,7 @@ Value PostgreSQLConnection::GetInsertedId() const
 {
 	String pk = session.pkache.Get(last_insert_table, Null);
 	if(IsNull(pk)) {
-		String sqlc_expr; 
+		String sqlc_expr;
 		sqlc_expr <<
 		"SELECT " <<
 		  "pg_attribute.attname " <<

@@ -37,9 +37,9 @@ public:
 
 	virtual Vector<String>        EnumUsers();
 	virtual Vector<String>        EnumDatabases();
-	virtual Vector<String>        EnumTables(String database);
-	virtual Vector<String>        EnumViews(String database);
-	virtual Vector<String>        EnumSequences(String database);
+	virtual Vector<String>        EnumTables(String schema);
+	virtual Vector<String>        EnumViews(String schema);
+	virtual Vector<String>        EnumSequences(String schema);
 	virtual Vector<SqlColumnInfo> EnumColumns(String database, String table);
 	virtual Vector<String>        EnumPrimaryKey(String database, String table);
 	virtual String                EnumRowID(String database, String table);
@@ -51,12 +51,12 @@ protected:
 private:
 	PGconn               *conn;
 	PGresult             *result;
-	
+
 	String                conns;
 	bool                  keepalive;
 	bool                  hex_blobs;
 	bool                  noquestionparams = false;
-	
+
 	VectorMap<String, String> pkache;
 
 	void                  ExecTrans(const char * statement);
@@ -65,10 +65,10 @@ private:
 	String                ErrorCode();
 	int                   level;
 	byte                  charset;
-	
+
 	String                FromCharset(const String& s) const;
 	String                ToCharset(const String& s) const;
-	
+
 	void                  DoKeepAlive();
 
 	friend class PostgreSQLConnection;

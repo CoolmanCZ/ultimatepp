@@ -48,10 +48,10 @@
 #define TIME_SEC_(x)               COLUMN_("timestamp(0)", Time, x, 0, 0)
 #define TIME_SEC_ARRAY_(x, items)  COLUMN_ARRAY_("timestamp(0)", Time, x, 0, 0, items)
 
-#define BOOL(x)                    COLUMN("char(1)", bool, x, 0, 0)
-#define BOOL_ARRAY(x, items)       COLUMN_ARRAY("char(1)", bool, x, 0, 0, items)
-#define BOOL_(x)                   COLUMN_("char(1)", bool, x, 0, 0)
-#define BOOL_ARRAY_(x, items)      COLUMN_ARRAY_("char(1)", bool, x, 0, 0, items)
+#define BOOL(x)                    COLUMN("boolean", bool, x, 0, 0)
+#define BOOL_ARRAY(x, items)       COLUMN_ARRAY("boolean", bool, x, 0, 0, items)
+#define BOOL_(x)                   COLUMN_("boolean", bool, x, 0, 0)
+#define BOOL_ARRAY_(x, items)      COLUMN_ARRAY_("boolean", bool, x, 0, 0, items)
 
 #define LONG(x)                    COLUMN("text", String, x, 0, 0)
 #define LONG_(x)                   COLUMN_("text", String, x, 0, 0)
@@ -64,6 +64,11 @@
 
 #define CLOB(x)                    COLUMN("text", String, x, INT_MAX/2, 0)
 #define CLOB_(x)                   COLUMN_("text", String, x, INT_MAX/2, 0)
+
+#define UUID(x)                    COLUMN("uuid", String, x, 0, 0)
+#define UUID_ARRAY(x, items)       COLUMN_ARRAY("uuid", String, x, 0, 0, items)
+#define UUID_(x)                   COLUMN_("uuid", String, x, 0, 0)
+#define UUID_ARRAY_(x, items)      COLUMN_ARRAY_("uuid", String, x, 0, 0, items)
 
 #define SEQUENCE(x)                SCHEMA("create sequence " #x " start with 1;",\
                                           "drop sequence " #x ";") \
@@ -98,13 +103,13 @@
 
 #ifndef REFERENCES_
 #define REFERENCES_(n, x)          ATTRIBUTE("alter table @t add constraint FK_@x$" #n " foreign key "\
-                                             "(@c) references " #x ";",\
+                                             "(@c) references " #n " (" #x ");",\
                                              "alter table @t drop constraint FK_@x$" #n ";")
 #endif
 
 #ifndef REFERENCES_CASCADE_
 #define REFERENCES_CASCADE_(n, x)  ATTRIBUTE("alter table @t add constraint FK_@x$" #n " foreign key "\
-                                             "(@c) references " #x " on delete cascade;",\
+                                             "(@c) references " #n " (" #x ") on delete cascade;",\
                                              "alter table @t drop constraint FK_@x$" #n ";")
 #endif
 
@@ -147,56 +152,77 @@ ATTRIBUTE("alter table @t add constraint UQ_@t$" #name " unique (" list ");", \
 #undef INT_ARRAY
 #undef INT_
 #undef INT_ARRAY_
+
 #undef INT64
 #undef INT64_ARRAY
 #undef INT64_
 #undef INT64_ARRAY_
+
 #undef SERIAL
 #undef SERIAL_ARRAY
 #undef SERIAL_
 #undef SERIAL_ARRAY_
+
 #undef ISERIAL
 #undef ISERIAL_ARRAY
 #undef ISERIAL_
 #undef ISERIAL_ARRAY_
+
 #undef BIGSERIAL
 #undef BIGSERIAL_ARRAY
 #undef BIGSERIAL_
 #undef BIGSERIAL_ARRAY_
+
 #undef DOUBLE
 #undef DOUBLE_ARRAY
 #undef DOUBLE_
 #undef DOUBLE_ARRAY_
+
 #undef STRING
 #undef STRING_ARRAY
 #undef STRING_
 #undef STRING_ARRAY_
+
 #undef DATE
 #undef DATE_ARRAY
 #undef DATE_
 #undef DATE_ARRAY_
+
 #undef TIME
 #undef TIME_ARRAY
 #undef TIME_
 #undef TIME_ARRAY_
+
 #undef TIME_SEC
 #undef TIME_SEC_ARRAY
 #undef TIME_SEC_
 #undef TIME_SEC_ARRAY_
+
 #undef BOOL
 #undef BOOL_ARRAY
 #undef BOOL_
 #undef BOOL_ARRAY_
+
 #undef LONG
 #undef LONG_
+
 #undef LONGRAW
 #undef LONGRAW_
+
 #undef BLOB
 #undef BLOB_
+
 #undef CLOB
 #undef CLOB_
+
+#undef UUID
+#undef UUID_ARRAY
+#undef UUID_
+#undef UUID_ARRAY_
+
 #undef SEQUENCE
 #undef SEQUENCE_
+
 #undef PRIMARY_KEY
 #undef NOT_NULL
 #undef UNIQUE
