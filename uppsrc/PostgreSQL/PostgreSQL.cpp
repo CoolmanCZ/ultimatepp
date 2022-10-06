@@ -1,7 +1,7 @@
 #include "PostgreSQL.h"
 
 #ifdef PLATFORM_WIN32
-#include "Winsock2.h"
+#include "winsock2.h"
 #endif
 
 #ifdef PLATFORM_POSIX
