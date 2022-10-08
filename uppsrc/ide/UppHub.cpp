@@ -44,7 +44,9 @@ public:
 	
 public:
 	UppHubSettingsDlg();
-	~UppHubSettingsDlg();
+	
+	void LoadGlobalSettings();
+	void SaveGlobalSettings();
 	
 private:
 	void RefreshCtrls();
@@ -57,12 +59,15 @@ UppHubSettingsDlg::UppHubSettingsDlg()
 	seturl.WhenAction = [=] {
 		RefreshCtrls();
 	};
-	RefreshCtrls();
-	
-	LoadFromGlobal(*this, GLOBAL_CONFIG_NAME);
 }
 
-UppHubSettingsDlg::~UppHubSettingsDlg()
+void UppHubSettingsDlg::LoadGlobalSettings()
+{
+	LoadFromGlobal(*this, GLOBAL_CONFIG_NAME);
+	RefreshCtrls();
+}
+
+void UppHubSettingsDlg::SaveGlobalSettings()
 {
 	StoreToGlobal(*this, GLOBAL_CONFIG_NAME);
 }
@@ -185,6 +190,8 @@ UppHubDlg::UppHubDlg()
 	broken <<= false;
 	
 	category ^= experimental ^= broken ^= [=] { SyncList(); };
+	
+	settings.LoadGlobalSettings();
 }
 
 INITBLOCK
@@ -358,10 +365,12 @@ void UppHubDlg::Sync()
 
 void UppHubDlg::Settings()
 {
+	settings.LoadGlobalSettings();
 	if(settings.Execute() != IDOK) {
 		return;
 	}
 	
+	settings.SaveGlobalSettings();
 	Load();
 }
 
