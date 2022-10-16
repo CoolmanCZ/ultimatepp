@@ -81,7 +81,7 @@ struct SSLInfo {
 	String  cert_issuer;
 	Date    cert_notbefore;
 	Date    cert_notafter;
-	int     cert_version;
+	long    cert_version;
 	String  cert_serial;
 };
 

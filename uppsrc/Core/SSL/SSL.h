@@ -103,7 +103,7 @@ public:
 	String   GetIssuerName() const;
 	Date     GetNotBefore() const;
 	Date     GetNotAfter() const;
-	int      GetVersion() const;
+	long     GetVersion() const;
 	String   GetSerialNumber() const;
 
 	operator X509 * () const                 { return cert; }

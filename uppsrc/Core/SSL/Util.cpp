@@ -98,37 +98,32 @@ String SslCertificate::Save(bool asn1) const
 
 String SslCertificate::GetSubjectName() const
 {
-	ASSERT(!IsEmpty());
 	return SslToString(X509_get_subject_name(cert));
 }
 
 String SslCertificate::GetIssuerName() const
 {
-	ASSERT(!IsEmpty());
 	return SslToString(X509_get_issuer_name(cert));
 }
 
 Date SslCertificate::GetNotBefore() const
 {
-	ASSERT(!IsEmpty());
 	return Asn1ToDate(X509_get_notBefore(cert));
 }
 
 Date SslCertificate::GetNotAfter() const
 {
-	ASSERT(!IsEmpty());
 	return Asn1ToDate(X509_get_notAfter(cert));
 }
 
-int SslCertificate::GetVersion() const
+long SslCertificate::GetVersion() const
 {
-	ASSERT(!IsEmpty());
+	if(IsEmpty()) return -1;
 	return X509_get_version(cert);
 }
 
 String SslCertificate::GetSerialNumber() const
 {
-	ASSERT(!IsEmpty());
 	return Asn1ToString(X509_get_serialNumber(cert));
 }
 
@@ -182,6 +177,7 @@ String SslGetLastError()
 
 String SslToString(X509_NAME *name)
 {
+	if(!name) return String::GetVoid();
 	char buffer[500];
 	return X509_NAME_oneline(name, buffer, sizeof(buffer));
 }
@@ -202,6 +198,7 @@ Date Asn1ToDate(ASN1_STRING *time)
 
 String Asn1ToString(ASN1_STRING *s)
 {
+	if(!s) return String::GetVoid();
 	return String(s->data, s->length);
 }
 
