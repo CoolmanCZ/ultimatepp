@@ -98,32 +98,43 @@ String SslCertificate::Save(bool asn1) const
 
 String SslCertificate::GetSubjectName() const
 {
+	if (IsEmpty())
+		return String::GetVoid();
 	return SslToString(X509_get_subject_name(cert));
 }
 
 String SslCertificate::GetIssuerName() const
 {
+	if (IsEmpty())
+		return String::GetVoid();
 	return SslToString(X509_get_issuer_name(cert));
 }
 
 Date SslCertificate::GetNotBefore() const
 {
+	if (IsEmpty())
+		return Null;
 	return Asn1ToDate(X509_get_notBefore(cert));
 }
 
 Date SslCertificate::GetNotAfter() const
 {
+	if (IsEmpty())
+		return Null;
 	return Asn1ToDate(X509_get_notAfter(cert));
 }
 
 long SslCertificate::GetVersion() const
 {
-	if(IsEmpty()) return -1;
+	if(IsEmpty())
+		return -1;
 	return X509_get_version(cert);
 }
 
 String SslCertificate::GetSerialNumber() const
 {
+	if (IsEmpty())
+		return String::GetVoid();
 	return Asn1ToString(X509_get_serialNumber(cert));
 }
 
