@@ -1,6 +1,6 @@
 class String;
 
-#if defined(PLATFORM_POSIX) || defined(PLATFORM_WINCE)
+#if defined(PLATFORM_POSIX) || defined(PLATFORM_WINCE) || defined(__MINGW32__)
 inline int tmGetTime() {
 	return GetTickCount();
 }
