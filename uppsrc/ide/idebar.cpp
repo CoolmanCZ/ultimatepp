@@ -50,7 +50,7 @@ void Ide::File(Bar& menu)
 			.Enable(!IdeIsDebugLock())
 			.Help("Select global configuration (var), select / add main project package");
 	}
-	
+
 	menu.AddMenu(AK_EDITFILE, CtrlImg::open(), THISBACK(EditAnyFile))
 		.Help("Select any file in file selector and open it in editor");
 	menu.AddMenu(!IsNull(GetOpposite()), AK_OPPOSITE, IdeImg::opposite(), THISBACK(GoOpposite))
@@ -98,7 +98,7 @@ void Ide::File(Bar& menu)
 	menu.Add(split, AK_SWAP, THISBACK(SwapEditors));
 
 	menu.MenuSeparator();
-	
+
 	menu.Add(AK_OPENFILEDIR, THISBACK(OpenFileFolder));
 	menu.Add("Copy File Path", [=] { WriteClipboardText(GetActiveFilePath()); });
 	menu.Sub("Properties", [=](Bar& bar) { FilePropertiesMenu(bar); });
@@ -134,7 +134,7 @@ void Ide::EditSpecial(Bar& menu)
 	    .Check(wordwrap);
 	    
 	menu.Separator();
-	
+
 	menu.Add(b, AK_SPACESTOTABS, THISBACK(EditMakeTabs))
 		.Help("Convert leading blanks on each line to tabs");
 	menu.Add(b, AK_TABSTOSPACES, THISBACK(EditMakeSpaces))
@@ -149,8 +149,6 @@ void Ide::EditSpecial(Bar& menu)
 	    .Help("Copy the current identifier to the clipboard");
 	menu.Add(b, AK_DUPLICATEIT, THISBACK(Duplicate))
 	    .Help("Duplicate the current line");
-	menu.Add(b, AK_FORMATCODE, THISBACK(FormatCode))
-	    .Help("Reformat code in editor");
 	menu.Add(b, AK_FORMATJSON, THISBACK(FormatJSON))
 	    .Help("Reformat JSON");
 	menu.Add(b, AK_FORMATXML, THISBACK(FormatXML))
@@ -276,13 +274,13 @@ void Ide::Edit(Bar& menu)
 			.Help("Insert text from clipboard at cursor location");
 
 		menu.Separator();
-		
+
 		menu.Add("Select all", CtrlImg::select_all(), callback(&editor, &LineEdit::SelectAll))
 			.Key(K_CTRL_A);
 	}
 
 	menu.MenuSeparator();
-	
+
 	menu.Add("Find and Replace", THISBACK(SearchMenu));
 
 	if(!designer && menu.IsMenuBar())
@@ -415,19 +413,18 @@ void Ide::Setup(Bar& menu)
 void Ide::SetupMobilePlatforms(Bar& menu)
 {
 	AndroidSDK androidSDK(GetAndroidSdkPath());
-	
+
 	if(androidSDK.Validate()) {
 		menu.Separator();
 		menu.Add("Android", THISBACK1(SetupAndroidMobilePlatform, androidSDK));
 	}
-	
+
 }
 
 void Ide::SetupAndroidMobilePlatform(Bar& menu, const AndroidSDK& androidSDK)
 {
-	menu.Add("SDK Manager", THISBACK1(LaunchAndroidSDKManager, androidSDK));
-	menu.Add("AVD Manager", THISBACK1(LaunchAndroidAVDManager, androidSDK));
-	menu.Add("Device monitor", THISBACK1(LauchAndroidDeviceMonitor, androidSDK));
+	menu.Add("SDK Manager", [=] { LaunchAndroidSDKManager(androidSDK); });
+	menu.Add("AVD Manager", [=] { LaunchAndroidAVDManager(androidSDK); });
 }
 
 void Ide::ProjectRepo(Bar& menu)
@@ -638,7 +635,7 @@ void Ide::FilePropertiesMenu(Bar& menu)
 					theirs = "3";
 				}
 			}
-				
+
 			if(mine.GetCount() || theirs.GetCount() || original.GetCount()) {
 				menu.Sub(editfile_repo == GIT_DIR ? "GIT Conflict" : "SVN Conflict", [=] (Bar& bar) {
 					if(mine.GetCount() && theirs.GetCount())
@@ -685,8 +682,6 @@ void Ide::BuildFileMenu(Bar& menu)
 		menu.Add(b, "Show assembler code for " + GetFileName(editfile), THISBACK1(Preprocess, true))
 			.Key(AK_ASSEMBLERCODE)
 			.Help("Compile the file into assembler code");
-	if(console.verbosebuild)
-		menu.Add(b, "Internal Preprocess " + GetFileName(editfile), IdeImg::HeaderInternal(), THISBACK(PreprocessInternal));
 }
 
 void Ide::BuildPackageMenu(Bar& menu)
@@ -738,7 +733,7 @@ void Ide::BuildMenu(Bar& menu)
 		BuildPackageMenu(menu);
 
 	BuildFileMenu(menu);
-	
+
 	menu.MenuSeparator();
 
 	menu.Add("Stop on errors", THISBACK(ToggleStopOnErrors))
@@ -803,10 +798,24 @@ void Ide::DebugMenu(Bar& menu)
 		menu.Add(!editfile.IsEmpty() /*&& !debuglock*/, AK_CLEARBREAKPOINTS, THISBACK(DebugClearBreakpoints))
 			.Help("Clear all breakpoints");
 		menu.Separator();
-		
+
 		String targetLogPath = GetTargetLogPath();
 		menu.Add(target.GetCount() && FileExists(targetLogPath), AK_OPENLOG, THISBACK1(OpenLog, targetLogPath));
 	}
+}
+
+void Ide::AssistMenu(Bar& menu)
+{
+	menu.Add(!designer, AK_ASSIST, [=] { editor.Assist(true); });
+	menu.Add(!designer, AK_JUMPS, [=] { ContextGoto(); });
+	menu.Add(!designer, AK_SWAPS, THISBACK(SwapS));
+	menu.Add(!designer, AK_DCOPY, callback(&editor, &AssistEditor::DCopy));
+	menu.Add(!designer, AK_IDUSAGE, THISBACK(IdUsage));
+	menu.Add(!designer, AK_USAGE, [=] { Usage(); });
+	menu.Add(!designer, AK_VIRTUALS, callback(&editor, &AssistEditor::Virtuals));
+	menu.Add(!designer, AK_THISBACKS, callback(&editor, &AssistEditor::Events));
+	menu.Add(!designer, AK_COMPLETE, callback(&editor, &AssistEditor::Complete));
+	menu.Add(!designer, AK_ABBR, callback(&editor, &AssistEditor::Abbr));
 }
 
 void Ide::BrowseMenu(Bar& menu)
@@ -819,33 +828,27 @@ void Ide::BrowseMenu(Bar& menu)
 			menu.Add(AK_GOTO, THISBACK(SearchCode))
 				.Enable(!designer)
 				.Help("Go to given line");
-			menu.Add(AK_GOTOGLOBAL, THISBACK(NavigatorDlg));
-			menu.Add(!designer, AK_JUMPS, THISBACK(ContextGoto));
-			menu.Add(!designer, AK_SWAPS, THISBACK(SwapS));
-			menu.Add(!designer, AK_ASSIST, callback(&editor, &AssistEditor::Assist));
-			menu.Add(!designer, AK_DCOPY, callback(&editor, &AssistEditor::DCopy));
-			menu.Add(!designer, AK_VIRTUALS, callback(&editor, &AssistEditor::Virtuals));
-			menu.Add(!designer, AK_THISBACKS, callback(&editor, &AssistEditor::Thisbacks));
-			menu.Add(!designer, AK_COMPLETE, callback(&editor, &AssistEditor::Complete));
-			menu.Add(!designer, AK_ABBR, callback(&editor, &AssistEditor::Abbr));
+			AssistMenu(menu);
 			menu.Add(!designer, AK_GO_TO_LINE, THISBACK(GoToLine));
 			AssistEdit(menu);
 			menu.MenuSeparator();
 		}
-		
+
 		menu.Add("Go back", IdeImg::AssistGoBack(), THISBACK1(History, -1))
 			.Key(K_ALT_LEFT)
 			.Enable(GetHistory(-1) >= 0);
 		menu.Add("Go forward", IdeImg::AssistGoForward(), THISBACK1(History, 1))
 			.Key(K_ALT_RIGHT)
 			.Enable(GetHistory(1) >= 0);
-		
+
 		if(menu.IsMenuBar()) {
 			menu.MenuSeparator();
-			menu.Add("Check source files for changes", THISBACK(CheckCodeBase));
-			menu.Add("Rescan all source files", THISBACK(RescanCode));
-			if(!auto_rescan)
-				menu.Add(AK_RESCANCURRENTFILE, THISBACK(EditFileAssistSync));
+			menu.Add("Reindex all source files", [=] {
+				PPInfo::RescanAll();
+				for(FileAnnotation& m : CodeIndex())
+					m.time = Null;
+				TriggerIndexer0();
+			});
 			menu.MenuSeparator();
 		}
 	}
@@ -853,7 +856,7 @@ void Ide::BrowseMenu(Bar& menu)
 		menu.Add(!designer, AK_GO_TO_LINE, THISBACK(GoToLine));
 		menu.MenuSeparator();
 	}
-	
+
 	if(menu.IsMenuBar()) {
 		menu.AddMenu(AK_CALC, IdeImg::calc(), THISBACK1(ToggleBottom, BCALC))
 	     .Check(IsBottomShown() && btabs.GetCursor() == BCALC);
@@ -865,6 +868,27 @@ void Ide::BrowseMenu(Bar& menu)
 		menu.AddMenu(!designer, AK_ASERRORS, IdeImg::errors(), THISBACK(AsErrors));
 		menu.AddMenu(AK_DIRDIFF, DiffImg::DirDiff(), THISBACK(DoDirDiff));
 		menu.AddMenu(AK_PATCH, DiffImg::PatchDiff(), THISBACK(DoPatchDiff));
+	}
+
+	if(AssistDiagnostics) {
+		menu.Separator();
+		menu.Add("Dump and show whole current index", [=] {
+			String path = CacheFile("index_" + AsString(Random()) + AsString(Random()));
+			DumpIndex(path);
+			EditFile(path);
+		});
+		menu.Add("Dump and show current file index", [=] {
+			String path = CacheFile("index_" + AsString(Random()) + AsString(Random()));
+			DumpIndex(path, editfile);
+			EditFile(path);
+		});
+		menu.Add("Current file parse errors", [=] { EditFile(CacheFile("parse_errors")); });
+		menu.Add("Current file autocomplete errors", [=] { EditFile(CacheFile("autocomplete_errors")); });
+		menu.Add("Current parsed file content", [=] {
+			String p = CacheFile("CurrentContext" + AsString(Random()) + AsString(Random()) + ".txt");
+			Upp::SaveFile(p, editor.CurrentContext().content);
+			EditFile(p);
+		});
 	}
 }
 

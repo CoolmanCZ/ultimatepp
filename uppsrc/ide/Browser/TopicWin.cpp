@@ -226,7 +226,7 @@ void TopicEditor::FileBar(Bar& bar)
 	bar.Add("Export to PDF..", THISBACK(ExportPdf));
 	bar.Add("Export group  to PDF..", THISBACK(ExportGroupPdf));
 	bar.Add("Export to HTML..", THISBACK(ExportHTML));
-	bar.Add("Export group  to HTML..", THISBACK(ExportGroupHTML));
+	bar.Add("Export group to HTML..", THISBACK(ExportGroupHTML));
 }
 
 void TopicEditor::EditMenu(Bar& bar)
@@ -278,7 +278,7 @@ void CreateTopic(const char *fn, int lang, const String& ss)
 	SaveFile(fn,  WriteTopic("", ParseQTF(ss + "[{_}%" + LNGAsText(lang) + " ")));
 }
 
-bool TopicEditor::NewTopicEx(const String& iname, const String& create)
+bool TopicEditor::NewTopicEx(const String& iname, const AnnotationItem& create)
 {
 	TopicDlg<WithNewTopicLayout<TopWindow> > d("New topic");
 	d.lang <<= lastlang;
@@ -326,14 +326,14 @@ bool TopicEditor::NewTopicEx(const String& iname, const String& create)
 	topics_list.FindSetCursor(GetFileTitle(fn));
 	editor.SetFocus();
 	serial++;
-	if(create.GetCount())
+	if(create.id.GetCount())
 		InsertNew(create);
 	return true;
 }
 
 void TopicEditor::NewTopic()
 {
-	NewTopicEx(Null, Null);
+	NewTopicEx(Null, AnnotationItem());
 }
 
 void TopicEditor::RemoveTopic()
@@ -380,9 +380,6 @@ void TopicEditor::SetBar()
 bool TopicEditor::Key(dword key, int cnt)
 {
 	switch(key) {
-	case K_ALT_F10:
-		FixTopic();
-		return true;
 	case K_ALT_UP:
 		return topics_list.Key(K_UP, 0);
 	case K_ALT_DOWN:

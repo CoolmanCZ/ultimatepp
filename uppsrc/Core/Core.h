@@ -1,7 +1,7 @@
 #ifndef CORE_H
 #define CORE_H
 
-#define UPP_VERSION 0x20220100
+#define UPP_VERSION 0x20220300
 
 #ifndef flagMT
 #define flagMT // MT is now always on
@@ -419,13 +419,11 @@ NTL_MOVEABLE(RECT)
 
 //Place it to the begining of each file to be the first function called in whole executable...
 //This is now backup to init_priority attribute in heapdbg.cpp
-//$-
 struct MemDiagCls {
 	MemDiagCls();
 	~MemDiagCls();
 };
 static const MemDiagCls sMemDiagHelper__upp__;
-//$+
 
 
 #endif

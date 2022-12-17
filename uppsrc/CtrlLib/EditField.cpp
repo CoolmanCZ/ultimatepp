@@ -295,8 +295,11 @@ void EditField::State(int)
 Color EditField::GetPaper()
 {
 	bool enabled = IsShowEnabled();
-	Color paper = enabled && !IsReadOnly() ? (HasFocus() ? style->focus : style->paper)
-	                                       : style->disabled;
+	Color paper = GetColorAttr(ATTR_BACKGROUND);
+	if(IsNull(paper))
+		paper = enabled && !IsReadOnly() ? (HasFocus() ? style->focus
+	                                                   : style->paper)
+	                                     : style->disabled;
 	if(nobg)
 		paper = Null;
 	if(enabled && (convert && convert->Scan(text).IsError() || errorbg))
@@ -1050,11 +1053,11 @@ void EditField::Reset()
 	errorbg = nobg = false;
 	charset = CHARSET_UTF8;
 	alignright = false;
+	showspaces = false;
+	no_internal_margin = false;
 	SetStyle(StyleDefault());
 	SetFrame(edge);
 	font = StdFont();
-	showspaces = false;
-	no_internal_margin = false;
 	fsell = fselh = -1;
 	DeleteAttr<Image>(ATTR_NULLICON);
 }
@@ -1068,8 +1071,19 @@ EditField& EditField::SetFont(Font _font)
 
 EditField& EditField::SetColor(Color c)
 {
-	SetColorAttr(ATTR_TEXTCOLOR, c);
-	Refresh();
+	if(GetColorAttr(ATTR_TEXTCOLOR) != c) {
+		SetColorAttr(ATTR_TEXTCOLOR, c);
+		Refresh();
+	}
+	return *this;
+}
+
+EditField& EditField::SetBackground(Color c)
+{
+	if(GetColorAttr(ATTR_BACKGROUND) != c) {
+		SetColorAttr(ATTR_BACKGROUND, c);
+		Refresh();
+	}
 	return *this;
 }
 

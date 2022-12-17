@@ -74,10 +74,8 @@ void CodeEditor::DirtyFrom(int line) {
 		if(syntax_cache[i].line >= line)
 			syntax_cache[i].Clear();
 
-	if(check_edited) {
-		bar.ClearErrors(line);
+	if(check_edited)
 		bar.Refresh();
-	}
 }
 
 inline bool IsComment(int a, int b) {
@@ -130,6 +128,7 @@ void CodeEditor::PreRemove(int pos, int size) {
 			refresh_info = GetRefreshInfo(pos);
 		}
 	}
+	sbi.Refresh();
 }
 
 void CodeEditor::PostRemove(int pos, int size) {
@@ -139,10 +138,12 @@ void CodeEditor::PostRemove(int pos, int size) {
 	EditorBarLayout();
 	if(GetRefreshInfo(pos) != refresh_info)
 		Refresh();
+	sbi.Refresh();
 }
 
 void CodeEditor::ClearLines() {
 	bar.ClearLines();
+	sbi.Refresh();
 }
 
 void CodeEditor::InsertLines(int line, int count) {
@@ -676,10 +677,10 @@ void CodeEditor::LeftDown(Point p, dword keyflags) {
 void CodeEditor::Tip::Paint(Draw& w)
 {
 	Rect r = GetSize();
-	w.DrawRect(r, SColorInfo());
+	w.DrawRect(r, background);
 	r.left++;
 	if(d)
-		d->Paint(w, r, v, SColorText(), SColorPaper(), 0);
+		d->Paint(w, r, v, SColorText(), background, 0);
 }
 
 CodeEditor::Tip::Tip()
@@ -690,14 +691,27 @@ CodeEditor::Tip::Tip()
 
 void CodeEditor::SyncTip()
 {
+	if(!HasMouse())
+		return;
+	Rect wa = GetWorkArea();
+	Point p = Upp::GetMousePos();
 	MouseTip mt;
+	mt.background = SColorInfo();
 	mt.pos = tippos;
-	if(tippos >= 0 && IsVisible() && WhenTip(mt)) {
+	mt.sz.cx = min(DPI(1000), 2 * wa.GetWidth() / 3);
+	if(tippos >= 0 && IsVisible() && (WhenTip(mt) || delayed_tip && DelayedTip(mt) && p == delayed_pos)) {
+		mt.sz.cy = min(wa.GetHeight() / 2 - DPI(20), mt.sz.cy);
 		tip.d = mt.display;
 		tip.v = mt.value;
-		Point p = Upp::GetMousePos();
+		tip.background = mt.background;
 		Size sz = tip.AddFrameSize(mt.sz);
-		tip.SetRect(p.x, p.y + 24, sz.cx, sz.cy);
+		int y = p.y + DPI(24);
+		if(y + sz.cy > wa.bottom)
+			y = max(0, p.y - sz.cy);
+		int x = p.x;
+		if(x + sz.cx > wa.right)
+			x = max(0, wa.right - sz.cx);
+		tip.SetRect(RectC(x, y, sz.cx, sz.cy) & wa);
 		if(!tip.IsOpen())
 			tip.PopUp(this, false, false, true);
 		tip.Refresh();
@@ -735,11 +749,28 @@ void CodeEditor::LeftRepeat(Point p, dword flags)
 void CodeEditor::MouseMove(Point p, dword flags) {
 	if(!MouseSelSpecial(p, flags))
 		LineEdit::MouseMove(p, flags);
+
+	tippos = Null;
+
 	if(IsSelection()) return;
-	int64 h = GetMousePos(p);
-	tippos = h < INT_MAX ? (int)h : -1;
+
+	if(p.x > 0) { // ignore calls from EditorBar::MouseMove
+		Size fsz = GetFontSize();
+		p = (p + fsz * (Size)sb.Get()) / fsz;
+		int64 h = GetGPos(p.y, p.x);
+		tippos = h < INT_MAX ? (int)h : -1;
+	}
+	
 	SyncTip();
+	delayed_tip = false;
+	delayed_pos = Upp::GetMousePos();
+	delayed.KillSet(1000, [=] {
+		delayed_tip = true;
+		SyncTip();
+	});
 }
+
+bool CodeEditor::DelayedTip(MouseTip& tip) { return false; }
 
 Image CodeEditor::CursorImage(Point p, dword keyflags)
 {
@@ -752,8 +783,12 @@ Image CodeEditor::CursorImage(Point p, dword keyflags)
 
 void CodeEditor::MouseLeave()
 {
+	delayed_tip = false;
+	delayed_pos = Null;
 	tippos = -1;
 	LineEdit::MouseLeave();
+	CloseTip();
+	delayed.Kill();
 }
 
 WString CodeEditor::GetI()
@@ -1142,6 +1177,11 @@ void CodeEditor::HighlightLine(int line, Vector<LineEdit::Highlight>& hl, int64 
 				q++;
 		}
 	}
+	for(Point p : errors)
+		if(p.y == line && p.x < hl.GetCount()) {
+			hl[p.x].paper = hl_style[PAPER_ERROR_FILE].color;
+			hl[p.x].flags |= LineEdit::NOENDFILL;
+		}
 }
 
 void CodeEditor::PutI(WithDropChoice<EditString>& edit)
@@ -1177,7 +1217,56 @@ void CodeEditor::Clear()
 	found = notfoundfw = notfoundbk = false;
 }
 
-CodeEditor::CodeEditor() {
+void CodeEditor::ScrollBarItems::Paint(Draw& w)
+{
+	Rect sr = sb.GetSliderRect();
+	for(const Tuple<int, Image, Color>& x : pos) {
+		int y = sb.GetSliderPos(x.Get<int>());
+		if(!IsNull(y)) {
+			Image m = x.Get<Image>();
+			Size isz = m.GetSize();
+			w.DrawImage(sr.CenterPoint().x - isz.cx / 2, sr.top + y - isz.cy / 2, m, x.Get<Color>());
+		}
+	}
+	Color bg = IsDarkTheme() ? GrayColor(70) : SColorLtFace();
+	for(int i = 0; i < editor.bar.li.GetCount(); i++) {
+		int edit = editor.bar.li[i].edited;
+		if(edit) {
+			int age = (int)(log((double)(editor.GetUndoCount() + 1 - edit)) * 30);
+			int y = sb.GetSliderPos(i);
+			if(!IsNull(y))
+				w.DrawRect(sr.left + DPI(2), sr.top + y, DPI(2),
+				           max(sb.GetTotal() / sr.GetHeight(), DPI(4)),
+				           Blend(SLtBlue(), bg, min(220, age)));
+		}
+	}
+}
+
+CodeEditor::ScrollBarItems::ScrollBarItems(ScrollBar& sb, CodeEditor& e)
+:	sb(sb), editor(e) {
+	sb.Add(SizePos());
+	Transparent();
+	IgnoreMouse();
+}
+
+void CodeEditor::Errors(Vector<Point>&& errs)
+{
+	errors = pick(errs);
+	Refresh();
+	sbi.pos.Clear();
+	for(Point p : errors)
+		sbi.pos.Add({ p.y, CodeEditorImg::dot(), LtRed() });
+	sbi.Refresh();
+}
+
+void CodeEditor::Layout()
+{
+	sbi.Refresh();
+	LineEdit::Layout();
+}
+
+CodeEditor::CodeEditor()
+:	sbi(sb.y, *this) {
 	bracket_flash = false;
 	highlight_bracket_pos0 = 0;
 	bracket_start = 0;

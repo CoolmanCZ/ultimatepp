@@ -31,6 +31,7 @@ String  GetConfigGroup();
 
 
 const Vector<String>& CommandLine();
+void   CommandLineRemove(int i, int count = 1);
 String GetArgv0();
 const VectorMap<String, String>& Environment();
 
@@ -105,3 +106,6 @@ String GetVideoFolder();
 String GetDocumentsFolder();
 String GetTemplatesFolder();
 String GetDownloadFolder();
+String GetProgramDataFolder();
+
+void   InstallCrashHook(void (*h)());

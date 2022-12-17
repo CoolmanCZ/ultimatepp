@@ -22,16 +22,13 @@ struct LineInfoRecord {
 	int    lineno;
 	String breakpoint;
 	int    count;
-	int    error;
 	int    firstedited;
 	int    edited;
 
-	LineInfoRecord() { error = 0; edited = 0; }
+	LineInfoRecord() { edited = 0; }
 };
 
 typedef Array<LineInfoRecord> LineInfo;
-
-void ClearErrors(LineInfo& li);
 
 struct LineInfoRemRecord : Moveable<LineInfoRemRecord> {
 	int    firstedited;
@@ -58,15 +55,12 @@ public:
 
 private:
 	struct LnInfo : Moveable<LnInfo> {
-		int    lineno;
+		int    lineno = -1;
 		String breakpoint;
-		int    error;
-		int    firstedited;
-		int    edited;
+		int    firstedited = 0;
+		int    edited = 0;
 		Image  icon;
 		String annotation;
-
-		LnInfo() { lineno = -1; error = 0; firstedited = 0; edited = 0; }
 	};
 	
 	Vector<LnInfo>   li;
@@ -82,9 +76,13 @@ private:
 	bool             ignored_next_edit;
 	int              next_age;
 	int              active_annotation;
+	Vector<Color>    animate;
+	Image            status_image;
 
 	String& PointBreak(int& y);
 	void    sPaintImage(Draw& w, int y, int fy, const Image& img);
+	
+	friend class CodeEditor;
 
 public:
 	Event<int> WhenBreakpoint;
@@ -108,8 +106,6 @@ public:
 	void    SetBreakpoint(int ln, const String& s);
 	void    SetEdited(int ln, int count = 1);
 	void    ClearEdited();
-	void    SetError(int ln, int err);
-	void    ClearErrors(int ln);
 
 	void SetEditor(CodeEditor *e)           { editor = e; }
 
@@ -136,6 +132,10 @@ public:
 	bool     IsHiliteIfEndif() const         { return hilite_if_endif; }
 	
 	int      GetActiveAnnotationLine() const { return active_annotation; }
+	
+	void     SetAnimate(const Vector<Color>& a)   { if(a != animate) { animate = clone(a); Refresh(); } }
+	
+	void     StatusImage(const Image& m);
 
 	EditorBar();
 	virtual ~EditorBar();
@@ -192,6 +192,17 @@ public:
 	virtual void  Serialize(Stream& s);
 	virtual void  MouseLeave();
 	virtual void  MouseWheel(Point p, int zdelta, dword keyFlags);
+	virtual void  Layout();
+
+public:
+	struct MouseTip {
+		int            pos;
+		Value          value;
+		const Display *display;
+		Size           sz;
+		bool           delayed = false;
+		Color          background;
+	};
 
 protected:
 	virtual void HighlightLine(int line, Vector<LineEdit::Highlight>& h, int64 pos);
@@ -209,6 +220,8 @@ protected:
 	virtual void NewScrollPos();
 
 	virtual String  GetPasteText();
+	
+	TimeCallback delayed;
 
 	EditorBar   bar;
 	Vector<int> line2;
@@ -280,6 +293,7 @@ protected:
 	
 	struct Tip : Ctrl {
 		Value v;
+		Color background;
 		const Display *d;
 		
 		virtual void Paint(Draw& w);
@@ -287,8 +301,10 @@ protected:
 		Tip();
 	};
 	
+	bool  delayed_tip = false;
+	Point delayed_pos = Null;
 	Tip   tip;
-	int   tippos;
+	int   tippos = Null;
 	
 	int   replacei;
 	
@@ -297,6 +313,22 @@ protected:
 	One<Progress> search_progress;
 	
 	String        refresh_info; // serialized next line syntax context to detect the need of full Refresh
+
+	Vector<Point> errors; // current file (compilation) errors
+
+	struct ScrollBarItems : Ctrl {
+		ScrollBar& sb;
+		CodeEditor& editor;
+	
+		void Paint(Draw& w);
+		
+		Vector<Tuple<int, Image, Color>> pos;
+		
+		ScrollBarItems(ScrollBar& sb, CodeEditor& e);
+	};
+	
+	ScrollBarItems sbi;
+
 
 	struct HlSt;
 	
@@ -351,13 +383,6 @@ protected:
 	String GetRefreshInfo(int pos);
 
 public:
-	struct MouseTip {
-		int            pos;
-		Value          value;
-		const Display *display;
-		Size           sz;
-	};
-
 	Event<>            WhenSelection;
 	Gate<MouseTip&>    WhenTip;
 	Event<>            WhenLeftDown;
@@ -374,6 +399,8 @@ public:
 
 	FrameTop<Button>    topsbbutton;
 	FrameTop<Button>    topsbbutton1;
+
+	virtual bool DelayedTip(MouseTip& tip);
 
 	static dword find_next_key;
 	static dword find_prev_key;
@@ -462,8 +489,6 @@ public:
 	void     HidePtr()                                { bar.HidePtr(); }
 	String   GetBreakpoint(int line)                  { return bar.GetBreakpoint(line); }
 	void     SetBreakpoint(int line, const String& b) { bar.SetBreakpoint(line, b); }
-	void     SetError(int line, int err)              { bar.SetError(line, err); }
-	void     ClearErrors(int line = -1)               { bar.ClearErrors(line); }
 	void     ClearEdited()                            { bar.ClearEdited(); }
 	int		 GetUndoCount()                           { return undo.GetCount(); }
 	void     GotoLine(int line);
@@ -509,16 +534,18 @@ public:
 	void     SetAnnotation(int i, const Image& icon, const String& a) { bar.SetAnnotation(i, icon, a); }
 	String   GetAnnotation(int i) const               { return bar.GetAnnotation(i); }
 	int      GetActiveAnnotationLine() const          { return bar.GetActiveAnnotationLine(); }
-
+	Size     GetBarSize() const                       { return bar.GetSize(); }
 	void     HideBar()                                { bar.Hide(); }
+	void     AnimateBar(const Vector<Color>& a)       { bar.SetAnimate(a); }
 
-	void     SyncTip();
-	void     CloseTip()                               { if(tip.IsOpen()) tip.Close(); tip.d = NULL;  }
+	void     Errors(Vector<Point>&& errs);
 	
 	void     Illuminate(const WString& text);
 	WString  GetIlluminated() const                   { return illuminated; }
-
+	
 	void     Zoom(int d);
+	
+	void     StatusImage(const Image& m)              { bar.StatusImage(m); }
 
 	One<EditorSyntax> GetSyntax(int line);
 	bool IsCursorBracket(int64 pos) const;
@@ -535,6 +562,9 @@ public:
 	
 	FindReplaceData GetFindReplaceData();
 	void            SetFindReplaceData(const FindReplaceData& d);
+
+	void     SyncTip();
+	void     CloseTip()                               { if(tip.IsOpen()) tip.Close(); tip.d = NULL;  }
 
 	typedef CodeEditor CLASSNAME;
 

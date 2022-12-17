@@ -75,9 +75,10 @@ public:
 	Zoom            GetZoom() const;
 	Rect            GetPage() const;
 
-	bool            GotoLabel(const String& lbl, bool highlight = false);
+	bool            GotoLabel(Gate<const WString&> match, bool dohighlight = false, bool match_last = false);
+	bool            GotoLabel(const String& lbl, bool highlight = false, bool match_last = false);
 	void            ClearHighlight()                          { highlight = Null; Refresh(); }
-
+	
 	int             GetLength() const                         { return text.GetLength(); }
 
 	bool            IsSelection() const                       { return anchor != cursor; }
@@ -299,6 +300,7 @@ private:
 	String         topic;
 	String         label;
 	String         current_link;
+	int            doing_goto = 0;
 
 	bool GoTo0(const String& link);
 	void Back();
@@ -318,6 +320,8 @@ public:
 	virtual Topic AcquireTopic(const String& topic);
 	virtual void  FinishText(RichText& text);
 	virtual void  BarEx(Bar& bar);
+	
+	Gate<const WString&, const WString&> WhenMatchLabel;
 
 	bool GoTo(const String& link);
 

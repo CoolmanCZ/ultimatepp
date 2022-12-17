@@ -64,7 +64,7 @@ void  RichTextView::Paint(Draw& w)
 	pi.usecache = true;
 	pi.sizetracking = sizetracking;
 	pi.shrink_oversized_objects = shrink_oversized_objects;
-	pi.darktheme = Grayscale(SColorPaper()) < 100;
+	pi.darktheme = IsDarkTheme();
 	Rect pg = GetPage();
 	pg.top = TopY();
 	text.Paint(pw, pg, pi);
@@ -317,21 +317,29 @@ void  RichTextView::Scroll()
 	scroller.Scroll(*this, Rect(GetSize()).Deflated(margin), sb * GetZoom());
 }
 
-bool RichTextView::GotoLabel(const String& lbl, bool dohighlight)
+bool RichTextView::GotoLabel(Gate<const WString&> match, bool dohighlight, bool find_last)
 {
 	Vector<RichValPos> f = text.GetValPos(GetPage(), RichText::LABELS);
 	highlight = Null;
-	WString lw = lbl.ToWString();
+	bool ret = false;
 	for(int i = 0; i < f.GetCount(); i++) {
-		if(f[i].data == lw) {
+		if(match(f[i].data)) {
 			sb = f[i].py.y;
 			if(dohighlight)
 				highlight = f[i].pos;
 			Refresh();
-			return true;
+			if(!find_last)
+				return true;
+			ret = true;
 		}
 	}
-	return false;
+	return ret;
+}
+
+bool RichTextView::GotoLabel(const String& lbl, bool dohighlight, bool find_last)
+{
+	WString lw = lbl.ToWString();
+	return GotoLabel([&](const WString& data) { return data == lw; }, dohighlight, find_last);
 }
 
 void  RichTextView::Clear()

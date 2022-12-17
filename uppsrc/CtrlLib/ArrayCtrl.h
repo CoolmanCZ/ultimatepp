@@ -181,10 +181,11 @@ private:
 		bool          select:1;
 		bool          enabled:1;
 		bool          visible:1;
+		bool          heading:1;
 		Color         paper;
 		Vector<Value> line;
 
-		Line() { select = false; enabled = true; visible = true; paper = Null; }
+		Line() { select = false; enabled = true; visible = true; heading = false; paper = Null; }
 	};
 	
 	static int StdValueCompare(const Value& a, const Value& b) { return Upp::StdValueCompare(a, b); }
@@ -489,10 +490,8 @@ public:
 	void       Add(Vector<Value>&& v)                           { Set(array.GetCount(), pick(v)); }
 	void       Add(const Nuller& null)                          { Add((Value)Null); }
 	void       Add(const VectorMap<String, Value>& m);
-//$-void Add(const Value& [, const Value& ]...);
 	template <typename... Args>
 	void       Add(const Args& ...args)                         { Add(gather<Vector<Value>>(args...)); }
-//$+
 
 	void       SetMap(int i, const ValueMap& m);
 	void       AddMap(const ValueMap& m);
@@ -503,6 +502,8 @@ public:
 	ValueArray GetArray(int i) const;
 
 	void       AddSeparator();
+	void       AddHeading(const Value& v);
+	bool       IsHeading(int i) const                           { return i < array.GetCount() && array[i].heading; }
 
 	void       Insert(int i);
 	void       Insert(int i, int count);

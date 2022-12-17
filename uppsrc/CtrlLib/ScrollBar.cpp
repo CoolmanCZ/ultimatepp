@@ -64,7 +64,6 @@ int ScrollBar::ButtonCount() const
 }
 
 void ScrollBar::Layout() {
-	Size sz = GetSize();
 	Set(pagepos);
 	Refresh();
 }
@@ -373,6 +372,14 @@ void ScrollBar::MouseWheel(Point p, int zdelta, dword keyflags)
 void ScrollBar::CancelMode() {
 	push = light = -1;
 	ButtonsCancelMode();
+}
+
+int ScrollBar::GetSliderPos(int pos) const
+{
+	if(totalsize <= 0)
+		return Null;
+	else
+		return pos * GetRange() / totalsize;
 }
 
 bool  ScrollBar::Set(int apagepos) {

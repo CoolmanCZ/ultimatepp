@@ -1,4 +1,5 @@
 #include "ide.h"
+
 struct UppHubNest : Moveable<UppHubNest> {
 	int              tier = -1;
 	String           name;
@@ -38,7 +39,52 @@ void VerifyUppHubRequirements()
 	);
 }
 
+class UppHubSettingsDlg final : public WithUppHubSettingsLayout<TopWindow> {
+public:
+	static constexpr auto GLOBAL_CONFIG_NAME = "UppHubDlgSettings";
+	
+public:
+	UppHubSettingsDlg();
+	
+	void LoadGlobalSettings();
+	void SaveGlobalSettings();
+	
+private:
+	void RefreshCtrls();
+};
+
+UppHubSettingsDlg::UppHubSettingsDlg()
+{
+	CtrlLayoutOKCancel(*this, "Settings");
+	FileSelectOpen(url, selfile);
+	seturl.WhenAction = [=] {
+		RefreshCtrls();
+	};
+}
+
+void UppHubSettingsDlg::LoadGlobalSettings()
+{
+	LoadFromGlobal(*this, GLOBAL_CONFIG_NAME);
+	RefreshCtrls();
+}
+
+void UppHubSettingsDlg::SaveGlobalSettings()
+{
+	StoreToGlobal(*this, GLOBAL_CONFIG_NAME);
+}
+
+void UppHubSettingsDlg::RefreshCtrls()
+{
+	auto enable = static_cast<bool>(seturl.Get());
+	url.Enable(enable);
+	selfile.Enable(enable);
+}
+
 struct UppHubDlg : WithUppHubLayout<TopWindow> {
+	SplitterFrame splitter;
+	ArrayCtrl list;
+	RichTextView info;
+	
 	VectorMap<String, UppHubNest> upv;
 	Index<String> loaded;
 	Progress pi;
@@ -52,7 +98,7 @@ struct UppHubDlg : WithUppHubLayout<TopWindow> {
 	bool         loading = false;
 	HttpRequest  http;
 
-	WithUppHubSettingsLayout<TopWindow> settings;
+	UppHubSettingsDlg settings;
 
 	Value LoadJson(const String& url);
 	void  Load(int tier, const String& url);
@@ -77,13 +123,15 @@ struct UppHubDlg : WithUppHubLayout<TopWindow> {
 	bool Key(dword key, int count) override;
 };
 
+#define METHOD_NAME "UppHubDlg::" << UPP_FUNCTION_NAME << "(): "
+
 UppHubDlg::UppHubDlg()
 {
 	CtrlLayoutCancel(*this, "UppHub");
 	Sizeable().Zoomable();
-
-	CtrlLayoutOKCancel(settings, "Settings");
-	FileSelectOpen(settings.url, settings.selfile);
+	
+	parent.Add(list.SizePos());
+	parent.AddFrame(splitter.Right(info, 560));
 	
 	list.AddKey("NAME");
 	list.AddColumn("Name").Sorting();
@@ -143,13 +191,13 @@ UppHubDlg::UppHubDlg()
 	broken <<= false;
 	
 	category ^= experimental ^= broken ^= [=] { SyncList(); };
-
-	LoadFromGlobal(settings, "UppHubDlgSettings");
+	
+	settings.LoadGlobalSettings();
 }
 
 INITBLOCK
 {
-	RegisterGlobalConfig("UppHubDlgSettings");
+	RegisterGlobalConfig(UppHubSettingsDlg::GLOBAL_CONFIG_NAME);
 }
 
 bool UppHubDlg::Key(dword key, int count)
@@ -318,21 +366,22 @@ void UppHubDlg::Sync()
 
 void UppHubDlg::Settings()
 {
-	if(settings.Execute() == IDOK) {
-		StoreToGlobal(settings, "UppHubDlgSettings");
-		Load();
+	settings.LoadGlobalSettings();
+	if(settings.Execute() != IDOK) {
+		return;
 	}
+	
+	settings.SaveGlobalSettings();
+	Load();
 }
 
 Value UppHubDlg::LoadJson(const String& url)
 {
 	String s = LoadFile(url);
-	
 	if(IsNull(s)) {
 		pi.SetText(url);
 
 		HttpRequest r(url);
-		
 		r.WhenWait = r.WhenDo = [&] {
 			if(pi.StepCanceled()) {
 				r.Abort();
@@ -341,24 +390,29 @@ Value UppHubDlg::LoadJson(const String& url)
 		};
 		
 		r.Execute();
+		if (!r.IsSuccess()) {
+			String msg = "Failed to execute UppHub download nests request with error code " + IntStr(r.GetStatusCode()) + ".";
+			Loge() << METHOD_NAME << msg;
+			return ErrorValue(msg);
+		}
 		
-		if(loading_stopped)
+		if(loading_stopped) {
 			return ErrorValue();
+		}
 	
 		s = r.GetContent();
 	}
 	
-	int begin = s.FindAfter("UPPHUB_BEGIN");
-	int end = s.Find("UPPHUB_END");
-	
-	if(begin >= 0 && end >= 0)
-		s = s.Mid(begin, end - begin);
-
 	Value v = ParseJSON(s);
 	if(v.IsError()) {
 		s.Replace("&quot;", "\"");
 		s.Replace("&amp;", "&");
 		v = ParseJSON(s);
+		if (v.IsError()) {
+			String msg = "Failed to parse Json file.";
+			Loge() << METHOD_NAME << msg;
+			return ErrorValue(msg);
+		}
 	}
 	return v;
 }
@@ -370,6 +424,14 @@ void UppHubDlg::Load(int tier, const String& url)
 	loaded.Add(url);
 	
 	Value v = LoadJson(url);
+	if (v.IsError()) {
+		auto error_text = GetErrorText(v);
+		if (!error_text.IsEmpty()) {
+			String msg = "Failed to load nests file with error \"" + GetErrorText(v) + "\".";
+			ErrorOK(msg);
+		}
+		return;
+	}
 
 	try {
 		String list_name = v["name"];

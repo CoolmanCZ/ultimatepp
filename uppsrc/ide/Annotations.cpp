@@ -1,29 +1,5 @@
 #include "ide.h"
 
-void AssistEditor::Annotate(const String& filename)
-{
-	CodeBaseLock __;
-	int fi = GetSourceFileIndex(filename);
-	CppBase& base = CodeBase();
-	ClearAnnotations();
-	for(int j = 0; j < base.GetCount(); j++) {
-		String nest = base.GetKey(j);
-		if(*nest != '@') { // Annotations of anonymous structures not suported
-			const Array<CppItem>& n = base[j];
-			for(int k = 0; k < n.GetCount(); k++) {
-				const CppItem& m = n[k];
-				if(m.file == fi) {
-					String coderef = MakeCodeRef(nest, m.qitem);
-					SetAnnotation(m.line - 1,
-					              GetRefLinks(coderef).GetCount() ? IdeImg::tpp_doc()
-					                                              : IdeImg::tpp_pen(),
-					              coderef);
-				}
-			}
-		}
-	}
-}
-
 bool IsCodeItem(const RichTxt& txt, int i)
 {
 	static Uuid codeitem = CodeItemUuid();
@@ -61,13 +37,18 @@ bool AssistEditor::GetAnnotationRefs(Vector<String>& tl, String& coderef, int q)
 	return true;
 }
 
-bool AssistEditor::GetAnnotationRef(String& t, String& coderef, int q)
+int GetMatchLen(const char *s, const char *t)
 {
-	Vector<String> tl;
-	if(!GetAnnotationRefs(tl, coderef, q))
-		return false;
+	int i = 0;
+	while(s[i] == t[i] && s[i])
+		i++;
+	return i;
+}
+
+String AssistEditor::BestTopic(const Vector<String>& tl)
+{ // it there are multiple topics, use one that is "close" by path
 	if(tl.GetCount() == 0)
-		return true;
+		return Null;
 	String path = theide ? theide->editfile : Null;
 	int mi = 0;
 	int m = 0;
@@ -78,8 +59,84 @@ bool AssistEditor::GetAnnotationRef(String& t, String& coderef, int q)
 			m = mm;
 		}
 	}
-	t = tl[mi];
+	return tl[mi];
+}
+
+bool AssistEditor::GetAnnotationRef(String& t, String& coderef, int q)
+{
+	Vector<String> tl;
+	if(!GetAnnotationRefs(tl, coderef, q))
+		return false;
+	t = BestTopic(tl);
 	return true;
+}
+
+RichText AssistEditor::GetCodeTopic(const String& tl, const String& coderef)
+{
+	static String   last_path;
+	static RichText topic_text;
+	String path = GetTopicPath(tl);
+	if(path != last_path)
+		topic_text = ParseQTF(ReadTopic(LoadFile(path)).text);
+	RichText result;
+	if(AssistDiagnostics)
+		result = ParseQTF("[A1 [@b* " + DeQtf(coderef) + "]&");
+	for(String cr : AnnotationCandidates(coderef)) {
+		for(int i = 0; i < topic_text.GetPartCount(); i++)
+			if(topic_text.IsTable(i)) {
+				const RichTable& t = topic_text.GetTable(i);
+				Size sz = t.GetSize();
+				for(int y = 0; y < sz.cy; y++)
+					for(int x = 0; x < sz.cx; x++) {
+						const RichTxt& txt = t.Get(y, x);
+						for(int i = 0; i < txt.GetPartCount(); i++) {
+							if(txt.IsPara(i) && CleanupTppId(txt.Get(i, topic_text.GetStyles()).format.label) == cr) {
+								RichTable r(t, 1);
+								result.CatPick(pick(r));
+								goto done;
+							}
+						}
+					}
+			}
+			else
+			if(IsCodeItem(topic_text, i) && CleanupTppId(topic_text.Get(i).format.label) == cr) {
+				while(i > 0 && IsCodeItem(topic_text, i)) i--;
+				if(!IsCodeItem(topic_text, i)) i++;
+				while(IsCodeItem(topic_text, i)) {
+					if(CleanupTppId(topic_text.Get(i).format.label) == cr)
+						result.Cat(topic_text.Get(i));
+					i++;
+				}
+				while(i < topic_text.GetPartCount() && !IsCodeItem(topic_text, i)
+				      && !IsBeginEnd(topic_text, i)) {
+					if(topic_text.IsPara(i))
+						result.Cat(topic_text.Get(i++));
+					else {
+						RichTable table(topic_text.GetTable(i++), 1);
+						result.CatPick(pick(table));
+					}
+				}
+				goto done;
+			}
+			else
+			if(CleanupTppId(topic_text.Get(i).format.label) == cr) {
+				while(CleanupTppId(topic_text.Get(i).format.label) == cr)
+					result.Cat(topic_text.Get(i++));
+				while(i < topic_text.GetPartCount() && topic_text.Get(i).format.label.GetCount() == 0
+				      && !IsBeginEnd(topic_text, i)) {
+					if(topic_text.IsPara(i))
+						result.Cat(topic_text.Get(i++));
+					else {
+						RichTable table(topic_text.GetTable(i++), 1);
+						result.CatPick(pick(table));
+					}
+				}
+				goto done;
+			}
+	}
+done:
+	result.SetStyles(topic_text.GetStyles());
+	return result;
 }
 
 void AssistEditor::SyncAnnotationPopup()
@@ -89,54 +146,7 @@ void AssistEditor::SyncAnnotationPopup()
 	if(!GetAnnotationRef(tl, coderef))
 		return;
 	if(tl.GetCount()) {
-		static String   last_path;
-		static RichText topic_text;
-		String path = GetTopicPath(tl);
-		if(path != last_path)
-			topic_text = ParseQTF(ReadTopic(LoadFile(path)).text);
-		RichText result;
-		String cr = coderef;
-		for(int pass = 0; pass < 2; pass++) {
-			for(int i = 0; i < topic_text.GetPartCount(); i++)
-				if(topic_text.IsTable(i)) {
-					const RichTable& t = topic_text.GetTable(i);
-					Size sz = t.GetSize();
-					for(int y = 0; y < sz.cy; y++)
-						for(int x = 0; x < sz.cx; x++) {
-							const RichTxt& txt = t.Get(y, x);
-							for(int i = 0; i < txt.GetPartCount(); i++) {
-								if(txt.IsPara(i) && txt.Get(i, topic_text.GetStyles()).format.label == cr) {
-									RichTable r(t, 1);
-									result.CatPick(pick(r));
-									goto done;
-								}
-							}
-						}
-				}
-				else
-				if(IsCodeItem(topic_text, i) && topic_text.Get(i).format.label == cr) {
-					while(i > 0 && IsCodeItem(topic_text, i)) i--;
-					if(!IsCodeItem(topic_text, i)) i++;
-					while(IsCodeItem(topic_text, i))
-						result.Cat(topic_text.Get(i++));
-					while(i < topic_text.GetPartCount() && !IsCodeItem(topic_text, i)
-					      && !IsBeginEnd(topic_text, i)) {
-						if(topic_text.IsPara(i))
-							result.Cat(topic_text.Get(i++));
-						else {
-							RichTable table(topic_text.GetTable(i++), 1);
-							result.CatPick(pick(table));
-						}
-					}
-					pass = 2;
-					break;
-				}
-			if(pass == 0 && !LegacyRef(cr))
-				break;
-		}
-	done:
-		result.SetStyles(topic_text.GetStyles());
-		annotation_popup.Pick(pick(result), GetRichTextStdScreenZoom());
+		annotation_popup.Pick(pick(GetCodeTopic(tl, coderef)), GetRichTextStdScreenZoom());
 	}
 	else
 		if(SyncRefsFinished)
@@ -159,6 +169,28 @@ void AssistEditor::OpenTopic(String topic, String create, bool before)
 		theide->OpenTopic(topic, create, before);
 }
 
+AnnotationItem AssistEditor::GetCodeAnnotation(const String& id)
+{
+	for(const AnnotationItem& h : annotations)
+		if(h.id == id)
+			return h;
+	return AnnotationItem();
+}
+
+void SplitCodeRef(const String& s, String& scope, String& item)
+{
+	int q = s.FindFirstOf("( ");
+	q = q >= 0 ? s.ReverseFind(':', q) : s.ReverseFind(':');
+	if(q < 0) {
+		scope.Clear();
+		item = s;
+	}
+	else {
+		scope = s.Mid(0, max(q - 1, 0));
+		item = s.Mid(q + 1);
+	}
+}
+
 void AssistEditor::NewTopic(String group, String coderef)
 {
 	if(!theide)
@@ -174,7 +206,7 @@ void AssistEditor::NewTopic(String group, String coderef)
 		return;
 	String scope, item;
 	SplitCodeRef(coderef, scope, item);
-	if(!te->NewTopicEx(IsNull(scope) ? n : Join(Split(scope, ':'), "_"), coderef))
+	if(!te->NewTopicEx(IsNull(scope) ? n : Join(Split(scope, ':'), "_"), GetCodeAnnotation(coderef)))
 		theide->EditFile(ef);
 	if (IsGitDir(fn))
 		AddGitFile(fn);
@@ -189,18 +221,22 @@ void AssistEditor::EditAnnotation(bool leftclick)
 	if(!GetAnnotationRefs(tl, coderef))
 		return;
 	SetCursor(GetPos64(GetActiveAnnotationLine()));
-	if(leftclick) {
+	if(leftclick) { // show documentation in help widget
 		auto GoToTopic = [&] (int i) {
 			if(theide) {
+				theide->doc.WhenMatchLabel = [](const WString& lbl, const WString& ref) {
+					return ref.ToString() == CleanupTppId(lbl.ToString());
+				};
 				theide->ShowTopics();
-				if(!theide->doc.GoTo(tl[i] + '#' + coderef) && LegacyRef(coderef))
-					theide->doc.GoTo(tl[i] + '#' + coderef);
+				for(String cr : AnnotationCandidates(coderef))
+					if(theide->doc.GoTo(tl[i] + '#' + cr))
+						break;
 			}
 		};
 		if(tl.GetCount() > 1) {
 			MenuBar bar;
 			for(int i = 0; i < tl.GetCount(); i++)
-				bar.Add(tl[i], [&] { GoToTopic(i); });
+				bar.Add(tl[i], [=] { GoToTopic(i); });
 			bar.Execute();
 			return;
 		}
@@ -245,5 +281,7 @@ void AssistEditor::EditAnnotation(bool leftclick)
 	}
 	bar.Add("New reference topic..", THISBACK2(NewTopic, "src", coderef));
 	bar.Add("New implementation topic..", THISBACK2(NewTopic, "srcimp", coderef));
+	bar.Separator();
+	bar.Add("Copy code reference id", [=] { WriteClipboardText(coderef); });
 	bar.Execute();
 }

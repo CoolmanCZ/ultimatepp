@@ -130,9 +130,6 @@ void Ide::SetMain(const String& package)
 	SetBar();
 	HideBottom();
 	SyncUsc();
-	InvalidateIncludes();
-	if(auto_check)
-		NewCodeBase();
 	if(IsNull(e))
 		e = GetFirstFile();
 	EditFile(e);
@@ -179,10 +176,8 @@ void Ide::NewMainPackage()
 		CreateHost(h, false, false);
 		h.Launch(GetExeFilePath() + " --nosplash");
 	}
-	else {
-		SaveCodeBase();
+	else
 		OpenMainPackage();
-	}
 }
 
 void Ide::PackageCursor()
@@ -222,31 +217,6 @@ void Ide::SaveWorkspace()
 	if(console.console) return;
 	if(main.IsEmpty()) return;
 	StoreToFile(THISBACK(SerializeWorkspace), WorkspaceFile());
-}
-
-void Ide::SyncMainConfigList()
-{
-	mainconfiglist.Clear();
-	const Workspace& wspc = IdeWorkspace();
-	if(wspc.GetCount() <= 0) return;
-	const Array<Package::Config>& f = wspc.GetPackage(0).config;
-	for(int i = 0; i < f.GetCount(); i++)
-		mainconfiglist.Add(f[i].param, Nvl(f[i].name, f[i].param));
-	SetMainConfigList();
-}
-
-void Ide::SetMainConfigList()
-{
-	mainconfiglist <<= mainconfigparam;
-	mainconfigname = mainconfiglist.GetValue();
-	mainconfiglist.Tip("Main configuration: " + mainconfigparam);
-}
-
-void Ide::OnMainConfigList()
-{
-	mainconfigparam = ~mainconfiglist;
-	SetMainConfigList();
-	MakeTitle();
 }
 
 void Ide::UscFile(const String& file)
@@ -295,16 +265,9 @@ void Ide::SyncUsc()
 	}
 }
 
-void Ide::CodeBaseSync()
-{
-	if(auto_check)
-		SyncCodeBase();
-}
-
 void Ide::SyncWorkspace()
 {
 	SyncUsc();
-	CodeBaseSync();
 }
 
 bool IsTextFile(const String& file, int maxline) {
@@ -368,7 +331,8 @@ void Ide::DeactivateBy(Ctrl *new_focus)
 
 void Ide::Activate()
 {
-	InvalidateFileTimeCache();
+	TriggerIndexer();
+	editor.TriggerSyncFile(0);
 	TopWindow::Activate();
 }
 
@@ -428,9 +392,6 @@ bool Ide::Key(dword key, int count)
 	case K_OPTION|K_TAB:
 #endif
 		CycleFiles();
-		return true;
-	case K_ALT_C|K_SHIFT:
-		CodeBrowser();
 		return true;
 	case K_MOUSE_BACKWARD:
 		History(-1);
@@ -541,7 +502,7 @@ void Ide::DoDisplay()
 	editor.GetSelection(l, h);
 	if(h > l)
 		s << ", Sel " << h - l;
-	display.SetLabel(s);
+	display.Set(s);
 	
 	ManageDisplayVisibility();
 }
@@ -646,8 +607,63 @@ void Ide::Periodic()
 	SetIcon();
 	if(debugger && debugger->IsFinished() && !IdeIsDebugLock())
 		IdeEndDebug();
-	if(file_scanned && Ctrl::GetEventLevel() == 0 && EditFileAssistSync2())
-		file_scanned = false;
+	SyncClang();
+}
+
+struct IndexerProgress : ImageMaker {
+	double pos;
+
+	String Key() const override {
+		String h;
+		RawCat(h, pos);
+		return h;
+	}
+	
+	Image Make() const override {
+		Size sz = IdeImg::Indexer().GetSize();
+		ImagePainter iw(sz);
+		iw.Clear(RGBAZero());
+		iw.Move(sz.cx / 2, sz.cy / 2).Arc(sz.cx / 2, sz.cy / 2, sz.cx / 2, -M_PI/2, pos * M_2PI).Line(sz.cx / 2, sz.cy / 2).Fill(SGray());
+		iw.DrawImage(0, 0, IdeImg::Indexer());
+		return iw;
+	}
+};
+
+void Ide::SyncClang()
+{
+	Vector<Color> a;
+	Color display_ink = Null;
+	int phase = msecs() / 30; // TODO: Use phase
+	auto AnimColor = [](int animator) {
+		return Blend(IsDarkTheme() ? GrayColor(70) : SColorLtFace(), Color(198, 170, 0), animator);
+	};
+	auto Animate = [=](int& animator, int& dir, bool animate) -> Color {
+		if(animator <= 0 && !animate) return Null;
+		if(animate)
+			animator = 20;
+		else
+			animator -= 3;
+		return AnimColor(animator);
+	};
+	Color bg = Animate(animate_current_file, animate_current_file_dir,
+	                   (editor.annotating || IsCurrentFileParsing()) && HasLibClang());
+	int cx = editor.GetBarSize().cx;
+	if(!IsNull(bg)) {
+		for(int i = 0; i < cx; i++)
+			a.Add(i > cx - DPI(6) ? bg : Null);
+	}
+	if(IsAutocompleteParsing() && HasLibClang())
+		a.At((phase % DPI(6)) + cx - DPI(6)) = SGray();
+	editor.AnimateBar(pick(a));
+	editor.search.SetBackground(Animate(animate_indexer, animate_indexer_dir, Indexer::IsRunning()));
+	if(Indexer::IsRunning()) {
+		IndexerProgress mi;
+		mi.pos = Indexer::Progress();
+		indeximage.SetImage(MakeImage(mi));
+	}
+	else
+		indeximage.SetImage(Null);
+	animate_phase = phase;
 }
 
 const Workspace& Ide::IdeWorkspace() const
@@ -768,4 +784,15 @@ void Ide::DiffFiles(const char *lname, const String& l, const char *rname, const
 	ConflictDiff diff;
 	diff.Set(lname, LoadConflictFile(l), rname, LoadConflictFile(r));
 	diff.Execute();
+}
+
+void Ide::TriggerIndexer0()
+{
+	Indexer::Start(main, GetCurrentIncludePath(), GetCurrentDefines());
+}
+
+void Ide::TriggerIndexer()
+{
+	if(AutoIndexer)
+		TriggerIndexer0();
 }

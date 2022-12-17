@@ -18,6 +18,7 @@ TreeCtrl::TreeCtrl()
 	multiroot = false;
 	chldlck = false;
 	highlight_ctrl = false;
+	hasctrls = false;
 	Clear();
 	SetFrame(ViewFrame());
 	AddFrame(sb);
@@ -929,7 +930,7 @@ void TreeCtrl::KillEdit()
 }
 
 void TreeCtrl::StartEdit() {
-	if(cursor < 0) return;
+	if(cursor < 0 || IsDragAndDropSource()) return;
 	if(!editor) {
 		edit_string.Create();
 		editor = ~edit_string;
@@ -938,7 +939,7 @@ void TreeCtrl::StartEdit() {
 	const Line& l = line[cursor];
 	const Item& m = item[l.itemi];
 	Rect r = GetValueRect(l);
-	r.Inflate(2);
+	r.Inflate(DPI(2));
 	editor->SetFrame(BlackFrame());
 	r.right = GetSize().cx;
 	editor->SetRect(r);
@@ -1151,7 +1152,7 @@ void TreeCtrl::Paint(Draw& w)
 			Color fg, bg;
 			dword st;
 			Size csz = m.GetCtrlSize();
-			if(m.ctrl && !highlight_ctrl) // 2008-04-08 mrjt
+			if(m.ctrl && !highlight_ctrl)
 				x += csz.cx;
 			if(x < sz.cx) {
 				const Display *d = GetStyle(i, fg, bg, st);
@@ -1179,7 +1180,7 @@ Image TreeCtrl::GetDragSample()
 {
 	SyncTree();
 	Size sz = StdSampleSize();
-	ImageDraw iw(StdSampleSize());
+	ImageDraw iw(sz);
 	iw.DrawRect(sz, SColorPaper);
 	int y = 0;
 	for(int i = 0; i < line.GetCount(); i++) {
@@ -1194,10 +1195,8 @@ Image TreeCtrl::GetDragSample()
 		if(IsSel(l.itemi)) {
 			iw.DrawImage(x, y + (msz.cy - isz.cy) / 2, m.image);
 			x += isz.cx;
-			if(!(m.ctrl && m.ctrl->IsWantFocus())) {
-				d->Paint(iw, RectC(x + m.margin, y + (msz.cy - vsz.cy) / 2, vsz.cx, vsz.cy), m.value,
-				         SColorHighlightText, SColorHighlight, Display::SELECT|Display::FOCUS);
-			}
+			d->Paint(iw, RectC(x + m.margin, y + (msz.cy - vsz.cy) / 2, vsz.cx, vsz.cy), m.value,
+			         SColorHighlightText(), SColorHighlight(), Display::SELECT|Display::FOCUS);
 			y += msz.cy;
 		}
 	}

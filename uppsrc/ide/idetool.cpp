@@ -2,7 +2,23 @@
 
 #define LLOG(x) // DLOG(x)
 
+void Ide::GotoPos(Point pos)
+{
+	int sc = editor.GetScrollPos().y;
+	editor.SetCursor(editor.GetPos64(pos.y, pos.x));
+	if(sc != editor.GetScrollPos().y)
+		editor.TopCursor(4);
+	editor.SetFocus();
+	AddHistory();
+	editor.SyncCursor();
+}
+
 void Ide::GotoPos(String path, int line)
+{
+	GotoPos(path, Point(0, line));
+}
+
+void Ide::GotoPos(String path, Point pos)
 {
 	LLOG("GotoPos " << path << ':' << line);
 	if(path.GetCount()) {
@@ -11,10 +27,7 @@ void Ide::GotoPos(String path, int line)
 			DoEditAsText(path);
 		EditFile(path);
 	}
-	editor.SetCursor(editor.GetPos64(line - 1));
-	editor.TopCursor(4);
-	editor.SetFocus();
-	AddHistory();
+	GotoPos(pos);
 }
 
 String PosFn(const String& pkg, const String& n)
@@ -63,47 +76,14 @@ void Ide::GotoPosition()
 			String pf = PosFn(pkg, n);
 			int q = f.GetCount() - pf.GetCount() - 1;
 			if(pf == f || q >= 0 && f.EndsWith(PosFn(pkg, n)) && f[q] == '/') {
-				GotoPos(SourcePath(pkg, n), line);
+				GotoPos(SourcePath(pkg, n), line - 1);
 				return;
 			}
 		}
 	}
 }
 
-void Ide::GotoCpp(const CppItem& pos)
-{
-	GotoPos(GetSourceFilePath(pos.file), pos.line);
-}
-
-void Ide::CheckCodeBase()
-{
-	InvalidateFileTimeCache();
-	InvalidateIncludes();
-	CodeBaseSync();
-}
-
-void Ide::RescanCode()
-{
-/*
-	TimeStop tm;
-	for(int i = 0; i < 10; i++)
-		ReQualifyCodeBase();
-	LOG(tm);
-	PutConsole(AsString(tm));
-//*/
-//*
-	InvalidateIncludes();
-	SaveFile();
-	TimeStop t;
-	console.Clear();
-	RescanCodeBase();
-	SyncRefsShowProgress = true;
-	SyncRefs();
-	editor.SyncNavigator();
-//*/
-}
-
-void Ide::OpenTopic(const String& topic, const String& createafter, bool before)
+void Ide::OpenTopic(const String& topic, const String& create_id, bool before)
 {
 	TopicLink tl = ParseTopicLink(topic);
 	if(tl) {
@@ -111,7 +91,7 @@ void Ide::OpenTopic(const String& topic, const String& createafter, bool before)
 		if(designer) {
 			TopicEditor *te = dynamic_cast<TopicEditor *>(&designer->DesignerCtrl());
 			if(te)
-				te->GoTo(tl.topic, tl.label, createafter, before);
+				te->GoTo(tl.topic, tl.label, editor.GetCodeAnnotation(create_id), before);
 		}
 	}
 }
@@ -123,7 +103,7 @@ void Ide::OpenTopic(const String& topic)
 
 void Ide::OpenATopic()
 {
-	String t = doc.GetCurrent();
+	String t = doc.GetCurrentLink();
 	if(!t.StartsWith("topic:"))
 		return;
 	OpenTopic(t);
@@ -140,7 +120,7 @@ void Ide::IdeOpenTopicFile(const String& file)
 	if(designer) {
 		TopicEditor *te = dynamic_cast<TopicEditor *>(&designer->DesignerCtrl());
 		if(te)
-			te->GoTo(GetFileTitle(file), "", "", false);
+			te->GoTo(GetFileTitle(file), "", AnnotationItem(), false);
 	}
 }
 
@@ -392,7 +372,7 @@ void Ide::CommentLines()
 	AlterText(sCommentLines);
 }
 
-static WString sUncomment(const WString& s) 
+static WString sUncomment(const WString& s)
 {
 	WString h = s;
 	h.Replace("/*", "");
@@ -593,21 +573,10 @@ void Ide::RemoveDs()
 
 void Ide::LaunchAndroidSDKManager(const AndroidSDK& androidSDK)
 {
-	Host host;
-	CreateHost(host, darkmode, disable_uhd);
-	IGNORE_RESULT(host.Execute(androidSDK.GetLauchSDKManagerCmd()));
+	PromptOK("SDK managment is not yet implemented in TheIDE. Use Android Studio for this purpose instead.");
 }
 
 void Ide::LaunchAndroidAVDManager(const AndroidSDK& androidSDK)
 {
-	Host host;
-	CreateHost(host, darkmode, disable_uhd);
-	IGNORE_RESULT(host.Execute(androidSDK.GetLauchAVDManagerCmd()));
-}
-
-void Ide::LauchAndroidDeviceMonitor(const AndroidSDK& androidSDK)
-{
-	Host host;
-	CreateHost(host, darkmode, disable_uhd);
-	IGNORE_RESULT(host.Execute(androidSDK.MonitorPath()));
+	PromptOK("AVD managment is not yet implemented in TheIDE. Use Android Studio for this purpose instead.");
 }

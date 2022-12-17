@@ -50,7 +50,7 @@ int CommaSpace(int c)
 	return c == ',' ? ' ' : c;
 }
 
-void ReduceCache()
+void ReduceCfgCache()
 {
 	String cfgdir = ConfigFile("cfg");
 	FindFile ff(AppendFileName(cfgdir, "*.*"));
@@ -86,27 +86,27 @@ void StartEditorMode(const Vector<String>& args, Ide& ide, bool& clset)
 		return;
 	}
 	
-	Vector<String> dir = Split(LoadFile(GetHomeDirFile("usc.path")), ';');
-	for(int i = 0; i < dir.GetCount(); i++)
-		ide.UscProcessDirDeep(dir[i]);
+	bool editor = false;
 	for(int i = 0; i < args.GetCount(); i++) {
-		if(args[i] != "-f") {
+		if(*args[i] != '-') {
 			String file_path = NormalizePath(args[i]);
 			
 			Logd() << FUNCTION_NAME << "Opening file \"" << file_path << "\".";
 			
 			ide.EditFile(file_path);
 			ide.FileSelected();
+			editor = true;
 		}
 	}
 	
-	clset = true;
-	ide.EditorMode();
+	if(editor) {
+		clset = true;
+		Vector<String> dir = Split(LoadFile(GetHomeDirFile("usc.path")), ';');
+		for(int i = 0; i < dir.GetCount(); i++)
+			ide.UscProcessDirDeep(dir[i]);
+		ide.EditorMode();
+	}
 }
-
-// TODO: I do not like that we need to define macro here.
-// I opt for std::function version. We need to fix that API
-// in 2018.2 release. #1901
 
 #undef  GUI_APP_MAIN_HOOK
 #define GUI_APP_MAIN_HOOK \
@@ -116,12 +116,75 @@ void StartEditorMode(const Vector<String>& args, Ide& ide, bool& clset)
 		return Upp::GetExitCode(); \
 }
 
+#ifdef DYNAMIC_LIBCLANG
+bool TryLoadLibClang()
+{
+	String libdir = TrimBoth(Sys("llvm-config --libdir"));
+	int q = FindIndex(CommandLine(), "--clangdir");
+	if(q >= 0 && q + 1 < CommandLine().GetCount()) {
+		libdir = CommandLine()[q + 1];
+		CommandLineRemove(q, 2);
+	}
+	if(LoadLibClang(libdir))
+		return true;
+	if(LoadLibClang("/usr/lib"))
+		return true;
+	for(int i = 200; i >= 10; i--)
+		if(LoadLibClang("/usr/lib/llvm-" + AsString(i) + "/lib"))
+			return true;
+	return false;
+}
+#endif
+
+char crash_file[2048];
+
+void OnCrash()
+{ // we deliberately avoid using heap here
+#ifdef PLATFORM_POSIX
+	open(crash_file, O_CREAT|O_RDWR|O_TRUNC, 0644);
+#endif
+}
+
 #ifdef flagMAIN
 GUI_APP_MAIN
 #else
 void AppMain___()
 #endif
 {
+#ifdef DYNAMIC_LIBCLANG
+	if(FindIndex(CommandLine(), "--noclang") < 0) {
+		String wfile = ConfigFile(".nolibclang");
+		if(TryLoadLibClang()) {
+			if(FileExists(wfile)) {
+				PromptOK("Library libclang was detected.&Assist`+`+ functions should be now available.");
+				DeleteFile(wfile);
+			}
+		}
+		else
+		if(!FileExists(wfile)) {
+			DeleteFile(wfile);
+			PromptOK("Library libclang was not found.&Assist`+`+ will not be available.");
+			SaveFile(wfile, String());
+		}
+	}
+#endif
+
+	strcpy(crash_file, ToSystemCharset(ConfigFile("ide_crashed")));
+	InstallCrashHook(OnCrash);
+	
+	String preamble_dir = CacheDir() + "/preambles-" + Uuid::Create().ToString();
+	if(!RealizeDirectory(preamble_dir)) // temporary (?)
+		Exclamation("Failed to create preamble dir&\1" + preamble_dir
+		            + "\1&\1" + GetLastErrorMessage());
+	
+#ifdef PLATFORM_POSIX
+	setenv("TMPDIR", preamble_dir, 1);
+	setenv("TMP", preamble_dir, 1);
+	setenv("LIBCLANG_NOTHREADS", "1", 1);
+#else
+	SetEnvironmentVariable("TMPDIR", preamble_dir);
+	SetEnvironmentVariable("TMP", preamble_dir); // Looks like libclang ignores TMPDIR
+#endif
 //	Ctrl::ShowRepaint(50);
 
 #ifdef flagPEAKMEM
@@ -143,6 +206,7 @@ void AppMain___()
 	auto arg = clone(cmd_handler.GetArgs());
 
 	SetVppLogSizeLimit(200000000);
+//	SetVppLogSizeLimit(2000000000); _DBG_
 	
 	if(!CheckLicense())
 		return;
@@ -312,14 +376,15 @@ void AppMain___()
 	#endif
 			Ini::user_log = true;
 		}
-		
-		String ppdefs = ConfigFile("global.defs");
-	#ifndef _DEBUG
-		if(!FileExists(ppdefs))
-	#endif
-			SaveFile(ppdefs, GetStdDefs());
 
-		SetPPDefs(LoadFile(ppdefs));
+		if(FileExists(crash_file)) {
+			Exclamation("TheIDE has crashed the last time it was run. As the possible "
+			            "cause is libclang incompatibility, we are disabling Assist features for now.&"
+			            "You can have them reenabled in Setup / Settings..");
+			DeleteFile(crash_file);
+			LibClangEnabled = false;
+		}
+	
 		
 		if(!clset)
 			ide.LoadLastMain();
@@ -329,8 +394,10 @@ void AppMain___()
 				ide.SaveLastMain();
 				ide.isscanning++;
 				ide.MakeTitle();
-				if(!ide.IsEditorMode())
+				if(!ide.IsEditorMode()) {
 					SyncRefs();
+					ide.TriggerIndexer();
+				}
 				ide.FileSelected();
 				ide.isscanning--;
 				ide.MakeTitle();
@@ -343,10 +410,9 @@ void AppMain___()
 		}
 		while(IdeAgain);
 
-		SaveCodeBase();
 		DelTemps();
 		DeletePCHFiles();
-		ReduceCache();
+		ReduceCfgCache();
 #ifndef _DEBUG
 	}
 	catch(const CParser::Error& e) {
@@ -357,13 +423,19 @@ void AppMain___()
 		ErrorOK("Exception " + e);
 		LOG("!!!!! Exception " << e);
 	}
-#ifdef PLATFORM_POSIX
 	catch(...) {
 		ErrorOK("Unknown exception !");
 		LOG("!!!!! Unknown exception");
 	}
 #endif
-#endif
+	Ctrl::ShutdownThreads();
+
+	DeleteFolderDeep(preamble_dir);
+	
+	// delete crashed preamble dirs older than one day
+	for(FindFile ff(AppendFileName(CacheDir(), "*.*")); ff; ff.Next())
+		if(ff.IsFolder() && ff.GetName().StartsWith("preambles-") && Time(ff.GetLastWriteTime()) < GetSysTime() - 3600 * 12)
+			DeleteFolderDeep(ff.GetPath()); // if still in use, this fails
 }
 
 #ifdef flagPEAKMEM

@@ -777,9 +777,10 @@ void Ide::SetupBuildMethods()
 		}
 	}
 	InvalidateIncludes();
-	CodeBaseSync();
 	SyncBuildMode();
 	SetBar();
+	TriggerIndexer();
+	editor.TriggerSyncFile(0);
 }
 
 void ExtractIncludes(Index<String>& r, String h)
@@ -796,7 +797,7 @@ void ExtractIncludes(Index<String>& r, String h)
 }
 
 String Ide::GetIncludePath()
-{
+{ // this is 'real' include path defined by current build method, for Alt+J and #include assist
 	if(include_path.GetCount())
 		return include_path;
 	SetupDefaultMethod();
@@ -852,36 +853,137 @@ String Ide::GetIncludePath()
 			}
 		}
 	}
+	
+	IncludeAddPkgConfig(include_path, Null);
 
+	return include_path;
+}
+
+void Ide::IncludeAddPkgConfig(String& include_path, const String& clang_method)
+{
+#ifdef PLATFORM_POSIX
 	const Workspace& wspc = GetIdeWorkspace();
-	Host dummy_host;
-	One<Builder> b = CreateBuilder(&dummy_host);
+	Host host;
+	if(clang_method.GetCount())
+		CreateHost(host, clang_method, false, false);
+	else
+		CreateHost(host, false, false);
+	One<Builder> b = CreateBuilder(&host);
 	Index<String> pkg_config;
+	Index<String> cfg = PackageConfig(wspc, max(GetPackageIndex(), 0), GetMethodVars(method), mainconfigparam, host, *b);
+	String main_conf;
 	for(int i = 0; i < wspc.GetCount(); i++) {
 		const Package& pkg = wspc.GetPackage(i);
 		for(int j = 0; j < pkg.include.GetCount(); j++)
 			MergeWith(include_path, ";", SourcePath(wspc[i], pkg.include[j].text));
-		for(String h : Split(Gather(pkg.pkg_config, b->config.GetKeys()), ' '))
+		for(String h : Split(Gather(pkg.pkg_config, cfg.GetKeys()), ' '))
 			pkg_config.FindAdd(h);
 	}
-
-#ifdef PLATFORM_POSIX
-	for(String s : pkg_config)
-		for(String p : Split(Sys("pkg-config --cflags " + s), ' '))
+	
+	static VectorMap<String, String> cflags;
+	for(String s : pkg_config) {
+		int q = cflags.Find(s);
+		if(q < 0) {
+			q = cflags.GetCount();
+			cflags.Add(s, Sys("pkg-config --cflags " + s));
+		}
+		for(String p : Split(cflags[q], CharFilterWhitespace))
 			if(p.TrimStart("-I"))
 				MergeWith(include_path, ";", p);
+	}
 #endif
+}
+
+void AddDirs(String& include_path, const String& dir)
+{
+	MergeWith(include_path, ";", dir);
+	for(FindFile ff(dir + "/*.*"); ff; ff.Next())
+		if(ff.IsFolder())
+			AddDirs(include_path, ff.GetPath());
+}
+
+String Ide::GetCurrentIncludePath()
+{ // this is include path for libclang / assist
+	String include_path;
+	
+	static String clang_method;
+
+	VectorMap<String, String> bm;
+	if(clang_method.GetCount())
+		bm = GetMethodVars(clang_method);
+	if(bm.GetCount() == 0) {
+		String exact, x64, clang;
+		for(FindFile ff(ConfigFile(GetMethodName("*"))); ff; ff.Next()) {
+			String n = ToLower(GetFileTitle(ff.GetName()));
+			if(n == "clangx64")
+				exact = n;
+			if(n.StartsWith("clangx64"))
+				x64 = n;
+			if(n.StartsWith("clang"))
+				clang = n;
+		}
+		clang_method = Nvl(exact, x64, clang);
+		if(clang_method.GetCount())
+			bm = GetMethodVars(clang_method);
+	}
+	
+	include_path = Join(GetUppDirs(), ";") + ';';
+	String inc1 = bm.Get("INCLUDE", "");
+	MergeWith(include_path, ";", inc1);
+	
+	VectorMap<String, String> bm2 = GetMethodVars(method); // add real method include paths at the end
+	String inc2 = bm2.Get("INCLUDE", "");
+	if(inc1 != inc2)
+		MergeWith(include_path, ";", inc2);
+	
+	IncludeAddPkgConfig(include_path, clang_method);
+
+	String main_conf;
+	const Workspace& wspc = GetIdeWorkspace();
+	for(int i = 0; i < wspc.GetCount(); i++) {
+		const Package& pkg = wspc.GetPackage(i);
+		for(int j = 0; j < pkg.GetCount(); j++) {
+			if(pkg[j] == "import.ext")
+				AddDirs(include_path, GetFileFolder(PackagePath(wspc[i])));
+
+			if(pkg[j] == "main.conf") {
+				main_conf << LoadFile(SourcePath(wspc[i], "main.conf")) << "\r\n";
+			}
+		}
+	}
+
+	if(main_conf.GetCount()) {
+		String main_conf_dir = CacheFile("main_conf_" + SHA1String(main_conf));
+		RealizeDirectory(main_conf_dir);
+		SaveChangedFile(AppendFileName(main_conf_dir, "main.conf.h"), main_conf);
+		return Merge(";", main_conf_dir, include_path);
+	}
 
 	return include_path;
+}
+
+String Ide::GetCurrentDefines()
+{
+	Index<String> flags;
+	flags = SplitFlags(mainconfigparam, false);
+	AddHostFlags(flags);
+	String r;
+	for(String s : flags)
+		MergeWith(r, ";", "flag" + s);
+	const Workspace& wspc = GetIdeWorkspace();
+	for(int i = 0; i < wspc.GetCount(); i++) {
+		const Package& pkg = wspc.GetPackage(i);
+		for(int j = 0; j < pkg.GetCount(); j++) {
+			if(pkg[j] == "main.conf") {
+				MergeWith(r, ";", "MAIN_CONF");
+				return r;
+			}
+		}
+	}
+	return r;
 }
 
 String Ide::IdeGetIncludePath()
 {
 	return GetIncludePath();
-}
-
-void Ide::InvalidateIncludes()
-{
-	InvalidatePPCache();
-	include_path.Clear();
 }

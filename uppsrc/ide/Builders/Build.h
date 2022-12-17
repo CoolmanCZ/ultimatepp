@@ -35,11 +35,9 @@ public:
 	virtual void SetupDefaultMethod() = 0;
 	virtual Vector<String> PickErrors() = 0; //console.PickErrors()
 	virtual void BeginBuilding(bool clear_console) = 0;
-	virtual void EndBuilding(bool ok) = 0;
-	virtual void ClearErrorEditor() = 0;
-	virtual void DoProcessEvents() = 0;
-	virtual void ReQualifyCodeBase() = 0;
 	virtual void SetErrorEditor() = 0;
+	virtual void EndBuilding(bool ok) = 0;
+	virtual void DoProcessEvents() = 0;
 	virtual String GetMain() = 0;
 
 	struct TransferFileInfo
@@ -67,6 +65,7 @@ public:
 
 	bool         makefile_svn_revision = true;
 
+	void CreateHost(Host& host, const String& method, bool darkmode, bool disable_uhd);
 	void CreateHost(Host& host, bool darkmode = false, bool disable_uhd = false);
 
 	const TargetMode& GetTargetMode();
@@ -98,6 +97,7 @@ public:
 
 private:
 	static String GetInvalidBuildMethodError(const String& method);
+	bool IsAndroidMethod(const String& method) const;
 };
 
 extern bool output_per_assembly;
