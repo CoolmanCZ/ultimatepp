@@ -1,6 +1,7 @@
 description "\377B";
 
 uses
+	CtrlCore,
 	ide/Core;
 
 library(WIN32) libclang.lib;
