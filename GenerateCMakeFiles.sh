@@ -50,7 +50,7 @@ UPP_SRC_DIR="${UPP_SRC_BASE}/uppsrc"
 PROJECT_NAME="${UPP_SRC_DIR}/ide/ide.upp"
 
 PROJECT_EXTRA_COMPILE_FLAGS=""
-PROJECT_EXTRA_LINK_FLAGS=""
+PROJECT_EXTRA_LINK_FLAGS="-Wl,--gc-sections"
 PROJECT_FLAGS="-DflagGUI -DflagMT -DflagGCC"
 
 generate_main_cmake_file "${PROJECT_NAME}" "${PROJECT_FLAGS}"

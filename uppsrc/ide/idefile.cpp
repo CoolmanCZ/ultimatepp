@@ -484,7 +484,10 @@ void Ide::EditFile0(const String& path, byte charset, int spellcheck_comments, c
 	editfile_repo = GetRepoKind(editfile);
 	editfile_isfolder = IsFolder(editfile) || IsHelpName(editfile);
 	repo_dirs = RepoDirs(true).GetCount(); // Perhaps not the best place, but should be ok
-	git_dirs = GitDirs(true).GetCount();
+	git_bin_found = CheckGit();
+	git_dirs = GitDirs(true).GetCount() > 0;
+	git_file = GetGitRoot(path).GetCount() > 0;
+
 	if (editfile_repo == GIT_DIR)
 		SyncGitBranchList();
 

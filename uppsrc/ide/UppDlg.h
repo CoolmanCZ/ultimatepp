@@ -283,7 +283,9 @@ struct WorkspaceWork {
 	Package   actual;
 	bool      editormode;
 	bool      repo_dirs;
+	bool      git_bin_found;
 	bool      git_dirs;
+	bool      git_file;
 	bool      patchpending;
 
 	struct Sepfo : Moveable<Sepfo> {

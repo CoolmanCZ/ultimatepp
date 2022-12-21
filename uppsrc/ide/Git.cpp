@@ -355,7 +355,7 @@ void Ide::OnGitBranchList()
 	if (branch.Find("*") < 0) {
 		Git git(GetGitRoot(PackagePath(actualpackage)));
 
-		if (CheckGit()) {
+		if (git_bin_found) {
 			Vector<String> output = git.BranchCheckout(TrimBoth(branch)).GetOutput();
 			ProcessCommandOutput(output);
 			SyncGitBranchList();
@@ -367,7 +367,7 @@ void Ide::SetGitBranchList()
 {
 	Git git(GetGitRoot(PackagePath(actualpackage)));
 
-	if (CheckGit()) {
+	if (git_bin_found) {
 		Vector<String> output = git.ProcessBranchAdd(git.GetBranchLocal()).GetOutput();
 		ProcessCommandOutput(output);
 		SyncGitBranchList();
