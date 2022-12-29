@@ -176,8 +176,10 @@ void Ide::NewMainPackage()
 		CreateHost(h, false, false);
 		h.Launch(GetExeFilePath() + " --nosplash");
 	}
-	else
+	else {
 		OpenMainPackage();
+		StopBuild();
+	}
 }
 
 void Ide::PackageCursor()
