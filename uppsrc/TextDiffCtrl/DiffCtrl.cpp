@@ -9,7 +9,6 @@ namespace Upp {
 TextDiffCtrl::TextDiffCtrl()
 {
 	left.SetLeft();
-	left.Gutter(30);
 	left.SetDiffBgColor(GreenDiffBg());
 	left.SetDiffBgColorBold(GreenDiffBgBold());
 	next.SetImage(DiffImg::Next());
@@ -18,7 +17,6 @@ TextDiffCtrl::TextDiffCtrl()
 	left.scroll.y.AddFrame(next);
 	next << [=] { FindDiff(true); };
 	prev << [=] { FindDiff(false); };
-	right.NoGutter();
 	Horz(left, right);
 	left.WhenScroll = right.ScrollWhen(left);
 	right.WhenScroll = left.ScrollWhen(right);
