@@ -23,6 +23,7 @@ TextCompareCtrl::TextCompareCtrl()
 	show_line_number = true;
 	show_white_space = false;
 	show_diff_highlight = true;
+	show_sb_dots = true;
 	change_paper_color = true;
 }
 
@@ -241,14 +242,16 @@ void TextCompareCtrl::ScrollBarItems::Paint(Draw& w)
 
 void TextCompareCtrl::PaintScrollBarItems(Draw& w)
 {
-	Rect sr = scroll.y.GetSliderRect();
-	for(int pass = 0; pass < 2; pass++) {
-		Size isz = pass ? DiffImg::dot1().GetSize() : DiffImg::dot().GetSize();
-		for(int i = 0; i < lines.GetCount(); i++)
-			if(lines[i].level > 1)
-				w.DrawImage(sr.CenterPoint().x - isz.cx / 2,
-				            sr.top + scroll.y.GetSliderPos(i) - isz.cy / 2,
-				            pass ? DiffImg::dot1() : DiffImg::dot());
+	if (show_sb_dots) {
+		Rect sr = scroll.y.GetSliderRect();
+		for(int pass = 0; pass < 2; pass++) {
+		  Size isz = pass ? DiffImg::dot1().GetSize() : DiffImg::dot().GetSize();
+		  for(int i = 0; i < lines.GetCount(); i++)
+		      if(lines[i].level > 1)
+		          w.DrawImage(sr.CenterPoint().x - isz.cx / 2,
+		                      sr.top + scroll.y.GetSliderPos(i) - isz.cy / 2,
+		                      pass ? DiffImg::dot1() : DiffImg::dot());
+		}
 	}
 }
 
@@ -261,7 +264,7 @@ void TextCompareCtrl::Paint(Draw& draw)
 	int lcnt = lines.GetCount();
 	int first_line = offset.cy / letter.cy;
 	int last_line = min(idivceil(sz.cy + offset.cy, letter.cy), lines.GetCount() - 1);
-	
+
 	WString test = "č"; // read text/paper colors from highlighting scheme using likely non-highlighted text
 	Vector<LineEdit::Highlight> th;
 	th.SetCount(2);

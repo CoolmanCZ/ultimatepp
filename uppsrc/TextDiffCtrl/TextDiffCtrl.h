@@ -92,6 +92,7 @@ private:
 	bool           show_line_number;
 	bool           show_white_space;
 	bool           show_diff_highlight;
+	bool           show_sb_dots;
 	bool           change_paper_color;
 	bool           left = false;
 	
@@ -137,6 +138,8 @@ public:
 	void           AutoHideSb(bool ssb=true){ scroll.AutoHide(ssb); }
 	void           ShowSb(bool ssb)         { scroll.ShowY(ssb); }
 	void           HideSb()                 { ShowSb(false); }
+	void           ShowSbDots(bool sbd=true){ show_sb_dots = sbd; }
+	void           HideSbDots()             { show_sb_dots = false; }
 
 	void           TabSize(int t);
 	int            GetTabSize() const { return tabsize; }

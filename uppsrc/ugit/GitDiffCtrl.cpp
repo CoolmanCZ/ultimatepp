@@ -15,17 +15,20 @@ GitDiffCtrl::GitDiffCtrl()
 
 	difftwo.Horz(left,right);
 
+	single.HideSbDots();
 	single.AutoHideSb();
 	single.NoChangePaperColor();
 	single.WhenLeftDouble = THISBACK1(GetFilePos, PANEL_ONE);
 	single.WhenHighlight = THISBACK(DiffHighlight);
 
 	left.HideSb();
+	left.HideSbDots();
 //	left.WhenLeftDouble = THISBACK1(GetFilePos, PANEL_LEFT);
 	left.WhenHighlight = THISBACK(DiffHighlight);
 	left.WhenScroll = right.ScrollWhen(left);
 
 	right.ShowSb(true);
+	right.HideSbDots();
 	right.WhenLeftDouble = THISBACK1(GetFilePos, PANEL_RIGHT);
 	right.WhenHighlight = THISBACK(DiffHighlight);
 	right.WhenScroll = left.ScrollWhen(right);
