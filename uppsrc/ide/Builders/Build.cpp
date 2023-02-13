@@ -102,9 +102,9 @@ void MakeBuild::CreateHost(Host& host, const String& method, bool darkmode, bool
 		VectorMap<String, String> env = clone(Environment());
 		host.exedirs = SplitDirs(bm.Get("PATH", "") + ';' + env.Get("PATH", ""));
 #ifdef PLATFORM_WIN32
-		String p = GetExeDirFile("bin/mingit/cmd");
-		if(FileExists(p + "/git.exe"))
-			host.exedirs.Add(p);
+		host.AddExecutable(GetExeDirFile("bin/mingit/cmd"), "git.exe");
+		host.AddExecutable(GetExeDirFile("bin/llvm/bin"), "clang-format.exe");
+		
 		env.GetAdd("PATH") = Join(host.exedirs, ";");
 #else
 		env.GetAdd("PATH") = Join(host.exedirs, ":");
@@ -625,4 +625,25 @@ bool MakeBuild::IsAndroidMethod(const String& method) const
 		return false;
 	
 	return AndroidBuilder::GetBuildersNames().Find(builder) > -1;
+}
+
+
+int HostSys(const char *cmd, String& out)
+{
+	MakeBuild *mb = dynamic_cast<MakeBuild *>(TheIdeContext());
+	if(!mb)
+		return Null;
+	Host host;
+	mb->CreateHost(host, false, false);
+	LocalProcess p;
+	host.canlog = false;
+	if(host.StartProcess(p, cmd))
+		return p.Finish(out);
+	return Null;
+}
+
+String HostSys(const char *cmd)
+{
+	String out;
+	return HostSys(cmd, out) == 0 ? out : String::GetVoid();
 }

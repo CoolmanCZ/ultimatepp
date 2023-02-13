@@ -642,16 +642,12 @@ public:
 	Font      gui_font = StdFont();
 	String    libclang_options;
 	String    libclang_coptions;
-	/*
-		astyle code formatter control vars
-		added 2008.01.27 by Massimo Del Fedele
-	*/
+	bool      prefer_clang_format = false;
 
 	// Formats editor's code with Ide format parameters
 	void FormatJSON_XML(bool xml);
 	void FormatJSON();
 	void FormatXML();
-	void FormatJSON_XML_File(bool xml);
 
 	bool      browser_closeesc;
 	bool      bookmark_pos;
@@ -836,12 +832,19 @@ public:
 		void  InsertMenu(Bar& bar);
 		void  InsertInclude(Bar& bar);
 		void  InsertAdvanced(Bar& bar);
+		void  Reformat(Bar& bar);
 		void  AssistEdit(Bar& menu);
 		void  EditorMenu(Bar& bar);
 		void  ToggleWordwrap();
 
         void  CopyPosition();
         void  GotoPosition();
+        
+    void      ReformatMenu(Bar& menu);
+	    void  ReformatCodeDlg();
+	    void  ReformatCode();
+	    void  ReformatComment();
+		String FindClangFormatPath(bool local = false);
 
 	void OnlineSearchMenu(Bar& menu);
 
@@ -871,7 +874,6 @@ public:
 		void  ToComment();
 		void  CommentLines();
 		void  UnComment();
-		void  ReformatComment();
 
 	void      MacroMenu(Bar& menu);
 		bool  HasMacros();
