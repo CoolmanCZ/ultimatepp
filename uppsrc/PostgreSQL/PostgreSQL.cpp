@@ -90,9 +90,7 @@ private:
 	int             fetched_row; //-1, if not fetched yet
 	String          last_insert_table;
 
-	void            FreeResult();
-	String          ErrorMessage();
-	String          ErrorCode();
+	String          ErrorMessage(const String& msg) const { return FromCharset(msg); }
 
 	String          FromCharset(const String& s) const { return session.FromCharset(s); }
 	String          ToCharset(const String& s) const   { return session.ToCharset(s); }
@@ -160,26 +158,6 @@ bool PostgreSQLPerformScript(const String& txt, StatementExecutor& se, Gate<int,
 		if(*text) text++;
 	}
 	return true;
-}
-
-String PostgreSQLConnection::ErrorMessage()
-{
-	return FromCharset(PQerrorMessage(conn));
-}
-
-String PostgreSQLConnection::ErrorCode()
-{
-	return PQresultErrorField(result, PG_DIAG_SQLSTATE);
-}
-
-String PostgreSQLSession::ErrorMessage()
-{
-	return FromCharset(PQerrorMessage(conn));
-}
-
-String PostgreSQLSession::ErrorCode()
-{
-	return PQresultErrorField(result, PG_DIAG_SQLSTATE);
 }
 
 Vector<String> PostgreSQLSession::EnumUsers()
@@ -252,8 +230,7 @@ Vector<SqlColumnInfo> PostgreSQLSession::EnumColumns(String schema, String table
 	                  "and a.attisdropped = '0' "
 	                "order by a.attnum", table, schema), *this);
 	sql.Execute();
-	while(sql.Fetch())
-	{
+	while(sql.Fetch()) {
 		SqlColumnInfo &ci = vec.Add();
 		int type_mod = int(sql[3]) - sizeof(int32);
 		ci.name = sql[0];
@@ -305,20 +282,27 @@ void PostgreSQLSession::ExecTrans(const char * statement)
 
 	int itry = 0;
 
+	String error_msg;
+	String error_code;
 	do {
 		result = PQexec(conn, statement);
+		error_msg = PQresultErrorMessage(result);
+		error_code = PQresultErrorField(result, PG_DIAG_SQLSTATE);
 		if(PQresultStatus(result) == PGRES_COMMAND_OK) {
 			PQclear(result);
+			result = nullptr;
 			return;
 		}
 	}
-	while(level == 0 && (!ConnectionOK() || ErrorMessage().Find("connection") >= 0 && itry == 0)
+	while(level == 0 && (!ConnectionOK() || ErrorMessage(error_msg).Find("connection") >= 0 && itry == 0)
 	      && WhenReconnect(itry++));
 
-	if(trace)
-		*trace << statement << " failed: " << ErrorMessage() << " (level " << level << ")\n";
-	SetError(ErrorMessage(), statement, 0, ErrorCode());
+	if(trace) {
+		*trace << statement << " failed: " << ErrorMessage(error_msg) << " (level " << level << ")\n";
+	}
+	SetError(ErrorMessage(error_msg), statement, 0, error_code);
 	PQclear(result);
+	result = nullptr;
 }
 
 String PostgreSQLSession::FromCharset(const String& s) const
@@ -356,9 +340,9 @@ bool PostgreSQLSession::Open(const char *connect)
 		conn = PQconnectdb(connect);
 	}
 
-	if(PQstatus(conn) != CONNECTION_OK)
-	{
-		SetError(FromSystemCharset(PQerrorMessage(conn)), "Opening database");
+	if(PQstatus(conn) != CONNECTION_OK)	{
+		String msg = PQerrorMessage(conn);
+		SetError(FromSystemCharset(msg), "Opening database");
 		Close();
 		return false;
 	}
@@ -370,17 +354,34 @@ bool PostgreSQLSession::Open(const char *connect)
 			return false;
 		}
 		charset = CHARSET_UTF8;
-	}
-	else
+	} else {
 		charset = CHARSET_DEFAULT;
+	}
 
 	DoKeepAlive();
 
 	LLOG( String("Postgresql client encoding: ") + pg_encoding_to_char( PQclientEncoding(conn) ) );
 
 	Sql sql(*this);
-	if(sql.Execute("select setting from pg_settings where name = 'bytea_output'") && sql.Fetch() && sql[0] == "hex")
+	if(sql.Execute("select setting from pg_settings where name = 'bytea_output'") && sql.Fetch() && sql[0] == "hex") {
 		hex_blobs = true;
+	}
+
+    // Get information about PostgreSQL connection
+    pginfo.pgDatabase = PQdb(conn);
+    pginfo.pgUser = PQuser(conn);
+    pginfo.pgHost = PQhost(conn);
+    pginfo.pgHostAddr = PQhostaddr(conn);
+    pginfo.pgPort = PQport(conn);
+    pginfo.pgServerVersion = PQserverVersion(conn);
+    pginfo.pgSSL = PQsslInUse(conn) != 0;
+    if(pginfo.pgSSL) {
+        pginfo.pgSslLibrary = PQsslAttribute(conn, "library");
+        pginfo.pgSslProtocol = PQsslAttribute(conn, "protocol");
+        pginfo.pgSslKeyBits = PQsslAttribute(conn, "key_bits");
+        pginfo.pgSslCipher = PQsslAttribute(conn, "cipher");
+        pginfo.pgSslCompression = PQsslAttribute(conn, "compression");
+    }
 
 	return true;
 }
@@ -393,9 +394,9 @@ bool PostgreSQLSession::ConnectionOK()
 bool PostgreSQLSession::ReOpen()
 {
 	PQreset(conn);
-	if(PQstatus(conn) != CONNECTION_OK)
-	{
-		SetError(ErrorMessage(), "Opening database");
+	String msg = PQerrorMessage(conn);
+	if(PQstatus(conn) != CONNECTION_OK)	{
+		SetError(ErrorMessage(msg), "Opening database");
 		return false;
 	}
 	DoKeepAlive();
@@ -409,8 +410,9 @@ void PostgreSQLSession::Close()
 		return;
 	SessionClose();
 	PQfinish(conn);
-	conn = NULL;
+	conn = nullptr;
 	level = 0;
+	pginfo.Clear();
 }
 
 void PostgreSQLSession::Begin()
@@ -459,7 +461,7 @@ void PostgreSQLConnection::SetParam(int i, const Value& r)
 				StringBuffer b(v.GetLength() * 2 + 3);
 				char *q = b;
 				*q = '\'';
-				int *err = NULL;
+				int *err = nullptr;
 				int n = (int)PQescapeStringConn(conn, q + 1, v, v.GetLength(), err);
 				q[1 + n] = '\'';
 				b.SetCount(2 + n);
@@ -538,12 +540,16 @@ bool PostgreSQLConnection::Execute()
 
 	int itry = 0;
 	int stat;
+	String error_msg;
+	String error_code;
 	do {
-		result = PQexecParams(conn, query, 0, NULL, NULL, NULL, NULL, 0);
+		result = PQexecParams(conn, query, 0, nullptr, nullptr, nullptr, nullptr, 0);
 		stat = PQresultStatus(result);
+		error_msg = PQresultErrorMessage(result);
+		error_code = PQresultErrorField(result, PG_DIAG_SQLSTATE);
 	}
 	while(stat != PGRES_TUPLES_OK && stat != PGRES_COMMAND_OK && session.level == 0 &&
-	      (!session.ConnectionOK() || ErrorMessage().Find("connection") >= 0 && itry == 0) && session.WhenReconnect(itry++));
+	      (!session.ConnectionOK() || ErrorMessage(error_msg).Find("connection") >= 0 && itry == 0) && session.WhenReconnect(itry++));
 
 	if(trace) {
 		if(session.IsTraceTime())
@@ -578,8 +584,9 @@ bool PostgreSQLConnection::Execute()
 		return true;
 	}
 
-	session.SetError(ErrorMessage(), query, 0, ErrorCode());
-	FreeResult();
+	session.SetError(ErrorMessage(error_msg), query, 0, error_code);
+	PQclear(result);
+	result = nullptr;
 	return false;
 }
 
@@ -687,7 +694,8 @@ void PostgreSQLConnection::Cancel()
 	info.Clear();
 	rows = 0;
 	fetched_row = -1;
-	FreeResult();
+	PQclear(result);
+	result = nullptr;
 }
 
 SqlSession& PostgreSQLConnection::GetSession() const
@@ -705,19 +713,10 @@ String PostgreSQLConnection::ToString() const
 	return statement;
 }
 
-void PostgreSQLConnection::FreeResult()
-{
-	if(result)
-	{
-		PQclear(result);
-		result = NULL;
-	}
-}
-
 PostgreSQLConnection::PostgreSQLConnection(PostgreSQLSession& a_session, PGconn *a_conn)
   : session(a_session), conn(a_conn)
 {
-	result = NULL;
+	result = nullptr;
 }
 
 Value PgSequence::Get()

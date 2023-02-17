@@ -25,6 +25,35 @@ bool PostgreSQLPerformScript(const String& text,
 	Gate<int, int> progress_canceled = Null
 );
 
+struct PGInfo : Moveable<PGInfo> {
+    String pgDatabase;
+    String pgUser;
+    String pgHost;
+    String pgHostAddr;
+    String pgPort;
+    int pgServerVersion = 0;
+    bool pgSSL = false;
+    String pgSslLibrary;
+    String pgSslProtocol;
+    String pgSslKeyBits;
+    String pgSslCipher;
+    String pgSslCompression;
+
+    void Clear() {
+        pgDatabase.Clear();
+        pgUser.Clear();
+        pgHost.Clear();
+        pgHostAddr.Clear();
+        pgPort.Clear();
+        pgServerVersion = 0;
+        pgSSL = false;
+        pgSslLibrary.Clear();
+        pgSslProtocol.Clear();
+        pgSslKeyBits.Clear();
+        pgSslCipher.Clear();
+        pgSslCompression.Clear();
+    }
+};
 
 String PostgreSQLTextType(int n);
 
@@ -52,6 +81,8 @@ private:
 	PGconn               *conn;
 	PGresult             *result;
 
+    PGInfo                pginfo;
+
 	String                conns;
 	bool                  keepalive;
 	bool                  hex_blobs;
@@ -60,9 +91,8 @@ private:
 	VectorMap<String, String> pkache;
 
 	void                  ExecTrans(const char * statement);
-	Vector<String>        EnumData(char type, const char *schema = NULL);
-	String                ErrorMessage();
-	String                ErrorCode();
+	Vector<String>        EnumData(char type, const char *schema = nullptr);
+	String                ErrorMessage(const String& msg) const { return FromCharset(msg); }
 	int                   level;
 	byte                  charset;
 
@@ -93,9 +123,11 @@ public:
 	virtual void          Rollback();
 	virtual int           GetTransactionLevel() const;
 
-	PostgreSQLSession()                                   { conn = NULL; Dialect(PGSQL); level = 0; keepalive = hex_blobs = false; }
+	PostgreSQLSession()                                   { conn = nullptr; Dialect(PGSQL); level = 0; keepalive = hex_blobs = false; }
 	~PostgreSQLSession()                                  { Close(); }
 	PGconn * GetPGConn()                                  { return conn; }
+
+    PGInfo GetPGInfo()                                    { return pginfo; }
 };
 
 class PgSequence : public ValueGen {
@@ -111,13 +143,13 @@ public:
 	void Set(SqlId id, SqlSession& s)                                   { ssq = id; session = &s; }
 
 #ifndef NOAPPSQL
-	void Set(SqlId id)                                                  { ssq = id; session = NULL; }
-	PgSequence(const char *name) : ssq(name), seq(ssq)                  { session = NULL; }
-	PgSequence(SqlId& seq) : seq(seq)                                   { session = NULL; }
+	void Set(SqlId id)                                                  { ssq = id; session = nullptr; }
+	PgSequence(const char *name) : ssq(name), seq(ssq)                  { session = nullptr; }
+	PgSequence(SqlId& seq) : seq(seq)                                   { session = nullptr; }
 #endif
 	PgSequence(const char *name, SqlSession& s) : ssq(name), seq(ssq)   { session = &s; }
 	PgSequence(SqlId& seq, SqlSession& s) : seq(seq)                    { session = &s; }
-	PgSequence() : seq(ssq)                                             { session = NULL; }
+	PgSequence() : seq(ssq)                                             { session =  nullptr; }
 };
 
 }

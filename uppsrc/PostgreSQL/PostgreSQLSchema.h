@@ -65,6 +65,11 @@
 #define CLOB(x)                    COLUMN("text", String, x, INT_MAX/2, 0)
 #define CLOB_(x)                   COLUMN_("text", String, x, INT_MAX/2, 0)
 
+#define TEXT(x)                    COLUMN("text", String, x, 0, 0)
+#define TEXT_ARRAY(x, items)       COLUMN_ARRAY("text", String, x, 0, 0, items)
+#define TEXT_(x)                   COLUMN_("text", String, x, 0, 0)
+#define TEXT_ARRAY_(x, items)      COLUMN_ARRAY_("text", String, x, 0, 0, items)
+
 #define UUID(x)                    COLUMN("uuid", String, x, 0, 0)
 #define UUID_ARRAY(x, items)       COLUMN_ARRAY("uuid", String, x, 0, 0, items)
 #define UUID_(x)                   COLUMN_("uuid", String, x, 0, 0)
@@ -214,6 +219,11 @@ ATTRIBUTE("alter table @t add constraint UQ_@t$" #name " unique (" list ");", \
 
 #undef CLOB
 #undef CLOB_
+
+#undef TEXT
+#undef TEXT_ARRAY
+#undef TEXT_
+#undef TEXT_ARRAY_
 
 #undef UUID
 #undef UUID_ARRAY
