@@ -822,6 +822,7 @@ public:
 		void  ClearEditedAll();
 		void  FindFileAll(const Vector<Tuple<int64, int>>& f);
 		void  InsertColor();
+		void  InsertImage();
 		void  InsertLay(const String& fn);
 		void  InsertIml(const Package& pkg, const String& fn, String classname);
 		void  InsertText(const String& text);
@@ -1169,6 +1170,8 @@ public:
 	void      SearchTopics();
 	void      ShowTopics();
 	void      ShowTopicsWin();
+
+	const Workspace& AssistWorkspace() const;
 
 	void      IncludeAddPkgConfig(String& include_path, const String& clang_method);
 	String    GetIncludePath();
