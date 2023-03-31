@@ -37,7 +37,10 @@ AssistEditor::AssistEditor()
 	int cy = search.GetMinSize().cy;
 	navigatorpane.Add(search.TopPos(0, cy).HSizePos(0, cy + 4));
 	navigatorpane.Add(sortitems.TopPos(0, cy).RightPos(0, cy));
-	navigatorpane.Add(list.VSizePos(cy, 0).HSizePos());
+	navigatorpane.Add(scope_list.VSizePos(cy, 0).HSizePos());
+	
+	scope_list.Vert() << scope << list;
+	scope_list.SetPos(1500);
 
 	navigator = true;
 
@@ -670,7 +673,6 @@ int  AssistEditor::ToUtf8x(int line, int pos)
 int AssistEditor::FromUtf8x(int line, int pos)
 { // libclang treats utf-8 bytes as whole characters
 	if(line < GetLineCount() && GetLineLength(line) < 1000) {
-		bool isutf8 = false;
 		const String& h = GetUtf8Line(line);
 		if(pos <= h.GetCount())
 			for(const char ch : h)
@@ -684,7 +686,6 @@ void AssistEditor::Assist(bool macros)
 {
 	LTIMING("Assist");
 	CloseAssist();
-	int q = GetCursor32();
 	assist_type.Clear();
 	assist_item.Clear();
 	include_assist = false;
@@ -965,7 +966,7 @@ void AssistEditor::AssistInsert()
 				ch++;
 			Remove(cl, ch - cl);
 			SetCursor(cl);
-			int n = Paste(ToUnicode(txt, CHARSET_WIN1250));
+			Paste(ToUnicode(txt, CHARSET_WIN1250));
 			if(param_count > 0) {
 				SetCursor(GetCursor32() - 1);
 				StartParamInfo(f, cl);
@@ -1165,7 +1166,7 @@ void AssistEditor::SelectionChanged()
 
 void AssistEditor::SerializeNavigator(Stream& s)
 {
-	int version = 9;
+	int version = 10;
 	s / version;
 	s % navigatorframe;
 	s % navigator;
@@ -1192,6 +1193,9 @@ void AssistEditor::SerializeNavigator(Stream& s)
 	
 	if(version >= 9)
 		s % ms_cache;
+	
+	if(version >= 10)
+		s % scope_list;
 }
 
 void AssistEditor::SerializeNavigatorWorkspace(Stream& s)

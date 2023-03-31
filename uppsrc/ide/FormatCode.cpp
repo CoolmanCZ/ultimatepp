@@ -451,7 +451,7 @@ ReformatDlg::ReformatDlg()
 				else
 				if(*f.type) {
 					DropList& dl = option.Create<DropList>();
-					dl.Add(Null, AttrText("default").Italic().NormalInk(SCyan()));
+					dl.Add(Null, AttrText("default").Italic().NormalInk(SColorDisabled()));
 					for(const String& s : Split(f.type, ':'))
 						dl.Add(s);
 					dl << [=] { Sync(); };
@@ -518,7 +518,6 @@ void ReformatDlg::Set(Stream& in)
 	int ii = 0;
 	String master_id;
 	for(const ClangFormat& f : clang_format) {
-		int x = 0;
 		String id = f.id;
 		if(*id == ' ')
 			id = master_id + ":" + TrimBoth(id);
