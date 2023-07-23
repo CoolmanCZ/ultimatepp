@@ -393,7 +393,8 @@ Ide::Ide()
 	toolbar_in_row = false;
 	WhenClose = THISBACK(Exit);
 
-	editorsplit.Vert(editor, editor2);
+	editor_p.Add(editor.SizePos());
+	editorsplit.Vert(editor_p, editor2);
 	editorsplit.Zoom(0);
 	SyncEditorSplit();
 	
@@ -414,6 +415,11 @@ Ide::Ide()
 		ffound[i].ColumnAt(2).SetDisplay(Single<FoundDisplay>());
 		ffound[i].WhenBar = THISBACK(FFoundMenu);
 		ffound[i].WhenSel = ffound[i].WhenLeftClick = THISBACK(ShowFound);
+		freplace[i].SetLabel("Replace");
+		ffound[i].HeaderObject() << freplace[i].RightPosZ(0, 80).VSizePos();
+		freplace[i].Hide();
+		freplace[i] << [=] { ReplaceFound(i); };
+		freplace[i].SetImage(IdeImg::textfield_rename());
 	}
 
 	error.WhenSel = THISBACK(SelError);
@@ -456,7 +462,7 @@ Ide::Ide()
 	};
 //	tabs.WhenCloseRest = THISBACK1(CloseRest, &tabs);
 //	editor2.SetFrame(NullFrame());
-	editor2.theide = this;
+//	editor2.theide = this;
 	editor2.topsbbutton.ScrollStyle().NoWantFocus().Show();
 	editor2.topsbbutton1.ScrollStyle().NoWantFocus().Show();
 	editor2.WhenLeftDown = THISBACK(SwapEditors);

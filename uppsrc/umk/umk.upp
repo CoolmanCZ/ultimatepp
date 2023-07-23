@@ -4,12 +4,15 @@ uses
 	Core\SSL,
 	ide\Builders;
 
+uses(!POSIX) Core/SSL;
+
 file
 	umake.h,
 	Console.cpp,
 	IdeContext.cpp,
 	MakeBuild.cpp,
 	Export.cpp,
+	UppHub.cpp,
 	umake.cpp;
 
 mainconfig

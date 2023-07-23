@@ -409,6 +409,7 @@ void Ide::SetupFormat() {
 		(assist.qtfsel, qtfsel)
 		(assist.assist, editor.auto_assist)
 		(assist.auto_indexer, AutoIndexer)
+		(assist.relaxed, RelaxedIndexerDependencies)
 		(assist.navigator_right, editor.navigator_right)
 		(assist.show_errors, editor.show_errors)
 		(assist.show_errors_status, editor.show_errors_status)
@@ -418,6 +419,7 @@ void Ide::SetupFormat() {
 		(assist.indexer_threads, IndexerThreads)
 		(assist.parsed_files, ParsedFiles)
 		(assist.no_empty_autocomplete, editor.no_empty_autocomplete)
+		(assist.blk0_header, blk0_header)
 
 		(ide.showtime, showtime)
 		(ide.show_status_bar, show_status_bar)

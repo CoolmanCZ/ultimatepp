@@ -205,7 +205,6 @@ bool RepoSync::ListSvn(const String& path)
 
 String GitCmd(const char *dir, const char *command)
 {
-	LOG("GitCmd " << dir << ", " << command);
 	String h = GetCurrentDirectory();
 	SetCurrentDirectory(dir);
 	String r = HostSys(String() << "git " << command);
@@ -317,7 +316,6 @@ void RepoSync::SyncList()
 			o.pull = Default("pull");
 			actions = ListGit(path);
 			if(!actions) {
-				o.push = false;
 				o.commit.Disable();
 			}
 		}
@@ -494,7 +492,7 @@ again:
 		if(svn && svn->update)
 			sys.CheckSystem(SvnCmd(sys, "update", repo_dir).Cat() << repo_dir);
 		if(git && git->pull)
-			if(sys.Git(repo_dir, "pull --rebase", true)) {
+			if(sys.Git(repo_dir, "pull --ff --no-rebase", true)) {
 				while(l < list.GetCount()) {
 					int action = list.Get(l, 0);
 					if(action == REPOSITORY)

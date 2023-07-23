@@ -2,12 +2,8 @@
 
 VectorMap<String, String> git_branch_cache;
 
-void Ide::MakeTitle()
+String GetGitBranch(const String& dir)
 {
-	String title;
-	title << Nvl(main, "TheIDE");
-
-	String dir = GetFileFolder(editfile);
 	int q = git_branch_cache.Find(dir);
 	String branch;
 	if(q < 0) {
@@ -30,10 +26,22 @@ void Ide::MakeTitle()
 			git_branch_cache.Add(dir, branch);
 		}
 	}
-	branch = git_branch_cache[q];
-	
-	if(branch.GetCount())
-		title << " [ " << branch << " ] ";
+	return git_branch_cache[q];
+}
+
+void Ide::MakeTitle()
+{
+	if(replace_in_files) return;
+
+	String title;
+	title << Nvl(main, "TheIDE");
+
+	Vector<String> dirs = GetUppDirs();
+	if(dirs.GetCount()) {
+		String branch = GetGitBranch(dirs[0]);
+		if(branch.GetCount())
+			title << " [ " << branch << " ] ";
+	}
 
 	if(!mainconfigname.IsEmpty() &&  mainconfigname == mainconfigparam)
 		title << " - " << mainconfigname;
@@ -51,6 +59,9 @@ void Ide::MakeTitle()
 	else
 	if(!editfile.IsEmpty()) {
 		title << " - " << editfile;
+		String branch = GetGitBranch(GetFileFolder(editfile));
+		if(branch.GetCount())
+			title << " [ " << branch << " ] ";
 		int chrset = editor.GetCharset();
 		title << " " << IdeCharsetName(chrset)
 		      << " " << (findarg(Nvl(editfile_line_endings, line_endings), LF, DETECT_LF) >= 0 ? "LF" : "CRLF");
@@ -68,6 +79,7 @@ void Ide::MakeTitle()
 		for(int i = 0; i < 10; i++)
 			if(NormalizePath(editfile) == NormalizePath(bookmark[i].file))
 				title << Format(" <%d>", i);
+	
 	title << " { " << GetAssemblyId() << " }";
 	if(isscanning)
 		title << " (scanning files)";
@@ -529,6 +541,8 @@ void Ide::BookKey(int key)
 
 void Ide::DoDisplay()
 {
+	if(replace_in_files)
+		return;
 	Point p = editor.GetColumnLine(editor.GetCursor64());
 	String s;
 	s << "Ln " << p.y + 1 << ", Col " << p.x + 1;
@@ -790,8 +804,17 @@ void Ide::Diff()
 
 void Ide::DiffWith(const String& path)
 {
-	if(IsNull(editfile) || IsNull(path) || max(GetFileLength(editfile), GetFileLength(path)) > 100*1024*1024)
+#ifdef CPU_64
+	int64 maxsize = 2000*1024*1024;
+#else
+	int64 maxsize = 100*1024*1024;
+#endif
+	if(IsNull(editfile) || IsNull(path))
 		return;
+	if(max(GetFileLength(editfile), GetFileLength(path)) > maxsize) {
+		Exclamation("Too big to compare");
+		return;
+	}
 	FileDiff diffdlg(AnySourceFs());
 	diffdlg.diff.WhenLeftLine = THISBACK1(GotoDiffLeft, &diffdlg);
 	diffdlg.diff.WhenRightLine = THISBACK1(GotoDiffRight, &diffdlg);

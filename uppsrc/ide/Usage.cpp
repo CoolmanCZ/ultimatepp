@@ -9,15 +9,15 @@ void   Ide::ResetFileLine()
 }
 
 String Ide::GetFileLine(const String& path, int linei)
-{
-	if(path == editfile)
+{ // slightly cached fetching of line from file
+	if(path == editfile && !designer)
 		return linei >= 0 && linei < editor.GetLineCount() ? editor.GetUtf8Line(linei)
 		                                                   : String();
 	if(path != lpath) {
 		lpath = path;
 		FileIn in(path);
 		line.Clear();
-		if(in.GetSize() < 1000000)
+		if(in.GetSize() < 10000000)
 			while(!in.IsEof())
 				line.Add(in.GetLine());
 	}
@@ -28,15 +28,18 @@ void Ide::AddReferenceLine(const String& path, Point mpos, const String& name, I
 {
 	String ln = GetFileLine(path, mpos.y);
 	int count = 0;
-	int pos = 0;
+	int pos = -1;
 	if(name.GetCount()) {
 		pos = FindId(ln.Mid(mpos.x), name);
+		if(pos < 0) {
+			pos = FindId(ln.Mid(mpos.x), "With" + name);
+			if(pos >= 0) // special case for WithNameLayout
+				pos += 4;
+		}
 		if(pos >= 0) {
 			count = name.GetCount();
 			pos += mpos.x;
 		}
-		else
-			pos = 0;
 	}
 	String h = String() << path << '\t' << mpos.y << '\t' << ln << '\t' << pos << '\t' << count;
 	if(unique.Find(h) < 0) {
@@ -116,7 +119,7 @@ void Ide::Usage(const String& id, const String& name, Point ref_pos)
 {
 	if(IsNull(id))
 		return;
-
+	
 	ResetFileLine();
 
 	int li = editor.GetCursorLine();
@@ -147,14 +150,33 @@ void Ide::Usage(const String& id, const String& name, Point ref_pos)
 	}
 	else {
 		bool isvirtual = false;
+		bool isstatic = false; // to limit file static variables to single file
+		bool istype = false;
 		String cls;
+		Progress pi("Indexing files");
+		while(Indexer::IsRunning()) {
+			if(pi.StepCanceled())
+				break;
+			GuiSleep(10);
+		}
 		for(const auto& f : ~CodeIndex())
-			for(const AnnotationItem& m : f.value.items)
-				if(m.id == id && m.isvirtual) {
-					isvirtual = true;
-					cls = m.nest;
-					break;
+			for(const AnnotationItem& m : f.value.items) {
+				if(m.id == id) {
+					if(m.isvirtual) {
+						isvirtual = true;
+						cls = m.nest;
+						break;
+					}
+					if(IsStruct(m.kind)) {
+						istype = true;
+						cls = m.nest;
+						break;
+					}
+					if(m.id == id && m.isstatic && f.key == editfile &&
+					   m.nest.GetCount() == m.nspace.GetCount()) // ignore class variables
+						isstatic = true;
 				}
+			}
 		
 		Index<String> ids;
 		ids.FindAdd(id);
@@ -178,25 +200,49 @@ void Ide::Usage(const String& id, const String& name, Point ref_pos)
 			visited.Clear();
 			for(const String& cls : base_id)
 				GatherVirtuals(bases, cls, signature, ids, visited);
-			
 		}
-		
-		SortByKey(CodeIndex());
-		for(int src = 0; src < 2; src++)
-			for(const auto& f : ~CodeIndex())
+
+		UsageId(name, id, ids, istype, isstatic, unique);
+	}
+
+	UsageFinish();
+}
+
+void Ide::UsageId(const String& name, const String& id, const Index<String>& ids, bool istype, bool isstatic, Index<String>& unique)
+{
+	int q = id.ReverseFind("::");
+	String constructor = id + "::" + (q >= 0 ? id.Mid(q + 2) : id) + "(";
+	String destructor = id + "::~(";
+	SortByKey(CodeIndex());
+	for(int src = 0; src < 2; src++)
+		for(const auto& f : ~CodeIndex()) {
+			if(!isstatic || f.key == editfile)
 				if((findarg(GetFileExt(f.key), ".h", "") < 0) == src) { // headers first
 					auto Add = [&](Point mpos) {
 						AddReferenceLine(f.key, mpos, name, unique);
 					};
-					for(const AnnotationItem& m : f.value.items)
-						if(ids.Find(m.id) >= 0)
+					for(const AnnotationItem& m : f.value.items) {
+						if(ids.Find(m.id) >= 0 || istype && (m.id.StartsWith(constructor) || m.id.StartsWith(destructor)))
 							Add(m.pos);
+					}
 					for(const ReferenceItem& m : f.value.refs)
-						if(ids.Find(m.id) >= 0)
+						if(ids.Find(m.id) >= 0) {
 							Add(m.pos);
+						}
 				}
-	}
+		}
+}
 
+void Ide::UsageFinish()
+{
+	FFound().Sort(3, [](const Value& va, const Value& vb)->int {
+		const ErrorInfo& a = va.To<ErrorInfo>();
+		const ErrorInfo& b = vb.To<ErrorInfo>();
+		return CombineCompare(GetFileName(a.file), GetFileName(b.file))
+		                     (a.file, b.file)
+		                     (a.lineno, b.lineno)
+		                     (a.linepos, b.linepos);
+	});
 	FFoundFinish();
 }
 
@@ -214,6 +260,37 @@ void Ide::IdUsage()
 {
 	String name;
 	Point ref_pos;
-	String ref_id = GetRefId(editor.GetCursor(), name, ref_pos);
+	String ref_id;
+	for(int pass = 0; pass < 2; pass++) { // bit of heuristics - if stored info has correct id at current pos, do not wait for rescan
+		ref_id = GetRefId(editor.GetCursor(), name, ref_pos);
+		if(ref_id.GetCount())
+			break;
+		if(!editor.WaitCurrentFile())
+			return;
+	}
 	Usage(ref_id, name, ref_pos);
+}
+
+void Ide::FindDesignerItemReferences(const String& id, const String& name)
+{
+	SaveFile();
+	ResetFileLine();
+	SortByKey(CodeIndex());
+	String path = NormalizePath(editfile);
+	int q = CodeIndex().Find(path);
+	if(q < 0)
+		return;
+
+	for(const AnnotationItem& m : CodeIndex()[q].items) {
+		if(m.id.EndsWith(id) &&
+		   (m.id.GetCount() <= id.GetCount() || !iscid(m.id[m.id.GetCount() - id.GetCount() - 1]))) {
+			Index<String> ids, unique;
+			ids.Add(m.id);
+			SetFFound(ffoundi_next);
+			FFound().Clear();
+			UsageId(name, m.id, ids, IsStruct(m.kind), m.isstatic, unique);
+			UsageFinish();
+			return;
+		}
+	}
 }
