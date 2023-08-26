@@ -131,7 +131,8 @@ void Ide::InsertAdvanced(Bar& bar)
 
 void Ide::Reformat(Bar& bar)
 {
-	bar.Sub("Reformat", [=] (Bar& menu) { ReformatMenu(menu); });
+	bool b = !editor.IsReadOnly() && !designer;
+	bar.Sub(b, "Reformat", [=] (Bar& menu) { ReformatMenu(menu); });
 }
 
 void Ide::EditSpecial(Bar& menu)
@@ -537,7 +538,7 @@ void Ide::Project(Bar& menu)
 			menu.Add(AK_MAINCONFIG, IdeImg::main_package(), THISBACK(MainConfig))
 				.Help("Configuring compiler, operating system, output application parameters, custom flags");
 		menu.Separator();
-		menu.Add(AK_SYNCT, IdeImg::Language(), THISBACK1(SyncT, 0))
+		menu.AddMenu(AK_SYNCT, IdeImg::Language(), THISBACK1(SyncT, 0))
 		    .Help("Synchronize all language translation files of current workspace");
 		menu.AddMenu(AK_TRIMPORT, IdeImg::Language(), THISBACK1(SyncT, 1))
 		    .Help("Import runtime translation file");
@@ -603,11 +604,24 @@ void Ide::FilePropertiesMenu(Bar& menu)
 			bar.AddMenu(candiff && FileExists(path), path,
 			            IdeImg::DiffNext(), [=] { DiffWith(path); })
 			    .Help("Show differences between the current and the next file");
-		for(String p : difflru)
-			if(p != path)
-				bar.AddMenu(candiff && FileExists(p), p,
-				            IdeImg::DiffNext(), [=] { DiffWith(p); })
-				    .Help("Show differences between the current and that file");
+		Vector<String> file;
+		if(bar.IsMenuBar()) {
+			ForAllSourceFiles([&](const VectorMap<String, String>& map) {
+				for(int i = map.Find(GetFileName(editfile)); i >= 0; i = map.FindNext(i))
+					file.Add(map[i]);
+			});
+		}
+		for(int pass = 0; pass < 2; pass++) {
+			bool sep = true;
+			for(String p : pass ? file : difflru)
+				if(!PathIsEqual(p, editfile) && FileExists(p)) {
+					if(sep)
+						bar.Separator();
+					sep = false;
+					bar.AddMenu(p, IdeImg::DiffNext(), [=] { DiffWith(p); })
+					    .Help("Show differences between the current and that file");
+				}
+		}
 	});
 	if(editfile_repo) {
 		String txt = String("Show ") + (editfile_repo == SVN_DIR ? "svn" : "git") + " history of ";
@@ -704,10 +718,10 @@ void Ide::FilePropertiesMenu(Bar& menu)
 void Ide::BuildFileMenu(Bar& menu)
 {
 	bool b = idestate == EDITING && !IdeIsDebugLock();
-	menu.Add(b, "Compile " + GetFileName(editfile), IdeImg::Source(), THISBACK(FileCompile))
+	menu.Add(b, "Compile " + GetFileName(editfile), IdeCommonImg::Source(), THISBACK(FileCompile))
 		.Key(AK_COMPILEFILE)
 		.Help("Compile current file");
-	menu.Add(b, "Preprocess " + GetFileName(editfile), IdeImg::Header(), THISBACK1(Preprocess, false))
+	menu.AddMenu(b, "Preprocess " + GetFileName(editfile), IdeCommonImg::Header(), THISBACK1(Preprocess, false))
 		.Key(AK_PREPROCESSFILE)
 		.Help("Preprocess current file into temporary file & open in editor");
 	if(findarg(current_builder, "GCC", "CLANG") >= 0)

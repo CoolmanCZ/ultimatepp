@@ -138,8 +138,7 @@ void Ide::Usage(const String& id, const String& name, Point ref_pos)
 		}
 	}
 	
-	SetFFound(ffoundi_next);
-	FFound().Clear();
+	NewFFound();
 
 	Index<String> unique;
 	if(local) {
@@ -210,10 +209,12 @@ void Ide::Usage(const String& id, const String& name, Point ref_pos)
 
 void Ide::UsageId(const String& name, const String& id, const Index<String>& ids, bool istype, bool isstatic, Index<String>& unique)
 {
+	// DLOG("UsageId " << name << " " << id << " " << ids << " istype: " << istype << " " << unique << " static " << isstatic);
 	int q = id.ReverseFind("::");
 	String constructor = id + "::" + (q >= 0 ? id.Mid(q + 2) : id) + "(";
 	String destructor = id + "::~(";
 	SortByKey(CodeIndex());
+	int kind = Null;
 	for(int src = 0; src < 2; src++)
 		for(const auto& f : ~CodeIndex()) {
 			if(!isstatic || f.key == editfile)
@@ -222,22 +223,26 @@ void Ide::UsageId(const String& name, const String& id, const Index<String>& ids
 						AddReferenceLine(f.key, mpos, name, unique);
 					};
 					for(const AnnotationItem& m : f.value.items) {
+						if(m.id == id)
+							kind = m.kind;
 						if(ids.Find(m.id) >= 0 || istype && (m.id.StartsWith(constructor) || m.id.StartsWith(destructor)))
 							Add(m.pos);
 					}
 					for(const ReferenceItem& m : f.value.refs)
-						if(ids.Find(m.id) >= 0) {
+						if(ids.Find(m.id) >= 0)
 							Add(m.pos);
-						}
 				}
 		}
+	
+	if(!IsNull(kind))
+		FFoundSetIcon(CxxIcon(kind));
 }
 
 void Ide::UsageFinish()
 {
 	FFound().Sort(3, [](const Value& va, const Value& vb)->int {
-		const ErrorInfo& a = va.To<ErrorInfo>();
-		const ErrorInfo& b = vb.To<ErrorInfo>();
+		const ListLineInfo& a = va.To<ListLineInfo>();
+		const ListLineInfo& b = vb.To<ListLineInfo>();
 		return CombineCompare(GetFileName(a.file), GetFileName(b.file))
 		                     (a.file, b.file)
 		                     (a.lineno, b.lineno)
@@ -280,17 +285,45 @@ void Ide::FindDesignerItemReferences(const String& id, const String& name)
 	int q = CodeIndex().Find(path);
 	if(q < 0)
 		return;
+	
+	auto DoUsage = [&](const AnnotationItem& m) {
+		Index<String> ids, unique;
+		ids.Add(m.id);
+		NewFFound();
+		UsageId(name, m.id, ids, IsStruct(m.kind), false, unique);
+		UsageFinish();
+	};
 
 	for(const AnnotationItem& m : CodeIndex()[q].items) {
 		if(m.id.EndsWith(id) &&
 		   (m.id.GetCount() <= id.GetCount() || !iscid(m.id[m.id.GetCount() - id.GetCount() - 1]))) {
-			Index<String> ids, unique;
-			ids.Add(m.id);
-			SetFFound(ffoundi_next);
-			FFound().Clear();
-			UsageId(name, m.id, ids, IsStruct(m.kind), m.isstatic, unique);
-			UsageFinish();
+			DoUsage(m);
 			return;
 		}
 	}
+	
+	// Probably untyped layout item, need to find all classes using the layout
+	q = id.ReverseFind("::");
+	if(q < 0) return;
+	String bclst = id.Mid(0, q);
+	String nbclst = ":" + id.Mid(0, q);
+	String var = id.Mid(q + 2);
+	Index<String> vars;
+	for(const auto& f : ~CodeIndex())
+		for(const AnnotationItem& m : f.value.items) {
+			if(IsStruct(m.kind) && m.bases.GetCount()) {
+				for(String bcls : Split(m.bases, [](int c) { return iscid(c) || c == ':' ? 0 : 1; })) {
+					if(bcls == bclst || bcls.EndsWith(nbclst)) {
+						vars.FindAdd(m.id + "::" + var);
+					}
+				}
+			}
+		}
+
+	for(const auto& f : ~CodeIndex())
+		for(const AnnotationItem& m : f.value.items) {
+			if(IsVariable(m.kind) && vars.Find(m.id) >= 0) {
+				DoUsage(m);
+			}
+		}
 }

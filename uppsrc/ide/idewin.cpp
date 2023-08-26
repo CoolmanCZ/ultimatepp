@@ -408,20 +408,6 @@ Ide::Ide()
 	error.ColumnWidths("207 41 834");
 	error.WhenBar = THISBACK(ErrorMenu);
 
-	for(int i = 0; i < 3; i++) {
-		SetupError(ffound[i], "Source");
-		ffound[i].ColumnWidths("207 41 834");
-		ffound[i].ColumnAt(0).SetDisplay(Single<FoundFileDisplay>());
-		ffound[i].ColumnAt(2).SetDisplay(Single<FoundDisplay>());
-		ffound[i].WhenBar = THISBACK(FFoundMenu);
-		ffound[i].WhenSel = ffound[i].WhenLeftClick = THISBACK(ShowFound);
-		freplace[i].SetLabel("Replace");
-		ffound[i].HeaderObject() << freplace[i].RightPosZ(0, 80).VSizePos();
-		freplace[i].Hide();
-		freplace[i] << [=] { ReplaceFound(i); };
-		freplace[i].SetImage(IdeImg::textfield_rename());
-	}
-
 	error.WhenSel = THISBACK(SelError);
 	error.WhenLeftClick = THISBACK(ShowError);
 	console.WhenLine = THISBACK1(ConsoleLine, false);
@@ -437,8 +423,6 @@ Ide::Ide()
 	bottom.Add(console.SizePos().SetFrame(NullFrame()));
 	bottom.Add(error.SizePos().SetFrame(NullFrame()));
 	bottom.Add(calc.SizePos().SetFrame(NullFrame()));
-	for(int i = 0; i < 3; i++)
-		bottom.Add(ffound[i].SizePos().SetFrame(NullFrame()));
 	btabs <<= THISBACK(SyncBottom);
 	BTabs();
 	
@@ -633,6 +617,7 @@ Ide::Ide()
 	libclang_coptions = "-Wno-logical-op-parentheses -Wno-pragma-pack";
 
 	editor.search.Add(indeximage.RightPos(DPI(1), DPI(16)).VSizePos());
+	editor.search.Add(indeximage2.RightPos(DPI(1), DPI(16)).VSizePos());
 
 #ifdef PLATFORM_COCOA
 	WhenDockMenu = [=](Bar& bar) {
@@ -648,6 +633,19 @@ Ide::Ide()
 Ide::~Ide()
 {
 	SetTheIde(NULL);
+}
+
+void Ide::DeleteWindows()
+{
+	for(Ptr<TopWindow> w : window)
+		if(w)
+			delete w;
+}
+
+void Ide::NewWindow(TopWindow *win)
+{
+	window.RemoveIf([&](int i) { return !window[i]; });
+	window.Add(win);
 }
 
 String LibClangCommandLine()

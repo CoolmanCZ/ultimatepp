@@ -168,7 +168,6 @@ void Ide::SetMain(const String& package)
 	SyncGitBranchList();
 	SetHdependDirs();
 	SetBar();
-	HideBottom();
 	SyncUsc();
 	if(IsNull(e))
 		e = GetFirstFile();
@@ -672,7 +671,7 @@ struct IndexerProgress : ImageMaker {
 		ImagePainter iw(sz);
 		iw.Clear(RGBAZero());
 		iw.Move(sz.cx / 2, sz.cy / 2).Arc(sz.cx / 2, sz.cy / 2, sz.cx / 2, -M_PI/2, pos * M_2PI).Line(sz.cx / 2, sz.cy / 2).Fill(SGray());
-		iw.DrawImage(0, 0, IdeImg::Indexer());
+	//	iw.DrawImage(0, 0, IdeImg::Indexer());
 		return iw;
 	}
 };
@@ -680,7 +679,7 @@ struct IndexerProgress : ImageMaker {
 void Ide::SyncClang()
 {
 	Vector<Color> a;
-	int phase = msecs() / 30; // TODO: Use phase
+	int phase = msecs() / 30;
 	auto AnimColor = [](int animator) {
 		return Blend(IsDarkTheme() ? GrayColor(70) : SColorLtFace(), Color(198, 170, 0), animator);
 	};
@@ -707,9 +706,29 @@ void Ide::SyncClang()
 		IndexerProgress mi;
 		mi.pos = Indexer::Progress();
 		indeximage.SetImage(MakeImage(mi));
+		
+		static Image waitani[64];
+		ONCELOCK {
+			int sz = DPI(16);
+			for(int ani = 0; ani < 64; ani++) {
+				ImagePainter sw(sz, sz);
+				sw.Clear(RGBAZero());
+				Pointf prev = Null;
+				for(int i = 0; i <= 128; i++) {
+					Pointf next = (sz / 2 - 1) * Polar((i + ani * 4) * M_2PI / 256) + Pointf(sz / 2, sz / 2);
+					if(!IsNull(prev))
+						sw.Move(prev).Line(next).Stroke(DPI(i) / 128.0, Blend(SLtGray, SLtRed, 2 * i));
+					prev = next;
+				}
+				waitani[ani] = sw.GetResult();
+			}
+		}
+		indeximage2.SetImage(waitani[(msecs() / 20) & 63]);
 	}
-	else
+	else {
 		indeximage.SetImage(Null);
+		indeximage2.SetImage(Null);
+	}
 	animate_phase = phase;
 }
 
@@ -775,31 +794,28 @@ int Ide::GetPackageIndex()
 	return -1;
 }
 
-void Ide::GotoDiffLeft(int line, DiffDlg *df)
+void Ide::DoDiff(FileDiff *df)
 {
-	EditFile(df->editfile);
-	editor.SetCursor(editor.GetPos64(line));
-	editor.SetFocus();
-}
-
-void Ide::GotoDiffRight(int line, FileDiff *df)
-{
-	EditFile(df->GetExtPath());
-	editor.SetCursor(editor.GetPos64(line));
-	editor.SetFocus();
+	auto Do = [=](const String& file, int line) {
+		EditFile(file);
+		editor.SetCursor(editor.GetPos64(line));
+		editor.SetFocus();
+	};
+	df->diff.WhenLeftLine = [=](int line) { Do(df->editfile, line); };
+	df->diff.WhenRightLine = [=](int line) { Do(df->GetExtPath(), line); };
+	df->OpenMain();
 }
 
 void Ide::Diff()
 {
 	if(IsNull(editfile))
 		return;
-	FileDiff diffdlg(AnySourceFs());
-	diffdlg.diff.WhenLeftLine = THISBACK1(GotoDiffLeft, &diffdlg);
-	diffdlg.diff.WhenRightLine = THISBACK1(GotoDiffRight, &diffdlg);
-	diffdlg.Execute(editfile);
+	FileDiff& diffdlg = CreateNewWindow<FileDiff>(AnySourceFs());
+	diffdlg.Set(editfile);
 	String s = diffdlg.GetExtPath();
 	if(FileExists(s))
 		LruAdd(difflru, s);
+	DoDiff(&diffdlg);
 }
 
 void Ide::DiffWith(const String& path)
@@ -815,10 +831,9 @@ void Ide::DiffWith(const String& path)
 		Exclamation("Too big to compare");
 		return;
 	}
-	FileDiff diffdlg(AnySourceFs());
-	diffdlg.diff.WhenLeftLine = THISBACK1(GotoDiffLeft, &diffdlg);
-	diffdlg.diff.WhenRightLine = THISBACK1(GotoDiffRight, &diffdlg);
-	diffdlg.Execute(editfile, path);
+	FileDiff& diffdlg = CreateNewWindow<FileDiff>(AnySourceFs());
+	diffdlg.Set(editfile, path);
+	DoDiff(&diffdlg);
 }
 
 struct ConflictDiff : TopWindow {

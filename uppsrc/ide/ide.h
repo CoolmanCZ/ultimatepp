@@ -249,8 +249,9 @@ private:
 		int    y;
 		Image  img;
 		String tip;
+		bool   highlight = false;
 
-		int    GetHeight() const { return img.GetSize().cy + SPACE; }
+		int    GetHeight() const;
 		int    GetRight() const  { return y + GetHeight(); }
 	};
 
@@ -260,12 +261,12 @@ private:
 	int        cursor;
 
 	void Repos();
-	void PaintTab(Draw& w, int x, int y, int cx, int cy, Color paper, const Image& img, Color hl);
+	void PaintTab(Draw& w, int x, int y, int cx, int cy, Color paper, const Tab& t, Color hl);
 	int  GetPos(Point p);
 
 public:
 	void Clear();
-	void Add(const Image& img, const String& tip);
+	void Add(const Image& img, const String& tip, bool highlight = false);
 	void SetCursor(int i);
 	int  GetCursor() const                                       { return cursor; }
 
@@ -480,9 +481,14 @@ public:
 	Splitter    editor_bottom;
 	Console     console;
 
-	ArrayCtrl   ffound[3];
-	Button      freplace[3];
-	int         ffoundi_next = 0;
+	struct FoundList : ArrayCtrl {
+		Button freplace;
+		Image  icon;
+		
+		FoundList();
+	};
+
+	One<FoundList> ffound[16];
 
 	ArrayCtrl   error;
 	int         error_count;
@@ -494,9 +500,9 @@ public:
 	bool        removing_notes;
 
 	IdeCalc     calc;
-	Ptr<Ctrl>   bottomctrl;
+	Ptr<Ctrl>   bottomctrl; // debugger pane
 
-	enum Bottoms { BCLOSE, BCONSOLE, BERRORS, BFINDINFILES1, BFINDINFILES2, BFINDINFILES3, BCALC, BDEBUG };
+	enum Bottoms { BCLOSE, BCONSOLE, BERRORS, BCALC, BDEBUG, BFINDINFILES1, BFINDINFILES2, BFINDINFILES3 };
 
 	FileOut    stdout_fout;
 
@@ -661,7 +667,7 @@ public:
 
 	FrameTop<StaticBarArea> bararea;
 	CursorInfoCtrl          display;
-	ImageCtrl               indeximage;
+	ImageCtrl               indeximage, indeximage2;
 
 	byte      hilite_scope;
 	int       hilite_bracket;
@@ -697,8 +703,13 @@ public:
 	int           animate_autocomplete = 0, animate_autocomplete_dir = 0;
 	int           animate_indexer = 0, animate_indexer_dir = 0;
 	int           animate_phase = 0;
+	
+	Vector<Ptr<TopWindow>> window;
 
-// ------------------------------------
+	void          NewWindow(TopWindow *win);
+	template<class T, class... Args>
+	T&            CreateNewWindow(Args&&... args)     { T *q = new T(std::forward<Args>(args)...); NewWindow(q); return *q; }
+	void          DeleteWindows();
 
 	Time      config_time;
 	Time      ConfigTime();
@@ -806,12 +817,11 @@ public:
 		String GetOpposite();
 		void   GoOpposite();
 		void   Print();
+		void   DoDiff(FileDiff *diffdlg);
 		void   Diff();
 		void   DiffWith(const String& path);
 		void   DiffFiles(const char *lname, const String& l, const char *rname, const String& r);
 		String LoadConflictFile(const String& n);
-		void   GotoDiffLeft(int line, DiffDlg *df);
-		void   GotoDiffRight(int line, FileDiff *df);
 
 	void      Edit(Bar& menu);
 		bool  IsDesignerFile(const String& path);
@@ -857,7 +867,7 @@ public:
 
 	void OnlineSearchMenu(Bar& menu);
 
-	void ReplaceFound(int i);
+	String GetFoundText(const ArrayCtrl& list);
 
 	void SearchMenu(Bar& bar);
 		void  EditFind()                { editor.FindReplace(find_pick_sel, find_pick_text, false); }
@@ -989,6 +999,7 @@ public:
 		void  GotoDirDiffRight(int line, DirDiffDlg *df);
 		void  DoDirDiff();
 		void  DoPatchDiff();
+		void  RunRepoDiff(const String& filepath);
 		void  AsErrors();
 		void  RemoveDs();
 		void  FindDesignerItemReferences(const String& id, const String& name);
@@ -1075,7 +1086,7 @@ public:
 		void Clear()            { init = false; file.Clear(); wspc_paths.Clear(); }
 	};
 
-	struct ErrorInfo {
+	struct ListLineInfo { // either error or found list (find in files / usage)
 		String file;
 		int    lineno;
 		int    linepos;
@@ -1083,8 +1094,9 @@ public:
 		int    kind;
 		String message;
 		String error_pos;
+		String line;
 
-		ErrorInfo() { lineno = linepos = kind = len = 0; }
+		ListLineInfo() { lineno = linepos = kind = len = 0; }
 	};
 
 	FindLineErrorCache error_cache;
@@ -1095,16 +1107,18 @@ public:
 	void      CopyError(bool all);
 	void      ErrorMenu(Bar& bar);
 	void      ShowError();
-	void      SetFFound(int ii);
+	void      NewFFound();
 	ArrayCtrl& FFound();
+	void      FFoundSetIcon(const Image& m);
 	void      FFoundFinish(bool replace = true);
-	void      ShowFound();
-	void      CopyFound(bool all);
-	void      FFoundMenu(Bar& bar);
+	void      ShowFound(ArrayCtrl& list);
+	void      CopyFound(ArrayCtrl& list, bool all);
+	void      FFoundMenu(ArrayCtrl& list, Bar& bar);
 	void      SelError();
 	void      ClearErrorsPane();
 	WString   FormatErrorLine(const String& text, int& linecy);
 	WString   FormatErrorLineEP(const String& text, const char *ep, int& linecy);
+	void      ReplaceFound(ArrayCtrl& list);
 
 	struct FoundDisplay : Display {
 		Size DrawHl(Draw& w, const char *s, const Rect& r, Color ink, Color paper, dword style) const;
@@ -1122,10 +1136,10 @@ public:
 	};
 
 	bool      FindLineError(int l);
-	void      GoToError(const ErrorInfo& f, bool error);
+	void      GoToError(const ListLineInfo& f, bool error);
 	void      GoToError(ArrayCtrl& a, bool error);
 
-	bool      FindLineError(const String& ln, FindLineErrorCache& cache, ErrorInfo& f);
+	bool      FindLineError(const String& ln, FindLineErrorCache& cache, ListLineInfo& f);
 	void      FindError();
 
 	void      FindWildcard();
@@ -1268,6 +1282,10 @@ public:
 	Ide();
 	~Ide();
 };
+
+void ForAllSourceFiles(Event<const VectorMap<String, String>&> fn);
+void ForAllNests(Event<const Vector<String>&> fn);
+void IdeBackgroundThread();
 
 inline Ide *TheIde()      { return (Ide *)TheIdeContext(); }
 
