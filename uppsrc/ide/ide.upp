@@ -59,6 +59,7 @@ file
 	Annotations.cpp,
 	Virtuals.cpp,
 	Events.cpp,
+	NavDlg.cpp,
 	Log.cpp,
 	MainConfig.cpp,
 	Setup.cpp,
@@ -121,7 +122,6 @@ file
 	Credentials.cpp,
 	Diff.cpp,
 	DirRepoDiff.cpp,
-	urepo.iml,
 	urepo.lay,
 	Info readonly separator,
 	Copying;
