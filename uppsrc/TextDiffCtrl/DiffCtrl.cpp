@@ -219,31 +219,29 @@ bool HasCrs(const String& path)
 
 void DiffDlg::Write()
 {
+	revert.Enable();
 	if(diff.right.IsSelection()) {
 		SaveFile(editfile, diff.Merge(true, HasCrs(editfile)));
 		Refresh();
-		revert.Enable();
 		return;
 	}
+
 	if (FileExists(editfile)) {
 		if (extfile.GetCount()) {
 			if (PromptYesNo("Do you want to overwrite&[* " + DeQtf(editfile) + "] ?")) {
 				SaveFile(editfile, extfile);
-				Break(IDOK);
-				revert.Enable();
+				Close();
 			}
 		} else {
 			if (PromptYesNo("Do you want to delete&[* " + DeQtf(editfile) + "] ?")) {
 				DeleteFile(editfile);
-				Break(IDOK);
-				revert.Enable();
+				Close();
 			}
 		}
 	} else {
 		if (PromptYesNo("Do you want to create&[* " + DeQtf(editfile) + "] ?")) {
 			SaveFile(editfile, extfile);
-			Break(IDOK);
-			revert.Enable();
+			Close();
 		}
 	}
 }
