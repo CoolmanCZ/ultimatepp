@@ -409,6 +409,19 @@ String FormatDoubleN(double x)
 	return String(h, FormatDouble_(h, x, 15, FD_TOLERANCE(6)|FD_MINIMAL_EXP));
 }
 
+String FormatFloat(float x)
+{
+	char h[512];
+	return String(h, FormatDouble_(h, x, 7, FD_TOLERANCE(6)|FD_MINIMAL_EXP|FD_SPECIAL));
+}
+
+String FormatFloatN(float x)
+{
+	char h[512];
+	return String(h, FormatDouble_(h, x, 7, FD_TOLERANCE(6)|FD_MINIMAL_EXP));
+}
+
+
 char *FormatG(char *t, double x, int precision, dword flags)
 {
 	return FormatDouble_(t, x, precision, flags);
@@ -655,6 +668,19 @@ double ScanDouble(const wchar *ptr)
 {
 	double n;
 	return ScanDbl<wchar, word>(n, ptr, ',') ? n : Null;
+}
+
+float ScanFloat(const char *ptr)
+{
+	double n;
+	ptr = ScanDbl<char, byte>(n, ptr, ',');
+	return ptr ? (float)n : Null;
+}
+
+float ScanFloat(const wchar *ptr)
+{
+	double n;
+	return ScanDbl<wchar, word>(n, ptr, ',') ? (float)n : Null;
 }
 
 double Atof(const char *s)
