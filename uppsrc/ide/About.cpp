@@ -61,6 +61,9 @@ String SplashCtrl::GenerateVersionInfo(char separator)
 #ifdef GUI_GTK
 	h << " (Gtk)";
 #endif
+#ifdef FLATPAK
+	h << " (Flatpak)";
+#endif
 	h << separator;
 #ifdef bmTIME
 	h << "Compiled: " << bmTIME;
