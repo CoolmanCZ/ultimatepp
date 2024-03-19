@@ -1307,6 +1307,8 @@ void   UppHubAuto(const String& s);
 
 void HighlightLine(const String& path, Vector<LineEdit::Highlight>& hln, const WString& ln);
 
+String GetGitBranchRaw(const String& dir);
+
 #include "urepo.h"
 
 #endif
