@@ -10,9 +10,8 @@
 bool   hasLibClang = false;
 String LibClangPath;
 
-bool LoadLibClang0(const char *dir, const char *file)
+bool LoadLibClang0(const char *path)
 {
-	String path = AppendFileName(dir, file);
 	hasLibClang = LibClang(path);
 	if(hasLibClang) {
 		LibClangPath = path;
@@ -21,16 +20,20 @@ bool LoadLibClang0(const char *dir, const char *file)
 	return hasLibClang;
 }
 
-bool LoadLibClang(const char *dir)
+bool LoadLibClang(const String& dir)
 {
 #ifdef PLATFORM_MACOS // it does not seem to work for some reason, block it for now
-	if(LoadLibClang0(dir, "libclang.dylib"))
+	if(LoadLibClang0(dir + "/libclang.dylib"))
 		return true;
 #endif
-	if(LoadLibClang0(dir, "libclang.so"))
+	if(LoadLibClang0(dir + "/libclang.so"))
 		return true;
-	for(int i = 0; i < 20; i++)
-		if(LoadLibClang0(dir, "libclang.so." + AsString(i)))
+	Vector<String> ps;
+	for(FindFile ff(dir + "/libclang.so*"); ff; ff.Next())
+		ps << ff.GetPath();
+	Sort(ps, StdGreater<String>());
+	for(String p : ps)
+		if(LoadLibClang0(p))
 			return true;
 	return false;
 }
@@ -279,6 +282,16 @@ enum CXDiagnosticSeverity clang_getDiagnosticSeverity(CXDiagnostic d)
 enum CX_StorageClass clang_Cursor_getStorageClass(CXCursor c)
 {
 	return LibClang().clang_Cursor_getStorageClass(c);
+}
+
+unsigned clang_getNumOverloadedDecls(CXCursor cursor)
+{
+	return LibClang().clang_getNumOverloadedDecls(cursor);
+}
+
+CXCursor clang_getOverloadedDecl(CXCursor cursor, unsigned index)
+{
+	return LibClang().clang_getOverloadedDecl(cursor, index);
 }
 
 #endif

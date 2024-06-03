@@ -898,6 +898,7 @@ void SelectPackageDlg::SyncBase(String initvars)
 	Sort(varlist, &PackageLess);
 	base.Clear();
 	Append(base, varlist);
+	base.HeaderTab(0).SetText("Assembly (" + AsString(base.GetCount()) + ")");
 	if(!base.FindSetCursor(initvars)) {
 		if(base.GetCount() > 0)
 			base.SetCursor(0);
