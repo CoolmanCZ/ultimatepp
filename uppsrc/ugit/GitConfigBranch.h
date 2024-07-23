@@ -64,7 +64,7 @@ struct GitConfigBranch : Upp::WithGitConfigBranchLayout<Upp::ParentCtrl>, public
 
 	virtual void ProcessCommandOutput();
 
-	virtual bool IsModified() const { return (remotesdl.IsModified() | remotemergedl.IsModified()); };
+	virtual bool IsModified() const { return (remotesdl.IsModified() || remotemergedl.IsModified()); };
 	void SaveChanges() {
 		RemoteChange();
 		MergeChange();

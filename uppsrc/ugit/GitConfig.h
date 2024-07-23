@@ -36,7 +36,7 @@ struct GitConfig : Upp::WithGitConfigLayout<Upp::ParentCtrl>, public Git {
   public:
 	typedef GitConfig CLASSNAME;
 
-	virtual bool IsModified() const { return (gituser.IsModified() | gitemail.IsModified()); }
+	virtual bool IsModified() const { return (gituser.IsModified() || gitemail.IsModified()); }
 	void SaveChanges() {
 		UserNameChange();
 		EmailChange();
