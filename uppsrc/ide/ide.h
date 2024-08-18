@@ -820,6 +820,7 @@ public:
 		void   Licenses();
 		void   Exit();
 		String GetOpposite();
+		String GetScratchPadFile();
 		void   GoOpposite();
 		void   Print();
 		void   DoDiff(FileDiff *diffdlg);
