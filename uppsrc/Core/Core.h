@@ -1,7 +1,7 @@
 #ifndef CORE_H
 #define CORE_H
 
-#define UPP_VERSION 0x20220300
+#define UPP_VERSION 0x20240900
 
 #ifndef flagMT
 #define flagMT // MT is now always on
@@ -255,6 +255,9 @@ typedef int SOCKET;
 #include <atomic>
 #include <chrono>
 #include <utility>
+#include <exception>
+#include <stdexcept>
+#include <tuple>
 
 // fix MSC8 beta problem....
 #ifdef COMPILER_MSC
@@ -408,12 +411,6 @@ String AsString(const f32x4& x);
 String AsString(const i32x4& x);
 String AsString(const i16x8& x);
 String AsString(const i8x16& x);
-#endif
-
-#ifdef PLATFORM_WIN32
-NTL_MOVEABLE(POINT)
-NTL_MOVEABLE(SIZE)
-NTL_MOVEABLE(RECT)
 #endif
 
 }

@@ -109,6 +109,15 @@ void IconDes::SettingBar(Bar& bar)
 {
 	using namespace IconDesKeys;
 	Slot *c = IsCurrent() ? &Current() : NULL;
+	bar.Add("Show UHD/Dark syntetics", IconDesImg::ShowOther(),
+	        [=] { show_synthetics = !show_synthetics; show_downscaled = false; SyncShow(); SetBar(); })
+	   .Check(show_synthetics);
+	bar.Add("Show downscaled", IconDesImg::ShowSmall(),
+	        [=] { show_downscaled = !show_downscaled; show_synthetics = false; SyncShow(); SetBar(); })
+	   .Check(show_downscaled);
+	bar.Add("Show secondardy grid", IconDesImg::grid2(),
+	        [=] { show_grid2 = !show_grid2; Refresh(); SetBar(); })
+	   .Check(show_grid2);
 	bar.Add(c, AK_ZOOM_IN, IconDesImg::ZoomMinus(), THISBACK(ZoomOut))
 		.Enable(magnify > 1);
 	bar.Add(c, AK_ZOOM_OUT,  IconDesImg::ZoomPlus(), THISBACK(ZoomIn))
@@ -215,15 +224,6 @@ void IconDes::DrawBar(Bar& bar)
        .Key(AK_RESIZEUP3);
 	bar.Add(c, "Supersample 3x", IconDesImg::ResizeDown(), THISBACK(ResizeDown))
 	   .Key(AK_RESIZEDOWN3);
-	bar.Add("Show UHD/Dark syntetics", IconDesImg::ShowOther(),
-	        [=] { show_synthetics = !show_synthetics; show_downscaled = false; SyncShow(); SetBar(); })
-	   .Check(show_synthetics);
-	bar.Add("Show downscaled", IconDesImg::ShowSmall(),
-	        [=] { show_downscaled = !show_downscaled; show_synthetics = false; SyncShow(); SetBar(); })
-	   .Check(show_downscaled);
-	bar.Add("Show secondardy grid", IconDesImg::grid2(),
-	        [=] { show_grid2 = !show_grid2; Refresh(); SetBar(); })
-	   .Check(show_grid2);
 	bar.Separator();
 	bar.Add(c, AK_SLICE, IconDesImg::Slice(), THISBACK(Slice));
 }
@@ -242,6 +242,10 @@ void IconDes::MainToolBar(Bar& bar)
 	DrawBar(bar);
 	bar.Separator();
 	SettingBar(bar);
+	bar.GapRight();
+	bar.Separator();
+	bar.Add("Learn more about Icon Designer..", IdeCommonImg::Help(),
+	        [=] { LaunchWebBrowser("https://www.ultimatepp.org/app$ide$IconDes$en-us.html"); });
 }
 
 void IconDes::SetBar()

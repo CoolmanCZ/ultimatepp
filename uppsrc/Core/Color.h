@@ -1,9 +1,9 @@
 #ifdef PLATFORM_MACOS
-struct RGBA : Moveable<RGBA> {
+struct RGBA {
 	byte a, r, g, b;
 };
 #else
-struct RGBA : Moveable<RGBA> {
+struct RGBA {
 	byte b, g, r, a;
 };
 #endif
@@ -135,6 +135,9 @@ void   CMYKtoRGB(double c, double m, double y, double k, double& r, double& g, d
 void   RGBtoCMYK(double r, double g, double b, double& c, double& m, double& y, double& k);
 
 Color  CmykColorf(double c, double m, double y, double k = 0);
+
+double RelativeLuminance(Color color);
+double ContrastRatio(Color c1, Color c2);
 
 Color  Blend(Color c1, Color c2, int alpha = 128);
 

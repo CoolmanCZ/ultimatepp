@@ -166,7 +166,7 @@ public:
 	friend String operator+(tchar a, const String& b)          { String c(a, 1); c += b; return c; }
 };
 
-class String0 : Moveable<String0> {
+class String0 {
 	enum { // 
 		KIND = 14,    // chr[KIND] is String tier flag, 0 - small, 31 - medium, 32..254 ref alloc, 255 - read alloc from Ref
 		SLEN = 15,    // chr[SLEN] stores the length of small tier strings (up to 14 bytes)
@@ -343,7 +343,7 @@ public:
 	~String0()                  { Free(); }
 };
 
-class String : public Moveable<String, AString<String0> > {
+class String : Moveable<String>, public AString<String0> {
 	void Swap(String& b)                                   { String0::Swap(b); }
 
 #ifdef _DEBUG
@@ -550,68 +550,68 @@ inline String& operator<<(String& s, const char& x)
 	return s;
 }
 
-force_inline String& operator<<(String&& s, const char *x)
+force_inline String&& operator<<(String&& s, const char *x)
 {
 	s.Cat(x, strlen__(x));
-	return s;
+	return pick(s);
 }
 
-force_inline String& operator<<(String&& s, char *x)
+force_inline String&& operator<<(String&& s, char *x)
 {
 	s.Cat(x);
-	return s;
+	return pick(s);
 }
 
-inline String& operator<<(String&& s, const String &x)
+inline String&& operator<<(String&& s, const String &x)
 {
 	s.Cat(x);
-	return s;
+	return pick(s);
 }
 
-inline String& operator<<(String&& s, char x)
+inline String&& operator<<(String&& s, char x)
 {
 	s.Cat((int) x);
-	return s;
+	return pick(s);
 }
 
-inline String& operator<<(String&& s, const void *x)
+inline String&& operator<<(String&& s, const void *x)
 {
 	s << FormatPtr(x);
-	return s;
+	return pick(s);
 }
 
-inline String& operator<<(String&& s, void *x)
+inline String&& operator<<(String&& s, void *x)
 {
 	s << FormatPtr(x);
-	return s;
+	return pick(s);
 }
 
 template <class T>
-inline String& operator<<(String&& s, const T& x)
+inline String&& operator<<(String&& s, const T& x)
 {
 	s.Cat(AsString(x));
-	return s;
+	return pick(s);
 }
 
 template<>
-inline String& operator<<(String&& s, const char * const &x)
+inline String&& operator<<(String&& s, const char * const &x)
 {
 	s.Cat(x);
-	return s;
+	return pick(s);
 }
 
 template<>
-inline String& operator<<(String&& s, const String &x)
+inline String&& operator<<(String&& s, const String &x)
 {
 	s.Cat(x);
-	return s;
+	return pick(s);
 }
 
 template<>
-inline String& operator<<(String&& s, const char& x)
+inline String&& operator<<(String&& s, const char& x)
 {
 	s.Cat(x);
-	return s;
+	return pick(s);
 }
 
 template<>
@@ -799,7 +799,7 @@ public:
 //	WString0& operator=(const WString0& s) { Free(); Set0(s); return *this; }
 };
 
-class WString : public Moveable<WString, AString<WString0> >
+class WString : Moveable<WString>, public AString<WString0>
 {
 	void Swap(WString& b)                                   { WString0::Swap(b); }
 
