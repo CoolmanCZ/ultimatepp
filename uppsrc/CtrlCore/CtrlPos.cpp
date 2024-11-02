@@ -52,9 +52,19 @@ Rect Ctrl::CalcRect(const Rect& prect, const Rect& pview) const
 	return CalcRect(pos, prect, pview);
 }
 
+Rect Ctrl::OffsetMegaRect(Rect r) const
+{
+	if(megarect)
+		r.Offset(GetIntAttr(ATTR_MEGARECT_X, 0), GetIntAttr(ATTR_MEGARECT_Y, 0));
+	return r;
+}
+
 Rect Ctrl::GetRect() const
 {
-	return rect;
+	Rect r = rect;
+	if(megarect)
+		r = OffsetMegaRect(r);
+	return r;
 }
 
 Rect Ctrl::GetView() const
@@ -101,7 +111,7 @@ Rect  Ctrl::GetVisibleScreenRect() const
 	}
 	else
 		GuiPlatformGetTopRect(r);
-	return r & GetVirtualScreenArea();
+	return r;
 }
 
 Rect  Ctrl::GetVisibleScreenView() const
@@ -145,6 +155,7 @@ void Ctrl::SyncLayout(int force)
 	if(destroying)
 		return;
 	LLOG("SyncLayout " << Name() << " size: " << GetSize());
+	fullrefresh = false;
 	bool refresh = false;
 	Rect oview = GetView();
 	Rect view = GetRect().Size();
@@ -250,11 +261,8 @@ void Ctrl::UpdateRect0(bool sync)
 	if(parent)
 		rect = CalcRect(parent->GetRect(), parent->GetView());
 	else {
-		static Rect pwa;
-		ONCELOCK {
-			pwa = GetPrimaryWorkArea();
-		}
-		rect = CalcRect(pwa, pwa);
+		Rect pwa = GetPrimaryWorkArea();
+		rect = OffsetMegaRect(CalcRect(pwa, pwa));
 	}
 	LLOG("UpdateRect0 " << Name() << " to " << rect);
 	LTIMING("UpdateRect0 SyncLayout");
@@ -278,8 +286,10 @@ Ctrl& Ctrl::SetPos(LogPos p, bool _inframe)
 		if(parent || !IsOpen())
 			SetPos0(p, _inframe);
 		else {
-			Rect wa = GetWorkArea();
-			WndSetPos(CalcRect(p, wa, wa));
+			ASSERT(p.x.GetAlign() == ALIGN_LEFT);
+			ASSERT(p.y.GetAlign() == ALIGN_TOP);
+			Rect pwa = GetPrimaryWorkArea();
+			WndSetPos(OffsetMegaRect(CalcRect(p, pwa, pwa)));
 			StateH(POSITION);
 		}
 	}
@@ -314,11 +324,29 @@ Ctrl& Ctrl::SetFramePosY(Logc y) {
 	return SetPos(LogPos(pos.x, y), true);
 }
 
+void  Ctrl::MegaRect(Rect& r)
+{ // support 32-bit position of window (not size - just clamp it)
+	Size sz = r.GetSize();
+	sz.cx = clamp(sz.cx, -16000, 16000);
+	sz.cy = clamp(sz.cy, -16000, 16000);
+	if(abs(r.left) > 16000 || abs(r.top) > 16000) {
+		megarect = true;
+		SetIntAttr(ATTR_MEGARECT_X, r.left);
+		SetIntAttr(ATTR_MEGARECT_Y, r.top);
+		r = sz;
+	}
+	else {
+		megarect = false;
+		r.SetSize(sz);
+	}
+}
+
 void  Ctrl::SetRect(int x, int y, int cx, int cy)
 {
 	LLOG("SetRect " << Name() << " rect: " << RectC(x, y, cx, cy));
-	auto clampc = [](int c) { return clamp(c, -10000, 10000); }; // Logc vals only have 15 bits
-	SetPos(PosLeft(clampc(x), clampc(cx)), PosTop(clampc(y), clampc(cy)));
+	Rect r = RectC(x, y, cx, cy);
+	MegaRect(r);
+	SetPos(LogPos(PosLeft(r.left, r.Width()), PosTop(r.top, r.Height())), false);
 }
 
 void  Ctrl::SetWndRect(const Rect& r)
@@ -428,9 +456,8 @@ Ctrl& Ctrl::VCenterPosZ(int size, int delta) {
 Rect Ctrl::GetWorkArea(Point pt)
 {
 	GuiLock __;
-	static Array<Rect> rc;
-	if (rc.IsEmpty())
-		GetWorkArea(rc);
+	Array<Rect> rc;
+	GetWorkArea(rc);
 	for(int i = 0; i < rc.GetCount(); i++)
 		if(rc[i].Contains(pt))
 			return rc[i];
@@ -441,10 +468,6 @@ Rect Ctrl::StdGetWorkArea() const
 {
 	GuiLock __;
 
-	static Array<Rect> rc;
-	if(rc.IsEmpty())
-		GetWorkArea(rc);
-	
 	const Ctrl *top = GetTopCtrl();
 	if(top && top->IsOpen())
 		return GetWorkArea(top->GetScreenRect().TopLeft());

@@ -1311,6 +1311,8 @@ void HighlightLine(const String& path, Vector<LineEdit::Highlight>& hln, const W
 
 String GetGitBranchRaw(const String& dir);
 
+Index<String> GetAllNests(bool sleep = false);
+
 #include "urepo.h"
 
 #endif
