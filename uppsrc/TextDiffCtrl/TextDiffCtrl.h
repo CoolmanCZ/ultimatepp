@@ -47,8 +47,16 @@ public:
 	virtual void   LeftUp(Point pt, dword keyflags);
 	virtual void   LeftRepeat(Point pt, dword keyflags);
 	virtual void   RightDown(Point p, dword keyflags);
+	virtual Image  CursorImage(Point p, dword keyflags);
 	virtual bool   Key(dword key, int repcnt);
 	virtual void   LostFocus();
+
+	struct Blame : Moveable<Blame> {
+		String hash;
+		String author;
+		String summary;
+		Time   time;
+	};
 
 private:
 	void           SelfScroll();
@@ -65,6 +73,8 @@ private:
 	                        const wchar *s1, int l1, int h1,
 	                        const wchar *s2, int l2, int h2, int depth);
 
+	const TextCompareCtrl::Blame *GetBlame(Point p);
+
 private:
 	struct Line {
 		Line() : number(Null), level(0) {}
@@ -77,16 +87,19 @@ private:
 		bool   left;
 	};
 	Array<Line>    lines;
+	Vector<Blame>  blame;
 	int            maxwidth;
 	ScrollBars     scroll;
 	Font           font;
 	Font           number_font;
+	Font           blame_font;
 	Color          number_bg;
 	Color          diff_bg;
 	Color          diff_bg_bold;
 	Size           letter;
 	int            tabsize;
 	int            number_width;
+	int            blame_width;
 	int            number_yshift;
 	int            cursor;
 	int            anchor;
@@ -114,10 +127,12 @@ private:
 	friend struct TextDiffCtrl;
 
 public:
-	Event<>        WhenSel;
-	Event<>        WhenScroll;
-	Callback2<int, int> WhenLeftDouble;
+	Event<>         WhenSel;
+	Event<>         WhenCursor;
+	Event<>         WhenScroll;
+	Event<int, int> WhenLeftDouble;
 	Event<Vector<LineEdit::Highlight>&, const WString&> WhenHighlight;
+	Event<String>   WhenBlame;
 
 	void           SetCount(int c);
 	void           AddCount(int c);
@@ -146,11 +161,11 @@ public:
 	int            GetTabSize() const { return tabsize; }
 
 	void           Set(int line, String text, bool diff, int number, int level, String text_diff, int number_diff);
-	String         GetText(int line) const { return lines[line].text; }
-	bool           GetDiff(int line) const { return lines[line].diff; }
-	int            GetNumber(int line) const { return lines[line].number; }
+	String         GetText(int line) const       { return lines[line].text; }
+	bool           GetDiff(int line) const       { return lines[line].diff; }
+	int            GetNumber(int line) const     { return lines[line].number; }
 	int            GetNumberDiff(int line) const { return lines[line].number_diff; }
-	bool           HasLine(int line) const { return !IsNull(lines[line].number); }
+	bool           HasLine(int line) const       { return !IsNull(lines[line].number); }
 
 	Point          GetPos() const;
 	void           SetPos(Point pos);
@@ -177,10 +192,17 @@ public:
 
 	void           SetLeft()                  { left = true; }
 	
+	bool           SetCursor(int c);
+	int            GetLine(int cursor) const;
+	int            GetLine() const;
+	void           SetLine(int ii);
+	
 	String         RemoveSelected(bool cr);
 
 	Event<>        ScrollWhen(TextCompareCtrl& pair) { return THISBACK1(PairScroll, &pair); }
-
+	
+	void           PickBlame(Vector<Blame>&& b)      { blame = pick(b); Refresh(); }
+	
 	TextCompareCtrl();
 };
 
@@ -188,6 +210,7 @@ struct TextDiffCtrl : public Splitter {
 	TextCompareCtrl left;
 	TextCompareCtrl right;
 	FrameTop<Button> next, prev;
+	int             cl = 0; // to lock WhenCursor -> SetLine
 
 	typedef TextDiffCtrl CLASSNAME;
 	
@@ -231,6 +254,7 @@ struct DiffDlg : public TopWindow {
 	String               editfile;
 	String               backup;
 	String               extfile;
+	bool                 serialize_placement = true;
 
 	typedef DiffDlg CLASSNAME;
 

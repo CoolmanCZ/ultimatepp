@@ -4,6 +4,16 @@
 #define IMAGEFILE  <ide/ide.iml>
 #include <Draw/iml_source.h>
 
+void Ide::Skin()
+{
+	SetToolBar();
+	ScanWorkspace();
+	if(!hl_custom) {
+		editor.DefaultHlStyles();
+		UpdateFormat();
+	}
+}
+
 void Ide::ToggleVerboseBuild() {
 	console.verbosebuild = !console.verbosebuild;
 	
@@ -574,7 +584,6 @@ Ide::Ide()
 	editor.NoCutLine();
 
 	bordercolumn = 96;
-	bordercolor = SColorFace();
 
 	state_icon = -1;
 
