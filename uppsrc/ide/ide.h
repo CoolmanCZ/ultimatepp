@@ -335,7 +335,7 @@ struct FindInFilesDlg : WithFindInFilesLayout<TopWindow> {
 struct WebSearchTab : WithSetupWebSearchTabLayout<ParentCtrl> {
 	void Load();
 	void Save();
-	bool EditDlg(String& name, String& uri, String& zico);
+	bool EditDlg(String& name, String& uri, String& ico16, String& ico32);
 	void Add();
 	void Sync();
 	void Edit();
@@ -847,6 +847,7 @@ public:
 		void  ClearEditedAll();
 		void  FindFileAll(const Vector<Tuple<int64, int>>& f);
 		void  InsertColor();
+		void  InsertSequence();
 		void  InsertImage();
 		void  InsertLay(const String& fn);
 		void  InsertIml(const Package& pkg, const String& fn, String classname);
@@ -1211,6 +1212,7 @@ public:
 	const Workspace& AssistWorkspace() const;
 
 	void      IncludeAddPkgConfig(String& include_path, const String& clang_method);
+	String    GetExternalIncludePath();
 	String    GetIncludePath();
 	String    GetCurrentIncludePath();
 	String    GetCurrentDefines();
