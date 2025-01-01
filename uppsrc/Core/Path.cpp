@@ -608,6 +608,7 @@ String NormalizePath(const char *path, const char *currdir) {
 	String out;
 	if(path[0] == '~') {
 		out = GetHomeDirectory();
+		out.Cat(DIR_SEPS);
 		i++;
 	}
 	else
