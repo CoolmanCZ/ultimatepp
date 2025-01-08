@@ -8,18 +8,16 @@ void Pdb::PrettyStdString(Pdb::Val val, const Vector<String>& tparam, int64 from
 	int size;
 	bool w = tparam[0] == "wchar_t";
 	if(HasAttr(val, "__r_")) { // CLANG variant
-		Val r = GetAttr(GetAttr(val, "__r_"), "__value_");
-		Val s = GetAttr(r, "__s");
-		size = GetByteAttr(s, "__size_");
-		if(size & 1) {
-			Val l = GetAttr(r, "__l");
-			size = GetIntAttr(l, "__size_");
-			a = DeRef(GetAttr(l, "__data_")).address;
+		Val r = GetAttr(val, "__r_");
+		Val v = GetAttr(r, "__value_");
+		Val s = GetAttr(v, "__s");
+		if(GetInt(GetAttr(s, "__is_long_"))) {
+			s = GetAttr(v, "__l");
+			a = DeRef(GetAttr(s, "__data_")).address;
 		}
-		else {
-			size = size >> 1;
-			a = s.address + 1 + w;
-		}
+		else
+			a = GetAttr(s, "__data_").address;
+		size = GetIntAttr(s, "__size_");
 	}
 	else {
 		Val q = GetAttr(GetAttr(val, "_Mypair"), "_Myval2");
@@ -50,7 +48,7 @@ void Pdb::PrettyStdVector(Pdb::Val val, const Vector<String>& tparam, int64 from
 		end = DeRef(GetAttr(q, "_Mylast"));
 	}
 	int sz = SizeOfType(tparam[0]);
-	p.data_count = (end.address - begin.address) / sz;
+	p.data_count = sz ? (end.address - begin.address) / sz : 0;
 	for(int i = 0; i < count; i++)
 		p.data_ptr.Add(begin.address + (i + from) * sz);
 }
@@ -225,7 +223,7 @@ void Pdb::PrettyStdDeque(Pdb::Val val, const Vector<String>& tparam, int64 from,
 	adr_t map;
 	if(HasAttr(val, "__size_")) {
 		p.data_count = GetIntAttr(GetAttr(val, "__size_"), "__value_");
-		block_size = sz < 256 ? 4096 / sz : 16;
+		block_size = sz && sz < 256 ? 4096 / sz : 16;
 		start = GetIntAttr(val, "__start_");
 		map = DeRef(GetAttr(GetAttr(val, "__map_"), "__begin_")).address;
 	}
