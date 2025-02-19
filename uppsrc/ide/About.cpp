@@ -18,6 +18,39 @@ extern const char *bm_USER;
 extern const char *bm_GIT_REVCOUNT;
 extern const char *bm_GIT_BRANCH;
 extern const char *bm_GIT_HASH;
+extern const char *bm_GIT_URL;
+
+String GetCommitUrl(const String &url, const String &rev) {
+    String https = "https://";
+    String s = url;
+
+    if (url.Find(https) == -1) {
+        int pos = url.Find('@');
+        if (pos > -1) {
+            s = https + url.Mid(pos + 1);
+            pos = s.Find(':', https.GetLength());
+            if (pos > -1) {
+                int i;
+                for (i = pos + 1; i < s.GetLength(); ++i) {
+                    if (!IsNumberValueTypeNo(s[i]))
+                        break;
+                }
+                s.Remove(pos, i - pos);
+                s.Insert(pos, '/');
+            }
+        }
+    }
+
+    int pos = s.ReverseFind(".git");
+    if (pos > -1) {
+        s = s.Left(pos);
+    }
+
+    String commit = "\1[^";
+    commit << s << "/commit/" << rev << "^ ";
+
+    return commit;
+}
 
 String SplashCtrl::GenerateVersionInfo(bool qtf, bool about)
 {
@@ -32,7 +65,7 @@ String SplashCtrl::GenerateVersionInfo(bool qtf, bool about)
 			dr.Trim(8);
 		h << "Revision: ";
 		if(qtf && about)
-			h << "\1[^https://github.com/ultimatepp/ultimatepp/commit/" << rev << "^ ";
+			h << GetCommitUrl(bm_GIT_URL, rev);
 		h << dr;
 		if(qtf && about)
 			h << "]\1";

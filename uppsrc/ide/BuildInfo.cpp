@@ -20,7 +20,7 @@ const char *bm_GIT_BRANCH =
 #endif
 ;
 const char *bm_GIT_REVCOUNT =
-#ifdef bmGIT_HASH
+#ifdef bmGIT_REVCOUNT
 	bmGIT_REVCOUNT
 #else
 	""
@@ -31,5 +31,12 @@ const char *bm_GIT_HASH =
 	bmGIT_HASH
 #else
 	""
+#endif
+;
+const char *bm_GIT_URL =
+#ifdef bmGIT_URL
+	bmGIT_URL
+#else
+	"https://github.com/ultimatepp/ultimatepp"
 #endif
 ;

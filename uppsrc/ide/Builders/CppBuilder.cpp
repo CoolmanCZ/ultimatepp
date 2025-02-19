@@ -501,39 +501,21 @@ Vector<String> GitInfo(const String& package)
 	Vector<String> info;
 	String d = GetFileFolder(PackagePath(package));
 	if(IsGitDir2(d)) {
-		String command = "git -C " << d << " log -n 1 --pretty=format:\"\%h\"";
+		String gitpath = GetGitPath();
+		String command = gitpath << " -C " << d << " log -n 1 --pretty=format:\"\%h\"";
 		String v = Sys(command);
 		if(!v.IsEmpty())
 			info.Add("#define bmGIT_REVISION " + AsCString(TrimBoth(v)));
-		command = "git -C " << d << " rev-parse --abbrev-ref HEAD";
+		command = gitpath << " -C " << d << " rev-parse --abbrev-ref HEAD";
 		v = Sys(command);
-		if(!v.IsEmpty())
-			info.Add("#define bmGIT_BRANCH " + AsCString(TrimBoth(v)));
-		command = "git -C " << d << " config --local branch." << TrimBoth(v) << ".remote";
+		command = gitpath << " -C " << d << " config --local branch." << TrimBoth(v) << ".remote";
 		v = Sys(command);
-		command = "git -C " << d << " config --local remote." << TrimBoth(v) << ".url";
+		command = gitpath << " -C " << d << " config --local remote." << TrimBoth(v) << ".url";
 		v = Sys(command);
 		if(!v.IsEmpty())
 			info.Add("#define bmGIT_URL " + AsCString(TrimBoth(v)));
 	}
 	return info;
-}
-
-bool IsSvnDir2(const String& p)
-{ // this is a cope of usvn/IsSvnDir to avoid modular issues
-	if(IsNull(p))
-		return false;
-	if(DirectoryExists(AppendFileName(p, ".svn")) || DirectoryExists(AppendFileName(p, "_svn")))
-		return true;
-	String path = p;
-	String path0;
-	while(path != path0) {
-		path0 = path;
-		path = GetFileFolder(path);
-		if(DirectoryExists(AppendFileName(path, ".svn")))
-			return true;
-	}
-	return false;
 }
 
 bool IsWin32Manifest(const String& s)
