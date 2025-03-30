@@ -246,6 +246,9 @@ void PPInfo::Dir::Load(const String& dir)
 {
 	for(FindFile ff(dir + "/*.*"); ff; ff.Next()) {
 		String n = ff.GetName();
+	#ifdef PLATFORM_WIN32
+		n = ToLower(n); // in Win32 case mismatch is possible
+	#endif
 		if(ff.IsFile())
 			files.Add(n, ff.GetLastWriteTime());
 		if(ff.IsFolder())
@@ -257,6 +260,10 @@ Time PPInfo::GetFileTime(const String& path)
 {
 	String dir = GetFileFolder(path);
 	String name = GetFileName(path);
+#ifdef PLATFORM_WIN32
+	dir = ToLower(dir);
+	name = ToLower(name);
+#endif
 	int q = dir_cache.Find(dir);
 	if(q < 0) {
 		String pdir = GetFileFolder(dir); // check that dir does make some sense...
@@ -359,7 +366,7 @@ PPInfo::PPFile& PPInfo::File(const String& path)
 				int retry = 0;
 			again:
 				FileIn in(path);
-				if(!in && ++retry < 6) {
+				if(!in && ++retry < 6) { // in case other thread is doing the same (e.g. Indexer)
 					Sleep(retry * 100);
 					goto again;
 				}
