@@ -143,10 +143,10 @@ void Ide::AssistEdit(Bar& menu)
 
 void Ide::InsertAdvanced(Bar& bar)
 {
-	LTIMESTOP("InsertAdvanced");
+	LTIMESTOP("Miscellaneous");
 	bool b = !editor.IsReadOnly();
 	AssistEdit(bar);
-	bar.Add(b, "Advanced", THISBACK(EditSpecial));
+	bar.Add(b, "Miscellaneous", THISBACK(EditSpecial));
 }
 
 void Ide::Reformat(Bar& bar)
@@ -587,14 +587,13 @@ void Ide::Project(Bar& menu)
 	if(!IsEditorMode()) {
 		menu.MenuSeparator();
 		if(repo_dirs) {
-			String pp = GetActivePackagePath();
+			String pp = GetActivePackageDir();
 			menu.AddMenu(FileExists(pp) && editfile_repo,
 			             (editfile_repo == SVN_DIR ? "Show svn history of " : "Show git history of ") + GetFileName(pp),
 			             IdeImg::SvnDiff(), [=] {
 				if(FileExists(pp))
 					RunRepoDiff(pp);
 			});
-			pp = GetFileFolder(pp);
 			menu.Add("Invoke gitk at " + pp, [=] {
 				Host h;
 				CreateHost(h, false, false);
@@ -987,7 +986,7 @@ void Ide::BrowseMenu(Bar& menu)
 	}
 
 	if(AssistDiagnostics) {
-		menu.Separator();
+		menu.MenuSeparator();
 		menu.Add("Dump and show whole current index", [=] {
 			String path = CacheFile("index_" + AsString(Random()) + AsString(Random()));
 			DumpIndex(path);
@@ -1004,6 +1003,9 @@ void Ide::BrowseMenu(Bar& menu)
 			String p = CacheFile("CurrentContext" + AsString(Random()) + AsString(Random()) + ".txt");
 			Upp::SaveFile(p, editor.CurrentContext().content);
 			EditFile(p);
+		});
+		menu.Add("Current include path", [=] {
+			PromptOK("\1" + Join(Split(GetCurrentIncludePath(),';'), "\n"));
 		});
 	}
 }

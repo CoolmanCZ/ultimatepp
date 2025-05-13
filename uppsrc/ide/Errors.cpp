@@ -46,7 +46,7 @@ bool Ide::FindLineError(const String& ln, FindLineErrorCache& cache, ListLineInf
 							::Workspace  wspc;
 							wspc.Scan(main);
 							for(int i = 0; i < wspc.GetCount(); i++)
-								cache.wspc_paths.Add(GetFileDirectory(PackagePath(wspc[i])));
+								cache.wspc_paths.Add(PackageDirectory(wspc[i]));
 						}
 						for(int i = 0; i < cache.wspc_paths.GetCount(); i++) {
 							String path = AppendFileName(cache.wspc_paths[i], file);
@@ -61,7 +61,6 @@ bool Ide::FindLineError(const String& ln, FindLineErrorCache& cache, ListLineInf
 							}
 						}
 					}
-					file = FollowCygwinSymlink(file);
 					if(!IsFullPath(file) || !exists && !FileExists(file) || !IsTextFile(file))
 						file = Null;
 					cache.file.Add(file0, file);
@@ -563,7 +562,7 @@ void Ide::SyncErrorsMessage()
 			cnt << warning_count << " warning(s)";
 		}
 	}
-	else  {
+	else {
 		h = "\1[g Message";
 		if(error_count)
 			cnt << "[*@r " << error_count << " error" << (error_count > 1 ? "s]" : "]");
@@ -576,6 +575,13 @@ void Ide::SyncErrorsMessage()
 	if(cnt.GetCount())
 		h << " (" << cnt << ")";
 	error.HeaderTab(2).SetText(h);
+	if(error_count)
+		btabs.Set(error_tab_i, "Errors (" + AsString(error_count) + ")", SRed(), StdFont().Bold());
+	else
+	if(warning_count)
+		btabs.Set(error_tab_i, "Warnings (" + AsString(warning_count) + ")", SColorText());
+	else
+		btabs.Set(error_tab_i, "Errors", SColorText());
 }
 
 void Ide::ConsoleRunEnd()

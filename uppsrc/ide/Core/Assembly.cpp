@@ -1,37 +1,5 @@
 #include "Core.h"
 
-String GetLocalDir()
-{
-	return ConfigFile("UppLocal");
-}
-
-String LocalPath(const String& filename)
-{
-	return AppendFileName(GetLocalDir(), filename);
-}
-
-String FollowCygwinSymlink(const String& file) {
-	for(String fn = file;;) {
-		if(fn.IsEmpty())
-			return fn;
-		FileIn fi(fn);
-		if(!fi.IsOpen())
-			return fn;
-		char buffer[10];
-		if(!fi.GetAll(buffer, 10) || memcmp(buffer, "!<symlink>", 10))
-			return fn;
-		fn = NormalizePath(LoadStream(fi), GetFileDirectory(fn));
-	}
-}
-
-Vector<String> SplitDirs(const char *s) {
-#ifdef PLATFORM_POSIX
-	return Split(s, [](int c) { return findarg(c, ';', ':') >= 0 ? c : 0; });
-#else
-	return Split(s, ';');
-#endif
-}
-
 static String varsname = "default";
 
 String GetVarsName()
@@ -106,43 +74,6 @@ String Nest::Get(const String& id)
 	return var.Get(id, String());
 }
 
-void Nest::Set(const String& id, const String& val)
-{
-	var.GetAdd(id) = val;
-	InvalidatePackageCache();
-}
-
-String Nest::PackagePath0(const String& name)
-{
-	String uppfile = NativePath(name);
-	if(IsFullPath(uppfile)) return NormalizePath(uppfile);
-	Vector<String> d = GetUppDirs();
-	String p;
-	for(int i = 0; i < d.GetCount(); i++) {
-		p = NormalizePath(AppendFileName(AppendFileName(d[i], uppfile),
-		                  GetFileName(uppfile)) + ".upp");
-		if(FileExists(p)) return p;
-	}
-	return d.GetCount() ? NormalizePath(AppendFileName(AppendFileName(d[0], uppfile),
-		                                GetFileName(uppfile)) + ".upp") : String();
-}
-
-String Nest::PackagePath(const String& name)
-{
-	int q = package_cache.Find(name);
-	if(q < 0) {
-		String h = PackagePath0(name);
-		package_cache.Add(name, h);
-		return h;
-	}
-	return package_cache[q];
-}
-
-Nest& MainNest()
-{
-	return Single<Nest>();
-}
-
 bool SaveVars(const char *name)
 {
 	if(!MainNest().Save(VarFilePath(name)))
@@ -174,6 +105,11 @@ String GetUppOut()
 	return Nvl(GetVar("OUTPUT"), GetDefaultUppOut());
 }
 
+String GetVarsIncludes()
+{
+	return GetVar("INCLUDE");
+}
+
 String DefaultHubFilePath()
 {
 	return ConfigFile("UppHub.path");
@@ -192,6 +128,11 @@ static String override_hub_dir;
 void OverrideHubDir(const String& path)
 {
 	override_hub_dir = path;
+}
+
+bool   IsExternalMode()
+{ // use TheIDE as editor/analyser, packages are stored separately, no compilation
+	return GetVar("EXTERNAL") == "1";
 }
 
 String GetHubDir()
@@ -255,15 +196,17 @@ String GetAssemblyId()
 Vector<String> GetUppDirsRaw()
 {
 	Vector<String> s = SplitDirs(GetVar("UPP"));
-	static Vector<String> hub_dirs;
-	if(!hub_loaded) {
-		hub_dirs.Clear();
-		for(const FindFile& ff : FindFile(GetHubDir() + "/*.*"))
-			if(ff.IsFolder())
-				hub_dirs.Add(ff.GetPath());
-		hub_loaded = true;
+	if(!IsExternalMode()) {
+		static Vector<String> hub_dirs;
+		if(!hub_loaded) {
+			hub_dirs.Clear();
+			for(const FindFile& ff : FindFile(GetHubDir() + "/*.*"))
+				if(ff.IsFolder())
+					hub_dirs.Add(ff.GetPath());
+			hub_loaded = true;
+		}
+		s.Append(hub_dirs);
 	}
-	s.Append(hub_dirs);
 	return s;
 }
 
@@ -278,6 +221,43 @@ Vector<String> GetUppDirs()
 bool IsHubDir(const String& path)
 {
 	return NormalizePath(path).StartsWith(GetHubDir());
+}
+
+void Nest::Set(const String& id, const String& val)
+{
+	var.GetAdd(id) = val;
+	InvalidatePackageCache();
+}
+
+String Nest::PackageDirectory0(const String& name)
+{
+	String uppfile = NativePath(name);
+	if(IsFullPath(uppfile))
+		return NormalizePath(uppfile);
+	String pname = GetFileName(uppfile);
+	Vector<String> d = GetUppDirs();
+	for(int i = 0; i < d.GetCount(); i++) {
+		String dir = NormalizePath(AppendFileName(d[i], uppfile));
+		if(IsDirectoryPackage(dir))
+			return dir;
+	}
+	return d.GetCount() ? NormalizePath(AppendFileName(AppendFileName(d[0], uppfile), pname) + ".upp") : String();
+}
+
+String Nest::PackageDirectory(const String& name)
+{
+	int q = package_cache.Find(name);
+	if(q < 0) {
+		String h = PackageDirectory0(name);
+		package_cache.Add(name, h);
+		return h;
+	}
+	return package_cache[q];
+}
+
+Nest& MainNest()
+{
+	return Single<Nest>();
 }
 
 void Nest::InvalidatePackageCache()

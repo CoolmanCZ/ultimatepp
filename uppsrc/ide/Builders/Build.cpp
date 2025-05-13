@@ -23,7 +23,6 @@ Index<String> MakeBuild::PackageConfig(const Workspace& wspc, int package,
                                  const VectorMap<String, String>& bm, String mainparam,
                                  Host& host, Builder& b, String *target)
 {
-	String packagepath = PackagePath(wspc[package]);
 	const Package& pkg = wspc.package[package];
 	cfg.Clear();
 	MergeWith(mainparam, " ", bm.Get(targetmode ? "RELEASE_FLAGS" : "DEBUG_FLAGS", String()),
@@ -109,7 +108,7 @@ void MakeBuild::CreateHost(Host& host, const String& method, bool darkmode, bool
 #else
 		env.GetAdd("PATH") = Join(host.exedirs, ":");
 #endif
-		env.GetAdd("UPP_MAIN__") = GetFileDirectory(PackagePath(GetMain()));
+		env.GetAdd("UPP_MAIN__") = PackageDirectory(GetMain());
 		env.GetAdd("UPP_ASSEMBLY__") = GetVar("UPP");
 		if(disable_uhd)
 			env.GetAdd("UPP_DISABLE_UHD__") = "1";
@@ -206,7 +205,7 @@ One<Builder> MakeBuild::CreateBuilder(Host *host)
 	else {
 		// TODO: cpp builder variables only!!!
 		b->compiler = bm.Get("COMPILER", "");
-		b->include = SplitDirs(Join(GetUppDirs(), ";") + ';' + bm.Get("INCLUDE", "") + ';' + add_includes);
+		b->include = SplitDirs(Join(GetUppDirs(), ";") + ';' + GetVarsIncludes() + ';' + bm.Get("INCLUDE", "") + ';' + add_includes);
 		const Workspace& wspc = GetIdeWorkspace();
 		for(int i = 0; i < wspc.GetCount(); i++) {
 			const Package& pkg = wspc.GetPackage(i);
@@ -415,6 +414,7 @@ bool MakeBuild::BuildPackage(const Workspace& wspc, int pkindex, int pknumber, i
 void MakeBuild::SetHdependDirs()
 {
 	Vector<String> include = SplitDirs(GetVar("UPP") + ';'
+	    + GetVarsIncludes() + ';'
 		+ GetMethodVars(method).Get("INCLUDE", "") + ';'
 		+ Environment().Get("INCLUDE", "")
 #ifdef PLATFORM_POSIX

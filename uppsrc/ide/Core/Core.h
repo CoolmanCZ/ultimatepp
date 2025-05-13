@@ -48,7 +48,7 @@ class PPInfo {
 
 	struct PPFile : Moveable<PPFile> {
 		int                           scan_serial = 0;
-		Vector<Tuple<String, int>>    flags; // "#if... flagXXXX"
+		VectorMap<String, String>     flags; // "#if... flagXXXX", key - flagXXX, value - comment
 		VectorMap<String, String>     all_defines; // #define ..., 1 - speculative
 		VectorMap<String, String>     defines[2]; // #define ..., 1 - speculative
 		Index<String>                 includes[2]; // 1 - speculative includes (in #if conditionals)
@@ -108,19 +108,15 @@ public:
 
 	Time                  GatherDependencies(const String& path, VectorMap<String, Time>& result,
 	                                         ArrayMap<String, Index<String>>& define_includes,
-	                                         Vector<Tuple<String, String, int>>& flags, bool speculative,
-	                                         const String& include, Vector<String>& chain, bool& found);
+	                                         bool speculative, const String& include, Vector<String>& chain, bool& found);
 	Time                  GatherDependencies(const String& path, VectorMap<String, Time>& result,
-	                                         ArrayMap<String, Index<String>>& define_includes,
-	                                         Vector<Tuple<String, String, int>>& flags, bool speculative = true);
-	void                  GatherDependencies(const String& path, VectorMap<String, Time>& result,
 	                                         ArrayMap<String, Index<String>>& define_includes,
 	                                         bool speculative = true);
 
 	Time                  GetTime(const String& path, VectorMap<String, Time> *ret_result = nullptr);
 	
 	const VectorMap<String, String>& GetFileDefines(const String& path) { return File(NormalizePath(path)).all_defines; }
-	const Vector<Tuple<String, int>>& GetFileFlags(const String& path)  { return File(NormalizePath(path)).flags; }
+	const VectorMap<String, String>& GetFileFlags(const String& path)   { return File(NormalizePath(path)).flags; }
 
 	void                  Dirty();
 };
@@ -289,7 +285,7 @@ class Nest {
 	VectorMap<String, String> var;
 	VectorMap<String, String> package_cache;
 
-	String PackagePath0(const String& name);
+	String PackageDirectory0(const String& name);
 
 public:
 	bool   Save(const char *path);
@@ -298,14 +294,31 @@ public:
 	void   Set(const String& id, const String& val);
 
 	void   InvalidatePackageCache();
-	String PackagePath(const String& name);
+	String PackageDirectory(const String& name);
 };
 
 Nest& MainNest();
 
 String GetUppOut();
+String GetVarsIncludes();
 
 String DefaultHubFilePath();
+
+
+String GetCurrentBuildMethod();
+String GetCurrentMainPackage();
+
+String GetAnyFileName(const char *path);
+String CatAnyPath(String path, const char *more);
+
+bool   IsFullDirectory(const String& d);
+bool   IsFolder(const String& path);
+
+bool   IsCSourceFile(const char *path);
+bool   IsCHeaderFile(const char *path);
+
+String GetLocalDir();
+String LocalPath(const String& filename);
 
 void   SetHubDir(const String& path);
 void   OverrideHubDir(const String& path);
@@ -326,36 +339,22 @@ Vector<String> GetUppDirsRaw();
 Vector<String> GetUppDirs();
 bool   IsHubDir(const String& path);
 String GetUppDir();
+
 void   SetVar(const String& var, const String& val, bool save = true);
 void   SetMainNest(const String& n);
 String GetAssemblyId();
-
-String GetCurrentBuildMethod();
-String GetCurrentMainPackage();
-
-String GetAnyFileName(const char *path);
-String GetAnyFileTitle(const char *path);
-String CatAnyPath(String path, const char *more);
-
 void   InvalidatePackageCache();
-String PackagePath(const String& name);
+
+bool   IsExternalMode();
+
+bool   IsDirectoryExternalPackage(const String& dir);
+bool   IsDirectoryPackage(const String& path);
+String PackageFile(const String& name);
 String SourcePath(const String& package, const String& name);
-inline
-String PackageDirectory(const String& name) { return GetFileDirectory(PackagePath(name)); }
+String PackageDirectory(const String& name);
 bool   IsNestReadOnly(const String& path);
 
 String GetPackagePathNest(const String& path);
-
-String GetLocalDir();
-String LocalPath(const String& filename);
-
-bool   IsFullDirectory(const String& d);
-bool   IsFolder(const String& path);
-
-bool   IsCSourceFile(const char *path);
-bool   IsCHeaderFile(const char *path);
-
-String FollowCygwinSymlink(const String& filename);
 
 void   SplitPathMap(const char *path_map, Vector<String>& local, Vector<String>& remote);
 String JoinPathMap(const Vector<String>& local, const Vector<String>& remote);

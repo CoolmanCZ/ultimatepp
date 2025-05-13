@@ -102,6 +102,8 @@ int FilterPackageName(int c);
 struct NestEditorDlg : public WithNestEditorLayout<TopWindow> {
     NestEditorDlg();
     
+    bool firstbold = true;
+    
 	void   Set(const String& nests);
 	String Get() const;
 
@@ -119,6 +121,7 @@ public:
 
 private:
     void OnUpp();
+    void Sync();
 
 private:
     bool               new_base;
@@ -163,6 +166,8 @@ struct SelectPackageDlg : public WithSelectPackageLayout<TopWindow> {
 	bool           canceled;
 	String         selected, selected_nest;
 
+	Vector<Tuple<String, String>> lru;
+
 	struct PkInfo {
 		String package;
 		String description;
@@ -205,8 +210,11 @@ struct SelectPackageDlg : public WithSelectPackageLayout<TopWindow> {
 	void           OnBase();
 	void           OnFilter();
 
-	void           ListCursor();
 	void           ChangeDescription();
+	
+	String         LRUFilePath();
+	void           LoadLRU();
+	void           StoreLRU(const String& p);
 
 	void           SyncFilter();
 	void           ScanFolder(const String& path, ArrayMap<String, PkData>& nd,
@@ -270,6 +278,9 @@ struct UppList : FileList {
 	                   dword style) const;
 };
 
+void SyncPackage(const String& active, Package& actual);
+void SyncEmptyPackage(const String& p);
+
 struct WorkspaceWork {
 	static    Font ListFont();
 
@@ -312,6 +323,7 @@ struct WorkspaceWork {
 	bool         organizer;
 	bool         showtime;
 	bool         sort;
+	bool         noemptyload = false; // in external mode, do not load files if package is empty (todo: refactor whole thing)
 	
 	Index<String> errorfiles;
 
@@ -353,7 +365,8 @@ struct WorkspaceWork {
 	void   ShowFile(int pi);
 
 	String         GetActivePackage() const           { return package.GetCurrentName(); }
-	String         GetActivePackagePath() const       { return PackagePath(package.GetCurrentName()); }
+	String         GetActivePackageDir() const        { return PackageDirectory(package.GetCurrentName()); }
+	String         GetActivePackageFile() const       { return PackageFile(package.GetCurrentName()); }
 	String         GetActiveFileName() const;
 	String         GetActiveFilePath() const;
 	void           OpenFileFolder();
@@ -395,6 +408,7 @@ struct WorkspaceWork {
 	void ToggleIncludeable();
 
 	void AddNormalUses();
+	void AddFolderUses();
 	void AddAnyUses();
 	void TogglePackageSpeed();
 
@@ -412,10 +426,10 @@ struct WorkspaceWork {
 
 	void PackageMenu(Bar& bar);
 	void FileMenu(Bar& bar);
-	void SpecialFileMenu(Bar& bar);
 	void InsertSpecialMenu(Bar& menu);
 
-	String PackagePathA(const String& pn);
+	String PackageDirA(const String& pn);
+	String PackageFileA(const String& pn);
 	
 	void SetErrorFiles(const Vector<String>& files);
 

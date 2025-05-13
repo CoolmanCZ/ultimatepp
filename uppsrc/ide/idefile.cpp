@@ -142,10 +142,8 @@ void Ide::ChangeFileCharset(const String& name, Package& p, byte charset)
 			p.file[i].charset = charset;
 			sv = true;
 		}
-	if(sv) {
-		String pp = PackagePathA(name);
-		p.Save(pp);
-	}
+	if(sv)
+		p.Save(PackageFileA(name));
 }
 
 void Ide::FileProperties()
@@ -869,7 +867,7 @@ void Ide::EditFile(const String& p)
 
 void Ide::CheckFileUpdate()
 {
-	if(editfile.IsEmpty() || !IsForeground() || designer) return;
+	if(editfile.IsEmpty() || !IsForeground() || designer || !FileExists(editfile)) return;
 	FileTime tm = GetFileTime(editfile);
 	if(tm == edittime) return;
 	edittime = tm;

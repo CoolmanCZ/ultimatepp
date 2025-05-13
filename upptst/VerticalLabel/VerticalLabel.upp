@@ -1,0 +1,11 @@
+uses
+	CtrlLib;
+
+file
+	VerticalLabel.h,
+	main.cpp,
+	VerticalLabel.lay;
+
+mainconfig
+	"" = "GUI";
+

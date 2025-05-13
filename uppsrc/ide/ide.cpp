@@ -220,6 +220,8 @@ bool Ide::OpenMainPackage()
 	main.Clear();
 	if(!IsOpen())
 		Open();
+	if(IsExternalMode())
+		SyncEmptyPackage(p);
 	SetMain(p);
 	return true;
 }
@@ -761,7 +763,7 @@ const Workspace& Ide::IdeWorkspace() const
 	}
 	else {
 		for(int i = 0; i < wspc.GetCount(); i++)
-			if(wspc.GetPackage(i).time != FileGetTime(PackagePath(wspc[i]))) {
+			if(wspc.GetPackage(i).time != FileGetTime(PackageFile(wspc[i]))) {
 				wspc.Scan(main);
 				break;
 			}
@@ -780,7 +782,7 @@ const Workspace& Ide::AssistWorkspace() const
 	}
 	else {
 		for(int i = 0; i < wspc.GetCount(); i++)
-			if(wspc.GetPackage(i).time != FileGetTime(PackagePath(wspc[i]))) {
+			if(wspc.GetPackage(i).time != FileGetTime(PackageFile(wspc[i]))) {
 				update = true;
 				break;
 			}
