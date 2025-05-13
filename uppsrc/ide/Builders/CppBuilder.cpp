@@ -499,7 +499,7 @@ bool IsGitDir2(const String& p)
 Vector<String> GitInfo(const String& package)
 {
 	Vector<String> info;
-	String d = GetFileFolder(PackagePath(package));
+	String d = PackageDirectory(package);
 	if(IsGitDir2(d)) {
 		String gitpath = GetGitPath();
 		String command = gitpath << " -C " << d << " log -n 1 --pretty=format:\"\%h\"";

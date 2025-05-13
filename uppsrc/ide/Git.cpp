@@ -11,7 +11,7 @@
 
 void Ide::ExecuteGitInitRepository()
 {
-	String path = GetFileDirectory(PackagePath(actualpackage));
+	String path = PackageDirectory(actualpackage);
 	if (DirectoryExists(AppendFileName(path, ".git")))
 		return;
 
@@ -53,7 +53,7 @@ void Ide::ExecuteGitConfig()
 	if (configuration.IsOpen())
 		configuration.SetFocus();
 	else {
-		configuration.Init(dirs, PackagePath(actualpackage));
+		configuration.Init(dirs, PackageDirectory(actualpackage));
 		configuration.OpenMain();
 	}
 }
@@ -74,7 +74,7 @@ void Ide::ExecuteGitHistory()
 
 void Ide::ExecuteGitStatus()
 {
-	Git git(GetGitRoot(PackagePath(actualpackage)));
+	Git git(GetGitRoot(PackageDirectory(actualpackage)));
 
 	if (!git.GetGitDir().IsEmpty()) {
 		ConsoleClear();
@@ -134,7 +134,7 @@ void Ide::ExecuteGitCommit()
 	commiting.WhenStash = THISBACK(ScanWorkspace);
 	commiting.WhenRepositoryChange = THISBACK(ScanWorkspace);
 	commiting.WhenLeftDouble = THISBACK(SetGitFilePos);
-	commiting.Init(dirs, PackagePath(actualpackage));
+	commiting.Init(dirs, PackageDirectory(actualpackage));
 	commiting.Run();
 }
 
@@ -152,7 +152,7 @@ void Ide::ExecuteGitStash()
 	editor.CloseAssist();
 	SaveFile();
 
-	Git git(GetGitRoot(PackagePath(actualpackage)));
+	Git git(GetGitRoot(PackageDirectory(actualpackage)));
 
 	ConsoleClear();
 	ConsoleShow();
@@ -169,7 +169,7 @@ void Ide::ExecuteGitStash()
 
 void Ide::ExecuteGitStashApply()
 {
-	Git git(GetGitRoot(PackagePath(actualpackage)));
+	Git git(GetGitRoot(PackageDirectory(actualpackage)));
 
 	ConsoleClear();
 	ConsoleShow();
@@ -334,7 +334,7 @@ void Ide::SyncGitBranchList()
 
 	String gitdir = GetGitRoot(editfile);
 	if (gitdir.IsEmpty())
-		gitdir = GetGitRoot(PackagePath(actualpackage));
+		gitdir = GetGitRoot(PackageDirectory(actualpackage));
 
 	Git git(gitdir);
 	Vector<String> list = git.GetBranchAll().GetOutput();
@@ -353,7 +353,7 @@ void Ide::OnGitBranchList()
 	String branch = ~gitbranchlist;
 
 	if (branch.Find("*") < 0) {
-		Git git(GetGitRoot(PackagePath(actualpackage)));
+		Git git(GetGitRoot(PackageDirectory(actualpackage)));
 
 		if (git_bin_found) {
 			Vector<String> output = git.BranchCheckout(TrimBoth(branch)).GetOutput();
@@ -365,7 +365,7 @@ void Ide::OnGitBranchList()
 
 void Ide::SetGitBranchList()
 {
-	Git git(GetGitRoot(PackagePath(actualpackage)));
+	Git git(GetGitRoot(PackageDirectory(actualpackage)));
 
 	if (git_bin_found) {
 		Vector<String> output = git.ProcessBranchAdd(git.GetBranchLocal()).GetOutput();
