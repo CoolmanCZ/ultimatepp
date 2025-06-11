@@ -557,9 +557,9 @@ void Ide::Project(Bar& menu)
 		}
 		menu.Separator();
 
-		menu.Add(mainconfiglist, HorzLayoutZoom(100));
+		menu.Add(mainconfiglist, HorzLayoutZoom(140));
 		menu.Gap(4);
-		menu.Add(buildmode, HorzLayoutZoom(150));
+		menu.Add(buildmode, HorzLayoutZoom(140));
 		menu.Separator();
 	}
 	if(!IsEditorMode()) {
@@ -1125,6 +1125,7 @@ void Ide::SetBar()
 {
 	SetMenuBar();
 	SetToolBar();
+	RefreshLayout();
 }
 
 void Ide::SetMenuBar()

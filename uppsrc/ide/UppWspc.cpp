@@ -1,5 +1,4 @@
 #include "ide.h"
-#include "ide.h"
 
 const char tempaux[] = "<temp-aux>";
 const char prjaux[] = "<prj-aux>";
@@ -1084,7 +1083,7 @@ void WorkspaceWork::ToggleIncludeable()
 
 void WorkspaceWork::AddNormalUses()
 {
-	String p = SelectPackage("Select package");
+	String p = IsExternalMode() ? SelectExternalPackage(actualpackage) : SelectPackage("Select package");
 
 	if(p.IsEmpty())
 		return;

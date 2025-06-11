@@ -130,13 +130,12 @@ String ClangCursorInfo::Id()
 			while(*p == '&' || *p == '*') // fix CleanupId("&Accel(int (*filter)(int))") -> Accel(int(*filter)())
 				p++;
 			m = CleanupId(p);
-			if(s.StartsWith("template ")) { // template class method already seems to contain some scope, sometimes
-				int p = m.Find('(');
-				for(;;) { // remove any scope
-					int q = m.Find("::");
-					if(q < 0 || q >= p)
-						break;
-					m = m.Mid(q + 2);
+			{ // remove any scope
+				int q = m.Find('(');
+				if(q >= 0) {
+					q = m.ReverseFind("::", q);
+					if(q >= 0)
+						m = m.Mid(q + 2);
 				}
 			}
 			while(findarg(m[q], ':', '*', '&', '(', ')', ' ') >= 0)
