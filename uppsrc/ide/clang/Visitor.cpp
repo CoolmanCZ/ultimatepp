@@ -313,13 +313,14 @@ bool ClangVisitor::ProcessNode(CXCursor cursor)
 		r.type = ci.Type();
 		r.pos = loc.pos;
 		r.id = id;
-		r.pretty = kind == CXCursor_MacroDefinition ? r.name
-	               : CleanupPretty(FetchString(clang_getCursorPrettyPrinted(cursor, pp_pretty)));
+		r.pretty0 = kind == CXCursor_MacroDefinition ? r.name
+	                : FetchString(clang_getCursorPrettyPrinted(cursor, pp_pretty));
+		r.pretty = kind == CXCursor_MacroDefinition ? r.name : CleanupPretty(r.pretty0);
 		r.definition = clang_isCursorDefinition(cursor);
 		r.nspace = ci.Nspace();
 		r.bases = ci.Bases();
 		r.isvirtual = kind == CXCursor_CXXMethod && clang_CXXMethod_isVirtual(cursor);
-		r.isstatic = clang_Cursor_getStorageClass(cursor) == CX_SC_Static;
+		r.isstatic = (IsFunction(r.kind) || IsVariable(r.kind)) && clang_Cursor_getStorageClass(cursor) == CX_SC_Static;
 
 		if(findarg(r.kind, CXCursor_Constructor, CXCursor_Destructor) >= 0) {
 			int q = r.id.Find('(');

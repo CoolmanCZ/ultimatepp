@@ -71,8 +71,6 @@ public:
 	~GuiUnlock() { EnterGuiMutex(n); }
 };
 
-bool ScreenInPaletteMode(); // Deprecated
-
 typedef ImageDraw SystemImageDraw;
 
 void SetSurface(Draw& w, const Rect& dest, const RGBA *pixels, Size srcsz, Point poff);
@@ -297,6 +295,7 @@ class PasteClip {
 
 public:
 	bool   IsAvailable(const char *fmt) const;
+	bool   IsAnyAvailable(const char *fmt) const;
 	String Get(const char *fmt) const;
 
 	bool   Accept();
@@ -335,6 +334,7 @@ void        Append(VectorMap<String, ClipData>& data, const String& text);
 void        Append(VectorMap<String, ClipData>& data, const WString& text);
 
 const char *ClipFmtsImage();
+inline bool IsAvailableImage(PasteClip& clip) { return clip.IsAnyAvailable(ClipFmtsImage()); }
 bool        AcceptImage(PasteClip& clip);
 Image       GetImage(PasteClip& clip);
 String      GetImageClip(const Image& m, const String& fmt);
@@ -688,8 +688,6 @@ private:
 	void    CtrlPaint(SystemDraw& w, const Rect& clip);
 	void    RemoveFullRefresh();
 	static void FullRefreshCleanup();
-	bool    PaintOpaqueAreas(SystemDraw& w, const Rect& r, const Rect& clip, bool nochild = false);
-	void    GatherTransparentAreas(Vector<Rect>& area, SystemDraw& w, Rect r, const Rect& clip);
 	void    ExcludeDHCtrls(SystemDraw& w, const Rect& r, const Rect& clip);
 	void    UpdateArea0(SystemDraw& draw, const Rect& clip, int backpaint);
 	void    UpdateArea(SystemDraw& draw, const Rect& clip);
@@ -1828,6 +1826,7 @@ inline T ReadClipboardFormat() {
 	return object;
 }
 
+bool   IsClipboardAvailableImage();
 Image  ReadClipboardImage();
 void   AppendClipboardImage(const Image& img);
 
