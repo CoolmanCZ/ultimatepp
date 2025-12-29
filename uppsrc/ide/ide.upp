@@ -74,8 +74,6 @@ file
 	background.cpp,
 	idewin.cpp,
 	main.cpp,
-	CommandLineHandler.h,
-	CommandLineHandler.cpp,
 	About.h,
 	BuildInfo.cpp,
 	About.cpp,

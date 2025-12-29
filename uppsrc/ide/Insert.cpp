@@ -176,13 +176,12 @@ void Ide::InsertFilePath(bool c)
 	}
 }
 
-
 void Ide::InsertAs(const String& data)
 {
 	WithInsertAsLayout<TopWindow> dlg;
 	CtrlLayoutOKCancel(dlg, "Insert data");
-	if(data.GetCount() > 20*1024)
-		Exclamation("Data size is too big!&(Limit is 20KB.)");
+	if(data.GetCount() > 2*1024*1024)
+		Exclamation("Data size is too big!&(Limit is 2MB.)");
 	String f[6];
 	f[0] = data;
 	f[1] = Encode64(data);
@@ -201,7 +200,7 @@ void Ide::InsertAs(const String& data)
 	String d = f[i];
 	WriteClipboardText(AsString(d.GetCount()));
 	if(i == 0 || i == 1)
-		editor.Paste(AsCString(d).ToWString());
+		editor.Paste(AsCString(d, 256).ToWString());
 	else {
 		for(int i = 0; i < d.GetCount(); i += 256) {
 			int e = min(i + 256, d.GetCount());
@@ -223,19 +222,60 @@ void Ide::InsertAs()
 		InsertAs(txt);
 }
 
-void Ide::InsertFileBase64()
+void Ide::InsertFileContent()
 {
 	if(editor.IsReadOnly())
 		return;
 	String path = SelectInsertFile();
 	path.Replace("\\", "/");
 	if(path.GetCount()) {
-		if(GetFileLength(path) >= 20*1024) {
-			Exclamation("File is too big!&(Limit is 20KB.)");
+		if(GetFileLength(path) >= 2*1024*1024) {
+			Exclamation("File is too big!&(Limit is 2MB.)");
 			return;
 		}
 		InsertAs(LoadFile(path));
 	}
+}
+
+void Ide::InsertParameters()
+{
+	if(designer)
+		return;
+	if(!editor.WaitCurrentFile())
+		return;
+	AnnotationItem cm = editor.FindCurrentAnnotation();
+	CParser p(cm.pretty);
+	int lvl = 0;
+	String id;
+	String params;
+	try {
+		while(!p.IsEof()) {
+			if(p.Char('(')) {
+				lvl++;
+				id.Clear();
+			}
+			else
+			if(p.Char(')')) {
+				if(lvl == 1 && id.GetCount())
+					MergeWith(params, ", ", id);
+				lvl--;
+				id.Clear();
+			}
+			else
+			if(p.Char(',')) {
+				if(lvl == 1 && id.GetCount())
+					MergeWith(params, ", ", id);
+				id.Clear();
+			}
+			else
+			if(p.IsId())
+				id = p.ReadId();
+			else
+				p.SkipTerm();
+		}
+	}
+	catch(CParser::Error) {}
+	InsertText(params);
 }
 
 void Ide::InsertMenu(Bar& bar)
@@ -276,10 +316,11 @@ void Ide::InsertMenu(Bar& bar)
 	bar.Add("Insert color..", THISBACK(InsertColor));
 	bar.Add("Insert .iml Image..", [=] { InsertImage(); });
 	bar.Add("Insert sequence..", THISBACK(InsertSequence));
+	bar.Add("Insert function parameters..", [=] { InsertParameters(); });
 	bar.Add("Insert file path..", THISBACK1(InsertFilePath, false));
 	bar.Add("Insert file path as C string..", THISBACK1(InsertFilePath, true));
 	bar.Add("Insert clipboard as..", [=] { InsertAs(); });
-	bar.Add("Insert file as..", THISBACK(InsertFileBase64));
+	bar.Add("Insert file as..", THISBACK(InsertFileContent));
 	bar.Add(IdeKeys::AK_INSERTDATE, [=] {
 		Date d = GetSysDate();
 		InsertText(Format("%d-%02d-%02d", d.year, d.month, d.day));
@@ -323,24 +364,4 @@ void Ide::ToggleWordwrap()
 {
 	wordwrap = !wordwrap;
 	SetupEditor();
-}
-
-void Ide::EditorMenu(Bar& bar)
-{
-	bar.Sub("Assist", [=](Bar& bar) { AssistMenu(bar); });
-	Reformat(bar);
-	InsertAdvanced(bar);
-	bar.MenuSeparator();
-	OnlineSearchMenu(bar);
-    bar.Add(IsClipboardAvailableText() && (editor.IsSelection() || editor.GetLength() < 1024*1024),
-            "Compare with clipboard..", [=]() {
-        DiffDlg& dlg = CreateNewWindow<DiffDlg>();
-        dlg.diff.left.RemoveFrame(dlg.p);
-        dlg.diff.Set(ReadClipboardText(), editor.IsSelection() ? editor.GetSelection()
-                                                               : editor.Get());
-		dlg.Title("Compare with clipboard");
-        dlg.OpenMain();
-    });
-	bar.MenuSeparator();
-	editor.StdBar(bar);
 }

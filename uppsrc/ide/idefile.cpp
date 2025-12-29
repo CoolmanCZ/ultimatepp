@@ -391,6 +391,8 @@ void Ide::SaveFile0(bool always)
 
 	FindFile ff(editfile);
 	fd.filetime = edittime = ff.GetLastWriteTime();
+	editfile_length = ff.GetLength();
+	editfile_isreadonly = ff.IsReadOnly();
 
 	if(!file_exists)
 		TriggerIdeBackgroundThread(2000);
@@ -515,6 +517,18 @@ void Ide::EditFile0(const String& path, byte charset, int spellcheck_comments, c
 	if (editfile_repo == GIT_DIR)
 		SyncGitBranchList();
 
+	FindFile ff(editfile);
+	if(ff) {
+		edittime = ff.GetLastWriteTime();
+		editfile_length = ff.GetLength();
+		editfile_isreadonly = ff.IsReadOnly();
+	}
+	else {
+		edittime = GetSysTime().AsFileTime();
+		editfile_isreadonly = false;
+		editfile_length = 0;
+	}
+
 	bool candesigner = !(debugger && !editfile_isfolder && (PathIsEqual(path, posfile[0]) || PathIsEqual(path, posfile[0])))
 	   && editastext.Find(path) < 0 && editashex.Find(path) < 0 && !IsNestReadOnly(editfile) && !replace_in_files;
 	
@@ -553,10 +567,8 @@ void Ide::EditFile0(const String& path, byte charset, int spellcheck_comments, c
 	if(!replace_in_files)
 		ActiveFocus(editor);
 	FileData& fd = Filedata(editfile);
-	FindFile ff(editfile);
 	bool tfile = GetFileExt(editfile) == ".t";
 	if(ff) {
-		edittime = ff.GetLastWriteTime();
 		view_file.SetBufferSize(256*1024);
 		view_file.Open(editfile);
 		if(view_file) {
@@ -656,6 +668,10 @@ void Ide::EditFile0(const String& path, byte charset, int spellcheck_comments, c
 		editor.SetCharset(tfile ? CHARSET_UTF8 : charset);
 		SaveFile(true);
 	}
+	static bool ShowBeginnerInfo = true;
+	editor.show_beginner_info = ShowBeginnerInfo;
+	ShowBeginnerInfo = false; // just a single chance!
+	editor.Refresh();
 	if(!replace_in_files) {
 		editor.SetFocus();
 		MakeTitle();
@@ -750,11 +766,11 @@ void Ide::EditAsText()
 		layout = "LAYOUT(" + layout + ",";
 		for(int i = 0; i < editor.GetLineCount(); i++)
 			if(TrimBoth(editor.GetUtf8Line(i)).StartsWith(layout)) {
-				editor.GotoLine(i);
+				editor.GotoBarLine(i);
 				if(item.GetCount())
 					for(int j = i + 1; j < editor.GetLineCount(); j++)
 						if(GetLayItemId(editor.GetUtf8Line(j)) == item) {
-							editor.GotoLine(j);
+							editor.GotoBarLine(j);
 							break;
 						}
 				break;

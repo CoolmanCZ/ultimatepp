@@ -603,8 +603,8 @@ void PackageEditor::Init(ArrayCtrl& option)
 {
 	option.AddIndex();
 	option.AddIndex();
-	option.AddColumn("").SetDisplay(Single<OptionDisplay>()).Margin(0);
-	option.AddColumn("", 2).SetDisplay(Single<OptionDisplay>()).Margin(0);
+	option.AddColumn("", 7).SetDisplay(Single<OptionDisplay>()).Margin(0);
+	option.AddColumn("", 20).SetDisplay(Single<OptionDisplay>()).Margin(0);
 	option.NoHeader();
 	option.SetLineCy(max(IdeImg::Package().GetSize().cy, Draw::GetStdFontCy()));
 }
@@ -706,8 +706,8 @@ void PackageEditor::MergeNests()
 	for(int i = 0; i < wspc.GetCount(); i++) {
 		String pkg_name = wspc[i];
 		String pkg_dir = PackageDirectory(pkg_name);
-		String pkg_nest = GetPackagePathNest(pkg_dir);
-		if(NormalizePath(GetPackagePathNest(pkg_dir)) != app_nest) {
+		String pkg_nest = GetPathNest(pkg_dir);
+		if(NormalizePath(GetPathNest(pkg_dir)) != app_nest) {
 			dlg.list.Add(pkg_name);
 			tocopy.Add(pkg_name);
 			tocopy_nest.Add(pkg_nest);

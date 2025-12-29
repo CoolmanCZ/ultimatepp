@@ -57,11 +57,14 @@ DirRepoDiffDlg::DirRepoDiffDlg()
 	files_pane.Add(added.TopPos(y, bcy).LeftPosZ(2, 60));
 	files_pane.Add(modified.TopPos(y, bcy).LeftPosZ(52, 70));
 	files_pane.Add(removed.TopPos(y, bcy).LeftPosZ(128, 80));
-	files_pane.Add(recent.TopPos(y, bcy).RightPos(0, bcx));
+	files_pane.Add(recent.TopPos(y, bcy).RightPos(0, bcx + Zx(8)));
+	files_pane.Add(extension.TopPos(y, bcy).RightPos(bcx + Zx(8) + DPI(8), bcx));
 	y += bcy + div;
 
 	files_pane.Add(files.VSizePos(y, Zy(24)).HSizePos());
 	files_pane.Add(find.BottomPosZ(6, 19).HSizePosZ());
+	
+	extension.Disable();
 
 	Mode(0);
 	Mode(1);

@@ -324,7 +324,9 @@ void Stream::PutUtf8(int c)
 
 void Stream::Put(const char *s)
 {
-	while(*s) Put(*s++);
+	if(s)
+		while(*s)
+			Put(*s++);
 }
 
 void Stream::Put(int c, int count) {
@@ -1332,6 +1334,28 @@ bool StoreToFile(Event<Stream&> serialize, const char *file, int version) {
 		return false;
 	f.Close();
 	return !f.IsError();
+}
+
+String StoreAsString(Event<Stream&> serialize) {
+	StringStream ss;
+	Store(serialize, ss);
+	return ss;
+}
+
+bool LoadFromString(Event<Stream&> serialize, const String& s) {
+	StringStream ss(s);
+	return Load(serialize, ss);
+}
+
+Vector<String> StoreAsStrings(Event<Stream&> serialize) {
+	StringsStreamOut ss;
+	Store(serialize, ss);
+	return ss.PickResult();
+}
+
+bool LoadFromStrings(Event<Stream&> serialize, const Vector<String>& s) {
+	StringsStreamIn ss(s);
+	return Load(serialize, ss);
 }
 
 Stream& Pack16(Stream& s, int& i) {

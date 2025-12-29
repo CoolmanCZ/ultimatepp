@@ -115,12 +115,11 @@ void CodeEditor::Paint(Draw& w)
 	Point start, end; // paint zero level block header
 	if(!GetSyntax(GetScrollPos().y + 1)->GetBlockHeader(start, end))
 		return;
-
-	if(IsNull(start) || IsNull(end) || end.y > start.y)
+	if(IsNull(start) || (!IsNull(end) && end.y > start.y))
 		return;
 
 	int line0 = -1;
-	for(int i = end.y + 1; i <= start.y; i++) {
+	for(int i = IsNull(end) ? 0 : end.y + 1; i <= start.y; i++) {
 		String l = GetUtf8Line(i);
 		bool hdr = false;
 		bool empty = true;
@@ -142,8 +141,8 @@ void CodeEditor::Paint(Draw& w)
 		if(!empty && line0 < 0)
 			line0 = i;
 	}
-
-	if(line0 < 0)
+	
+	if(line0 < 0 || GetScrollPos().y <= line0)
 		return;
 
 	int l = GetPos(line0, 0);
@@ -593,19 +592,6 @@ void CodeEditor::MakeLineEnds()
 	Make(THISBACK(LineEnds));
 }
 
-void CodeEditor::ConvertToOverrides()
-{
-	Make([](String& out) {
-		out.Insert(0, " ");
-		out.Replace("\tvirtual\t", "\t");
-		out.Replace("\tvirtual ", "\t");
-		out.Replace(" virtual\t", " ");
-		out.Replace(" virtual ", " ");
-		out.Replace(";", " override;");
-		out.Remove(0, 1);
-	});
-}
-
 void CodeEditor::MoveNextWord(bool sel) {
 	int64 p = GetCursor64();
 	int64 e = GetLength64();
@@ -870,7 +856,7 @@ void CodeEditor::SyncTip()
 		Size sz = tip.AddFrameSize(mt.sz);
 		int y = p.y + DPI(24);
 		if(y + sz.cy > wa.bottom)
-			y = max(0, p.y - sz.cy);
+			y = max(0, p.y - sz.cy - DPI(4));
 		int x = p.x;
 		if(x + sz.cx > wa.right)
 			x = max(0, wa.right - sz.cx);
@@ -881,6 +867,13 @@ void CodeEditor::SyncTip()
 	}
 	else
 		CloseTip();
+}
+
+void CodeEditor::CloseTip()
+{
+	if(tip.IsOpen())
+		tip.Close();
+	tip.d = NULL;
 }
 
 bool CodeEditor::MouseSelSpecial(Point p, dword flags) {
@@ -921,7 +914,7 @@ void CodeEditor::MouseMove(Point p, dword flags) {
 		Size fsz = GetFontSize();
 		p = (p + fsz * (Size)sb.Get()) / fsz;
 		int64 h = GetGPos(p.y, p.x);
-		tippos = h < INT_MAX ? (int)h : -1;
+		tippos = h < INT_MAX && GetColumnLine(h) == p ? (int)h : -1;
 	}
 	
 	SyncTip();
@@ -1294,7 +1287,7 @@ void CodeEditor::ForwardWhenBreakpoint(int i) {
 	WhenBreakpoint(i);
 }
 
-void CodeEditor::GotoLine(int line)
+void CodeEditor::GotoBarLine(int line)
 {
 	SetCursor(GetPos64(GetLineNo(line)));
 }

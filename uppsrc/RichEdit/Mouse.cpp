@@ -307,8 +307,11 @@ void RichEdit::StdBar(Bar& menu)
 				ObjectTool(menu);
 			}
 		}
-		LoadImageTool(menu);
-		InsertDiagramTool(menu);
+		if(allow_objects) {
+			LoadImageTool(menu);
+			InsertCharacterTool(menu);
+			InsertDiagramTool(menu);
+		}
 	}
 }
 
@@ -371,21 +374,16 @@ void RichEdit::LeftDouble(Point p, dword flags)
 	if(c >= 0) {
 		if(objectpos == c) {
 			RichObject object = GetObject();
+			Size osz = object.GetSize();
+			Sizef pxsz = object.GetPixelSize();
 			if(!object) return;
 			if(object.GetTypeName() == "qdf") {
-				TopWindow app;
-				app.Icon(DiagramImg::Diagram());
-				app.Title("Diagram");
-				app.Sizeable().Zoomable();
-				DiagramEditor de;
-				de.Load(ZDecompress(~object.GetData()));
-				app.Add(de.SizePos());
-				app.Execute();
-				RichText clip;
-				RichPara p;
-				RichObject o = RichObject("qdf", ZCompress(de.Save()));
-				o.InitSize(0, 0);
-				ReplaceObject(o);
+				RichObject o = object;
+				if(EditDiagram(o)) {
+					Sizef sz = osz / pxsz * o.GetPixelSize();
+					o.SetSize(Size(max((int)round(sz.cx), 1), max((int)round(sz.cy), 1)));
+					ReplaceObject(o);
+				}
 			}
 			else {
 				RichObject o = object;

@@ -55,17 +55,17 @@ void Animate(Ctrl& c, int x, int y, int cx, int cy, int type)
 	Animate(c, RectC(x, y, cx, cy), type);
 }
 
-void Animate(Event<double> update, int duration)
+void Animate(Event<double> update, int duration_ms)
 {
-	if(duration < 1)
+	if(duration_ms < 1)
 		return;
 
 	int start = msecs();
 	for(;;) {
         int elapsed = msecs() - start;
-        if(elapsed > duration)
+        if(elapsed > duration_ms)
             break;
-        double t = min(1.0, (double) elapsed / (double) duration);
+        double t = min(1.0, (double) elapsed / (double) duration_ms);
         t = t * t * (3 - 2 * t);  // Ease-in-out (smoother movement).
         update(t);
         Ctrl::ProcessEvents();
@@ -74,7 +74,7 @@ void Animate(Event<double> update, int duration)
     update(1);
 }
 
-void Animate(Vector<Ptr<Ctrl>>& ctrls, const Vector<Rect>& targets, int duration)
+void Animate(Vector<Ptr<Ctrl>>& ctrls, const Vector<Rect>& targets, int duration_ms)
 {
 	Vector<Rect> data;
 	for(const Ptr<Ctrl>& c : ctrls)
@@ -84,7 +84,7 @@ void Animate(Vector<Ptr<Ctrl>>& ctrls, const Vector<Rect>& targets, int duration
 		for(int i = 0; i < ctrls.GetCount(); i++)
 			if(ctrls[i])
 				ctrls[i]->SetRect(data[i]);
-	}, duration);
+	}, duration_ms);
 }
 
 bool CtrlLibDisplayError(const Value& e) {
@@ -431,22 +431,29 @@ void FileSelButton::OnAction()
 	Ctrl *owner = button.GetParent();
 	ASSERT(owner);
 	String old = ~*owner;
-	if(mode == MODE_DIR) {
-		for(int i = 0; i < 4; i++) {
-			if(DirectoryExists(old))
+	if(IsNull(old))
+		LoadFromGlobal(old, "FileSelButtonLastPath");
+	if(mode == MODE_DIR)
+		for(int i = 0; i < 8 && old.GetCount(); i++) {
+			if(DirectoryExists(old)) {
+				ActiveDir(old);
 				break;
+			}
 			old = GetFileFolder(old);
 		}
-		ActiveDir(old);
-	}
 	else
 		Set(old);
-	if(mode == MODE_OPEN ? ExecuteOpen(title) : mode == MODE_SAVE ? ExecuteSaveAs(title) : ExecuteSelectDir(title))
-	{
-		*owner <<= Get();
+	String path;
+	if(mode == MODE_OPEN ? ExecuteOpen(title) : mode == MODE_SAVE ? ExecuteSaveAs(title) : ExecuteSelectDir(title)) {
+		path = Get();
+		*owner <<= path;
 		owner->Action();
 		WhenSelected();
 	}
+	else
+		path = GetActiveDir();
+	if(path.GetCount())
+		StoreToGlobal(path, "FileSelButtonLastPath");
 }
 
 void FileSelButton::Detach()
@@ -486,6 +493,54 @@ Image MakeZoomIcon(double scale)
 	ZoomIconMaker m;
 	m.zoom = scale;
 	return MakeImage(m);
+}
+
+void DrawRoundRect(Draw& w, const Rect& r, int radius, Color fill, int stroke_width,
+                   Color stroke)
+{
+	Size sz = r.GetSize();
+	radius = min(min(sz.cx, sz.cy) / 2, radius);
+	if(radius < 1) {
+		w.DrawRect(r.Deflated(stroke_width), fill);
+		DrawFrame(w, r, stroke);
+	}
+	else {
+		StringStream ss;
+		ss % radius % fill % stroke_width % stroke;
+		String key = ss;
+		auto MakeCorner = [&](int x, int y, int c) {
+			return MakeImage(
+				[&] { return key + String(c, 1); },
+				[&] {
+					ImagePainter iw(radius, radius);
+					iw.Clear();
+					iw.Circle(x, y, radius - (double) stroke_width / 2);
+					iw.Fill(fill);
+					iw.Stroke(stroke_width, stroke);
+					return iw.GetResult();
+				}
+			);
+		};
+		w.DrawImage(r.left, r.top, MakeCorner(radius, radius, '1'));
+		w.DrawImage(r.right - radius, r.top, MakeCorner(0, radius, '2'));
+		w.DrawImage(r.left, r.bottom - radius, MakeCorner(radius, 0, '3'));
+		w.DrawImage(r.right - radius, r.bottom - radius, MakeCorner(0, 0, '4'));
+		int tbf = max(radius - stroke_width, 0);
+		w.DrawRect(r.left + radius, r.top, sz.cx - 2 * radius, stroke_width, stroke);
+		w.DrawRect(r.left + radius, r.top + stroke_width, sz.cx - 2 * radius, tbf, fill);
+		w.DrawRect(r.left + radius, r.bottom - stroke_width, sz.cx - 2 * radius, stroke_width, stroke);
+		w.DrawRect(r.left + radius, r.bottom - stroke_width - tbf, sz.cx - 2 * radius, tbf, fill);
+		int h = sz.cy - 2 * radius;
+		w.DrawRect(r.left, r.top + radius, stroke_width, h, stroke);
+		w.DrawRect(r.left + stroke_width, r.top + radius, max(sz.cx - 2 * stroke_width, 0), h, fill);
+		w.DrawRect(r.right - stroke_width, r.top + radius, stroke_width, h, stroke);
+	}
+}
+
+void DrawRoundRect(Draw& w, int x, int y, int cx, int cy, int radius, Color fill,
+                   int stroke_width, Color stroke)
+{
+	DrawRoundRect(w, RectC(x, y, cx, cy), radius, fill, stroke_width, stroke);
 }
 
 }

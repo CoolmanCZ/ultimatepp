@@ -106,7 +106,7 @@ public:
 	static const Style& StyleScroll();
 	static const Style& StyleNaked();
 
-	static void  PaintButton(Draw& w, const Rect& r, const Button::Style& st, int visualstate, bool focus,
+	static void  PaintButton(Ctrl *ctrl, Draw& w, const Rect& r, const Button::Style& st, int visualstate, bool focus,
                              const String& label, Font font, const Image& img,
                              bool monoimg, int accesskey, bool visibaleaccesskeys, bool disabled);
 
@@ -231,7 +231,7 @@ public:
 	ButtonOption& SetLabel(const String& text);
 	String GetLabel() const                                   { return label; }
 	
-	void Set(bool b)                                          { option = b; UpdateRefresh(); }
+	ButtonOption& Set(bool b)                                 { option = b; UpdateRefresh(); return *this; }
 	bool Get() const                                          { return option; }
 
 	void operator=(bool b)                                    { Set(b); }

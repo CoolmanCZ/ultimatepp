@@ -254,11 +254,11 @@ extern "C" int COMBINE(i, _count); \
 extern "C" char *COMBINE(i, _files)[];
 
 class NoCopy {
-private:
-	NoCopy(const NoCopy&);
-	void operator=(const NoCopy&);
 public:
-	NoCopy() {}
+	NoCopy() = default;
+	
+	NoCopy(const NoCopy&) = delete;
+	void operator=(const NoCopy&) = delete;
 };
 
 const int    INT_NULL           =    INT_MIN;
@@ -275,7 +275,7 @@ public:
 	operator float() const              { return FLOAT_NULL; }
 	operator bool() const               { return false; }
 
-	Nuller() {}
+	Nuller() = default;
 };
 
 extern const Nuller Null;

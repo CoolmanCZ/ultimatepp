@@ -38,10 +38,28 @@ String Ide::GetDefaultMethod()
 	return "GCC";
 }
 
+String ReplaceMethodDir(String paths, const String& method_dir)
+{
+	constexpr const char* METHOD_DIR = "${METHOD_DIR}";
+	
+	if (paths.Find(METHOD_DIR) == -1) {
+		return paths;
+	}
+	paths.Replace(METHOD_DIR, method_dir);
+	return paths;
+}
+
 VectorMap<String, String> Ide::GetMethodVars(const String& method)
 {
 	VectorMap<String, String> map;
 	LoadVarFile(GetMethodName(method), map);
+	
+	const String method_dir = GetFileFolder(method);
+	const Vector<String> categories_with_method_dir = {"PATH", "INCLUDE", "LIB" };
+	for (const auto& category : categories_with_method_dir) {
+		map.GetAdd(category) = ReplaceMethodDir(map.Get(category), method_dir);
+	}
+
 	return map;
 }
 
@@ -69,21 +87,6 @@ String GenerateVersionNumber()
 	return AsString(atoi(bmGIT_REVCOUNT) + 2270);
 #endif
 	return "";
-}
-
-void SetupUmkUppHub()
-{
-	String cfgdir = GetFileFolder(GetFileFolder(ConfigFile("x")));
-	for(const char *q : { "umk", "theide", "ide" }) {
-		String dir = cfgdir + "/" + q + "/UppHub";
-		if(DirectoryExists(dir)) {
-			for(FindFile ff(dir + "/*"); ff; ff.Next())
-				if(ff.IsFolder() && *ff.GetName() != '.') {
-					OverrideHubDir(dir);
-					return;
-				}
-		}
-	}
 }
 
 CONSOLE_APP_MAIN
@@ -118,6 +121,8 @@ CONSOLE_APP_MAIN
 	bool run = false;
 	bool auto_hub = false;
 	bool update_hub = false;
+	bool only_hub = false;
+	String hub_dir;
 	bool flatpak_build = !GetEnv("FLATPAK_ID").IsEmpty();
 	String mkf;
 
@@ -126,6 +131,28 @@ CONSOLE_APP_MAIN
 	const Vector<String>& args = CommandLine();
 	for(int i = 0; i < args.GetCount(); i++) {
 		String a = args[i];
+		if(a.StartsWith("--")) {
+			String ar = a.Right(a.GetCount() - 2);
+			if(ar == "hub-dir") {
+				if(i + 1 >= args.GetCount()) {
+					Puts("UppHub directory not specified");
+					SetExitCode(7);
+					return;
+				}
+				
+				hub_dir = args[++i];
+			}
+			else
+			if(ar == "hub-only") {
+				only_hub = true;
+			}
+			else {
+				Puts(String("Unrecognized parameter \"") + a + "\".");
+				SetExitCode(7);
+				return;
+			}
+		}
+		else
 		if(*a == '-') {
 			for(const char *s = ~a + 1; *s; s++)
 				switch(*s) {
@@ -195,10 +222,7 @@ CONSOLE_APP_MAIN
 			param.Add(a);
 	}
 
-	if(auto_hub)
-		DeleteFolderDeep(GetHubDir());
-	else
-		SetupUmkUppHub();
+	UppHubSetupDirForUmk(hub_dir, auto_hub);
 
 	if(param.GetCount() >= 2) {
 		String v = GetUmkFile(param[0] + ".var");
@@ -243,8 +267,19 @@ CONSOLE_APP_MAIN
 				SetExitCode(6);
 				return;
 			}
-			if (update_hub)
+			if(update_hub)
 				UppHubUpdate(ide.main);
+		}
+		if(only_hub) {
+			int exit_code = 0;
+			if(!auto_hub && !update_hub) {
+				exit_code = 6;
+				Puts("The --hub-only option was specified, but UppHub mode instruction are "
+				     "missing. Please ensure you include the -U or -h flag for the required "
+				     "UppHub mode configuration.\n");
+			}
+			SetExitCode(exit_code);
+			return;
 		}
 		ide.wspc.Scan(ide.main);
 		const Workspace& wspc = ide.IdeWorkspace();
@@ -335,9 +370,10 @@ CONSOLE_APP_MAIN
 	else {
 		String version = GenerateVersionNumber();
 		Puts("umk (U++MaKe) " + version + "\n\n"
-		     "Usage: umk assembly main_package [build_method] [-options] [+flags] [output]\n"
+		     "Usage: umk assembly main_package [build_method] [--hub-dir dir] [--hub-only] [-options] [+flags] [output]\n\n"
 		     "Examples: umk examples Bombs CLANG -ab +GUI,SHARED ~/bombs\n"
-		     "          umk ~/upp.src/examples,~/upp.src/uppsrc Bombs ~/GCC.bm -rv +GUI,SHARED ~/bin\n\n"
+		     "          umk ~/upp.src/examples,~/upp.src/uppsrc Bombs ~/GCC.bm -rv +GUI,SHARED ~/bin\n"
+		     "          umk ./,3p/uppsrc UppTerm 3p/umk/CLANG.bm --hub-dir 3p/hub -brU +GUI,SHARED build/UppTerm\n\n"
 		     "See https://www.ultimatepp.org/app$ide$umk$en-us.html for details.\n");
 	}
 }

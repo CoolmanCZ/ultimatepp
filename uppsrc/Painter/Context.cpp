@@ -28,6 +28,7 @@ void BufferPainter::EndOp()
 		onpathstack.Drop();
 		pathlen = pathlenstack.Pop();
 	}
+	current = Null;
 }
 
 void   BufferPainter::TransformOp(const Xform2D& m)
@@ -160,11 +161,11 @@ void BufferPainter::Create(ImageBuffer& ib, int mode_)
 
 	if(mode_ != mode || (Size)size != ib.GetSize()) {
 		mode = mode_;
-	
+
 		rasterizer.Create(ib.GetWidth(), ib.GetHeight(), mode == MODE_SUBPIXEL);
 		cojob.Clear();
 		cofill.Clear();
-	
+
 		render_cx = ib.GetWidth();
 		if(mode == MODE_SUBPIXEL) {
 			render_cx *= 3;
@@ -177,7 +178,7 @@ void BufferPainter::Create(ImageBuffer& ib, int mode_)
 		co_subpixel.Clear();
 		co_span.Clear();
 		span.Clear();
-		
+
 		co_clear.Clear();
 	}
 
@@ -200,11 +201,11 @@ void BufferPainter::Create(ImageBuffer& ib, int mode_)
 	attr.mask = false;
 	attr.invert = false;
 	attr.mtx_serial = 0;
-	
+
 	pathattr = attr;
 
 	ClearPath();
-	
+
 	jobcount = fillcount = emptycount = 0;
 
 	attrstack.Clear();

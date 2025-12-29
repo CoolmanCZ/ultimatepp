@@ -509,6 +509,41 @@ Image WithBottomLine(const Image& m, Color c, int w)
 	return WithRect(m, 0, m.GetHeight() - w, m.GetWidth(), w, c);
 }
 
+void ChSetSliderThumb()
+{
+	for(int i = 0; i < 4; i++) {
+		Image thumb_face = CreateImage(Size(Zx(20), Zy(20)), IsDarkTheme() ? GrayColor(50 + 20 * i) : GrayColor(224 - 20 * i));
+		CtrlImg::Set(CtrlImg::I_hthumb + i, MakeElement(Size(Zx(10), Zy(20)), 0,
+		             thumb_face, 1, Gray(), [&](Painter& w, const Rectf& r) {
+			double cx = r.GetWidth();
+			double cy = r.GetHeight();
+			double uy = 0.4 * cy;
+			double by = int(0.85 * cy);
+			double uq = 0.5 * uy;
+			w.Move(r.left, r.top + by)
+			 .Line(r.left, r.top + uy)
+			 .Quadratic(r.left, r.top + uq, r.left + cx / 2, r.top)
+			 .Quadratic(r.left + cx, r.top + uq, r.left + cx, r.top + uy)
+			 .Line(r.left + cx, r.top + by)
+			 .Close();
+		}));
+		CtrlImg::Set(CtrlImg::I_vthumb + i, MakeElement(Size(Zx(20), Zx(10)), 0,
+		             thumb_face, 1, Gray(), [&](Painter& w, const Rectf& r) {
+			double cx = r.GetWidth();
+			double cy = r.GetHeight();
+			double rx = 0.5 * cx;
+			double bx = int(0.15 * cx);
+			double uq = 0.8 * cx;
+			w.Move(r.left + bx, r.top)
+			 .Line(r.left + rx, r.top)
+			 .Quadratic(r.left + uq, r.top, r.right - 1, r.top + cy / 2)
+			 .Quadratic(r.left + uq, r.top + cy, r.left + rx, r.top + cy)
+			 .Line(r.left + bx, r.top + cy)
+			 .Close();
+		}));
+	}
+}
+
 int ChSynthetic(Image *button100x100, Color *text, bool macos, int dpi)
 {
 	auto DPI = [&](int i) { return dpi * i; };
@@ -643,27 +678,10 @@ int ChSynthetic(Image *button100x100, Color *text, bool macos, int dpi)
 			s.bound = true;
 			s.nomargins = true;
 		}
-		Image sm = MakeElement(Size(DPI(10), DPI(20)), roundness,
-		                       CreateImage(Size(10, 10), GrayColor(224 - 20 * i)),
-		                       lw, ink, [&](Painter& w, const Rectf& r) {
-			double cx = r.GetWidth();
-			double cy = r.GetHeight();
-			double uy = 0.4 * cy;
-			double by = 0.85 * cy;
-			double uq = 0.5 * uy;
-			w.Move(r.left, r.top + by)
-			 .Line(r.left, r.top + uy)
-			 .Quadratic(r.left, r.top + uq, r.left + cx / 2, r.top)
-			 .Quadratic(r.left + cx, r.top + uq, r.left + cx, r.top + uy)
-			 .Line(r.left + cx, r.top + by)
-			 .Close();
-		});
-		CtrlImg::Set(CtrlImg::I_hthumb + i, sm);
-		CtrlImg::Set(CtrlImg::I_vthumb + i, RotateClockwise(sm));
-		{
-			SyntheticTab(i, roundness, ink);
-		}
+		SyntheticTab(i, roundness, ink);
 	}
+	
+	ChSetSliderThumb();
 	
 	return roundness;
 }
@@ -673,6 +691,7 @@ void ChBaseSkin()
 	GUI_GlobalStyle_Write(GUISTYLE_XP);
 	GUI_PopUpEffect_Write(Ctrl::IsCompositedGui() ? GUIEFFECT_NONE : GUIEFFECT_SLIDE);
 	ColoredOverride(CtrlsImg::Iml(), CtrlsImg::Iml());
+	ChSetSliderThumb();
 }
 
 void ChMakeSkin(int roundness, Color button_face, Color thumb, int *adj)
@@ -855,13 +874,99 @@ void ChFlatDarkSkin()
 
 void ChHostSkin()
 {
-	int h = Ctrl::GetPrimaryScreenArea().Height();
-	Font::SetDefaultFont(Arial(h > 1300 ? 26 : h > 800 ? 14 : 12));
+	String s = Sys("dump_xsettings");
+	StringStream ss(s);
+	String font_name, theme;
+	int    scaling = 1;
+	int    xdpi = 98347;
+	while(!ss.IsEof()) {
+		String l = ss.GetLine();
+		int q = l.Find(' ');
+		if(q >= 0) {
+			String id = l.Mid(0, q);
+			String value = l.Mid(q + 1);
+			if(id == "Gdk/WindowScalingFactor")
+				scaling = max(Atoi(value), 1);
+			if(id == "Gtk/FontName")
+				font_name = value;
+			if(id == "Xft/DPI")
+				xdpi = Nvl(StrInt(value), 98347);
+			if(id == "Net/ThemeName")
+				theme = value;
+		}
+	}
+
+	int fontface = Font::ARIAL;
+	int fontheight = 13;
+	bool bold = false;
+	bool italic = false;
+
+	const char *q = strrchr(font_name, ' ');
+	if(q) {
+		int h = atoi(q);
+		if(h)
+			fontheight = h;
+		String face(font_name, q);
+		fontface = Font::FindFaceNameIndex(face);
+
+		if(fontface == 0) {
+			for(;;) {
+				const char *q = strrchr(face, ' ');
+				if(!q) break;
+				const char *s = q + 1;
+				if(stricmp(s, "Bold") == 0 || stricmp(s, "Heavy") == 0)
+					bold = true;
+				else
+				if(stricmp(s, "Italic") == 0 || stricmp(s, "Oblique") == 0)
+					italic = true;
+				else
+				if(stricmp(s, "Regular") == 0 || stricmp(s, "Light") || stricmp(s, "Medium"))
+					;
+				else
+					continue;
+				face = String(~face, q);
+			}
+			fontface = Font::FindFaceNameIndex(face);
+			if(fontface == 0) {
+				if(ToUpper(face[0]) == 'M')
+					fontface = Font::COURIER;
+				else
+				if(ToUpper(face[0]) == 'S' && ToUpper(face[1]) == 'e')
+					fontface = Font::ROMAN;
+				else
+					fontface = Font::ARIAL;
+			}
+		}
+	}
+	
+	Font gui_font = Font(fontface, fround(fontheight * xdpi / (72*1024.0))).Bold(bold).Italic(italic);
+	Font::SetDefaultFont(gui_font);
+
 	SColorFace_Write(Color(242, 241, 240));
 	SColorMenu_Write(Color(242, 241, 240));
 	SColorHighlight_Write(Color(50, 50, 250));
 
-	ChStdSkin();
+	auto ThemeHasWord = [&](const char *text) {
+		int q = ToLower(theme).Find(text);
+		if(q >= 0) {
+			if(q > 0) {
+				int c = theme[q];
+				if(IsLetter(c) && IsLower(c) == IsLower(*text))
+					return false;
+			}
+			int l = strlen(text);
+			int c = theme[q + l];
+			if(IsLetter(c) && IsLower(c) == IsLower(text[l - 1]))
+				return false;
+			return true;
+		}
+		return false;
+	};
+	
+	if(ThemeHasWord("dark") || ThemeHasWord("inverse") || ThemeHasWord("black"))
+		ChDarkSkin();
+	else
+		ChStdSkin();
 }
 
 #endif

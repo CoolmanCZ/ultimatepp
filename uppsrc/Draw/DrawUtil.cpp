@@ -408,7 +408,7 @@ void DrawHighlightImage(Draw& w, int x, int y, const Image& img, bool highlight,
 		w.DrawImage(x, y + 1, img, maskcolor);
 		w.DrawImage(x, y - 1, img, maskcolor);
 	}
-	w.DrawImage(x, y, enabled ? img : MakeImage(img, Etched));
+	w.DrawImage(x, y, enabled ? img : AdjustImage(img, Etched));
 }
 
 Color GradientColor(Color fc, Color tc, int i, int n)
@@ -578,6 +578,19 @@ void DrawXPButton(Draw& w, Rect r, int type)
 			w.DrawRect(r.left, r.top + i, r.Width(), 1, i < h1 ? Blend(light, b1, 255 * i / h1)
 			                                                   : Blend(b1, bs, 255 * (i - h1) / (h - h1)));
 	}
+}
+
+Value ChLookFnImage(Draw& w, const Rect& r, const Image& img, int op, Color ink, Point p, Point p2);
+
+void Draw9Slice(Draw& w, const Rect& r, const Image& img, Point p1, Point p2)
+{
+	ChLookFnImage(w, r, img, LOOK_PAINT, Null, p1, p2);
+}
+
+void Draw9Slice(Draw& w, const Rect& r, const Image& img, int margin)
+{
+	Size sz = img.GetSize();
+	Draw9Slice(w, r, img, Point(margin, margin), Point(sz.cx - margin - 1, sz.cy - margin - 1));
 }
 
 static DrawingToPdfFnType sPdf;

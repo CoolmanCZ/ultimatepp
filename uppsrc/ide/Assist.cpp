@@ -73,6 +73,20 @@ AssistEditor::AssistEditor()
 	};
 }
 
+void AssistEditor::EndBeginnerInfo()
+{
+	if(show_beginner_info) {
+		show_beginner_info = false;
+		Refresh();
+	}
+}
+
+void AssistEditor::Paint(Draw& w)
+{
+	CodeEditor::Paint(w);
+	PaintBasicHintsTopic(this, w, "ide/app/EditorBeginnerInfo_en-us");
+}
+
 class IndexSeparatorFrameCls : public CtrlFrame {
 	virtual void FrameLayout(Rect& r)                   { r.right -= 1; }
 	virtual void FramePaint(Draw& w, const Rect& r) {
@@ -133,6 +147,7 @@ void AssistEditor::PostInsert(int pos, const WString& s)
 		assist_cursor = -1;
 	}
 	CodeEditor::PostInsert(pos, s);
+	EndBeginnerInfo();
 }
 
 void AssistEditor::PostRemove(int pos, int size)
@@ -142,6 +157,7 @@ void AssistEditor::PostRemove(int pos, int size)
 		assist_cursor = -1;
 	}
 	CodeEditor::PostRemove(pos, size);
+	EndBeginnerInfo();
 }
 
 bool isincludefnchar(int c)
@@ -469,7 +485,8 @@ void AssistEditor::SyncCurrentFile(const CurrentFileContext& cfx)
 			SetAnnotations(f);
 
 			ClearErrors();
-			if(!IsCurrentFileDirty() && theide && theide->IsProjectFile(theide->editfile)) {
+			if(!IsCurrentFileDirty() && theide && theide->IsProjectFile(theide->editfile) && GetIdeWorkspace().GetCount()
+			   && !GetIdeWorkspace().GetPackage(0).nowarnings) {
 				errors = clone(ds);
 	
 				Vector<Point> err;
@@ -478,7 +495,9 @@ void AssistEditor::SyncCurrentFile(const CurrentFileContext& cfx)
 				String path = NormalizePath(theide->editfile);
 				if(path.TrimEnd(".icpp"))
 					path << ".cpp";
-				while(di < ds.GetCount() && err.GetCount() < 30) {
+				bool errors = false;
+				bool warnings = false;
+				while(di < ds.GetCount() && err.GetCount() < 500) {
 					int k = ds[di].kind;
 					bool group_valid = false;
 					auto Do = [&](const Diagnostic& d) {
@@ -503,6 +522,10 @@ void AssistEditor::SyncCurrentFile(const CurrentFileContext& cfx)
 							return;
 
 						err.Add(pos);
+						if(IsError(d.kind))
+							errors = true;
+						if(IsWarning(d.kind))
+							warnings = true;
 
 						if(d.path == path)
 							group_valid = true;
@@ -517,7 +540,7 @@ void AssistEditor::SyncCurrentFile(const CurrentFileContext& cfx)
 						err.Trim(q);
 				}
 				if(show_errors_status)
-					StatusImage(err.GetCount() ? IdeImg::CurrentErrors() : IdeImg::CurrentOK());
+					StatusImage(errors ? IdeImg::CurrentErrors() : warnings ? IdeImg::CurrentWarnings() : IdeImg::CurrentOK());
 				if(show_errors)
 					Errors(pick(err));
 			}
@@ -586,16 +609,17 @@ bool AssistEditor::DelayedTip(CodeEditor::MouseTip& mt)
 		return false;
 	
 	String qtf = "[g ";
-	if(m.nest.GetCount())
-		qtf << "[@b* \1" << m.nest << "::\1]&";
+	
+	String p = IsFunction(m.kind) ? m.pretty : m.pretty0;
+	p.TrimEnd("{}");
 
+	qtf << SignatureQtf(m.name, p, m.nest);
+	
 	String tl = BestTopic(GetRefLinks(ref_id));
 	if(tl.GetCount()) {
-		RichText txt = GetCodeTopic(tl, ref_id);
-		qtf << AsQTF(txt);
+		RichText txt = GetCodeTopic(tl, ref_id, true);
+		qtf << '&' << AsQTF(txt);
 	}
-	else
-		qtf << SignatureQtf(m.name, m.pretty);
 
 	SetQTF(mt, qtf);
 	mt.background = AdjustIfDark(Color(245, 255, 221));
@@ -752,7 +776,7 @@ void AssistEditor::Assist(bool macros)
 					AssistItem& f = assist_item.Add();
 					(AutoCompleteItem&)f = m;
 					f.uname = ToUpper(f.name);
-					f.typei = assist_type.FindAdd(f.kind == CXCursor_MacroDefinition ? "<macros>" : f.parent);
+					f.typei = assist_type.FindAdd(f.kind == CXCursor_MacroDefinition ? String("<macros>") : f.parent);
 				}
 			PopUpAssist();
 		});
@@ -1028,6 +1052,7 @@ bool isaid(int c)
 bool AssistEditor::Key(dword key, int count)
 {
 	CloseTip();
+	EndBeginnerInfo();
 	dword *k = IdeKeys::AK_DELLINE().key;
 	if(key == k[0] || key == k[1]) {
 		DeleteLine();

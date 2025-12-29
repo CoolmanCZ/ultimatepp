@@ -5,17 +5,16 @@
 #define LAYOUTFILE <RichEdit/Diagram.lay>
 #include <CtrlCore/lay.h>
 
-struct DiaRichEdit : RichEdit {
+class DiaRichEdit : public RichEdit {
 	bool Key(dword key, int count) override;
+	void PasteFilter(RichText& txt, const String& fmt) override;
 
+public:
 	Event<> WhenEnter;
 	Event<> WhenEsc;
 };
 
-struct ColumnPopUp : Ctrl {
-	int  columns = 4;
-	Size isz = Size(64, 32);
-	int  count = 18;
+class ColumnPopUp : public Ctrl {
 	int  cursor = -1;
 
 	void Paint(Draw& w) override;
@@ -24,9 +23,15 @@ struct ColumnPopUp : Ctrl {
 	void MouseLeave() override;
 	void Deactivate() override;
 
-	void PopUp(Point p, Ctrl *owner);
+public:
+	void PopUp(const Rect& sr, Ctrl *owner);
 
+	int Execute(const Rect& sr, Ctrl *owner);
 	int  Execute();
+
+	int  columns = 4;
+	Size isz = Size(64, 32);
+	int  count = 18;
 
 	Event<int>                    WhenSelect;
 	Event<Draw&, Size, int, bool> WhenPaintItem;
@@ -37,6 +42,8 @@ struct ColumnPopUp : Ctrl {
 const VectorMap<String, Vector<Tuple<int, String>>>& UnicodeSymbols();
 
 String SelectFontSymbolSvg(Sizef& sz);
+int    SelectFontSymbol(Font& fnt);
+int    SelectSpecialSymbol();
 
 class DiagramEditor : public Ctrl, Diagram::PaintInfo {
 public:
@@ -55,6 +62,13 @@ public:
 	void Skin() override;
 
 private:
+	struct DropColumns : public MultiButton, public Display {
+		ColumnPopUp popup;
+		void Paint(Draw& w, const Rect& r, const Value& q, Color ink, Color paper, dword style) const override;
+		
+		DropColumns();
+	};
+
 	Diagram        data;
 
 	bool           allow_dark_content = false;
@@ -64,9 +78,10 @@ private:
 	Point          draghandle = Point(0, 0);
 	Point          dragstart = Point(0, 0);
 	Point          dragcurrent = Point(0, 0);
-	Rectf          dragfrom = Rect(0, 0, 0, 0);
+	Pointf         dragfrom = Point(0, 0);
+	Pointf         drag_cp = Point(0, 0);
 	double         base_rotate = 0;
-	Vector<Point2> sdragfrom;
+	Vector<Pointf> sdragfrom;
 	bool           doselection = false; // we are doing rect selection
 	bool           grid = true; // snap to grid
 	bool           edit_text = false; // text editor is visible
@@ -88,8 +103,9 @@ private:
 	BinUndoRedo    undoredo;
 
 	ToolBar     toolbar;
-	DropList    shape, line_start, line_end, line_width, line_dash;
+	DropColumns shape, line_start, line_end, line_dash, line_width;
 	DiaRichEdit text_editor;
+	RichEdit    editor_bar; // misusing RichEdit to implement selection bar
 
 	ColorButton ink, paper;
 	
@@ -98,7 +114,7 @@ private:
 	DiagramItem tl[2];
 
 	ScrollBars  sb;
-
+	
 	void SetupDark(ColorPusher& c) const;
 	bool IsDarkContent() const;
 
@@ -134,12 +150,21 @@ private:
 	Image  ShapeIcon(int i);
 	Image  CapIcon(int start, int end);
 	Image  DashIcon(int i);
+	Image  WidthIcon(int i);
 	void   PrepareConns();
 	void   UseConns();
-	void   Grid(int shape, Point& p);
-	void   Grid(const DiagramItem& m, Point& p) { Grid(m.shape, p); }
+	void   Grid(Point& p);
+	void   Grid(Pointf& p);
 	void   ChangeSize();
+	void   PopPaint(Draw& w, const Image& m, bool sel);
+	void   Shapes(ColumnPopUp& shape);
+	void   Caps(ColumnPopUp& m, bool left);
+	void   Dashes(ColumnPopUp& m);
+	void   Widths(ColumnPopUp& m);
+	void   AddImage(Pointf pos, const Image& img);
 
+	RichText::FormatInfo GetFormatInfo(int itemi) const;
+	RichText::FormatInfo GetSelectionFormatInfo() const;
 
 	void   FixPositions();
 	void   ForEachConst(Event<const DiagramItem&> fn) const;
@@ -159,7 +184,7 @@ private:
 	void   GetAttrs(const DiagramItem& m);
 	void   GetAttrs();
 
-	void   ComputeAspectSize(DiagramItem& m, Sizef& sz1, Sizef& sz2);
+	void   ComputeAspectSize(DiagramItem& m, Sizef& sz_cx, Sizef& sz_cy);
 
 	DiagramItem& AddItem(int shape);
 
@@ -175,6 +200,8 @@ private:
 public:
 	String Save() const;
 	bool   Load(const String& s);
+	
+	void   SerializeSettings(Stream& s);
 
 	DiagramEditor& DarkContent(bool b = true);
 	DiagramEditor& AllowDarkContent(bool b = true);

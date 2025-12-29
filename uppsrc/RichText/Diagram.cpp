@@ -21,8 +21,6 @@ double DistanceFromSegment(Pointf P, Pointf P0, Pointf P1, Pointf *p = NULL)
 	return Distance(P, sp);
 }
 
-Index<String> DiagramItem::LineCap = { "none", "arrow", "round" };
-
 void DiagramItem::Reset()
 {
 	shape = SHAPE_RECT;
@@ -40,44 +38,47 @@ void DiagramItem::Reset()
 	dash = 0;
 }
 
-void Point2::Normalize()
+void DiagramItem::Serialize(Stream& s)
+{ // used for undo/redo mostly
+	s % pos
+	  % size
+	  % shape
+	  % qtf
+	  % width
+	  % ink
+	  % paper
+	  % blob_id
+	  % flip_horz
+	  % flip_vert
+	  % aspect_ratio
+	  % rotate
+	  % cap[0]
+	  % cap[1];
+}
+
+void DiagramItem::Normalize()
 {
-	if(pt[0].x > pt[1].x)
-		Swap(pt[0].x, pt[1].x);
-	if(pt[0].y > pt[1].y)
-		Swap(pt[0].y, pt[1].y);
+	if(IsLine())
+		return;
+	size.cx = abs(size.cx);
+	size.cy = abs(size.cy);
 }
 
 void DiagramItem::FixPosition()
 {
-	double x = min(pt[0].x, pt[1].x);
-	if(x < 0) {
-		pt[0].x -= x;
-		pt[1].x -= x;
-	}
-	double y = min(pt[0].y, pt[1].y);
-	if(y < 0) {
-		pt[0].y -= y;
-		pt[1].y -= y;
-	}
-	auto Clamp = [](Pointf& p) {
-		p.x = clamp(p.x, 0.0, 10000.0);
-		p.y = clamp(p.y, 0.0, 10000.0);
-	};
-	Clamp(pt[0]);
-	Clamp(pt[1]);
+	Normalize();
+	pos.x = clamp(pos.x, 0.0, 100000.0);
+	pos.y = clamp(pos.y, 0.0, 100000.0);
 	if(IsLine())
 		return;
-	if(pt[1].x - pt[0].x < 8)
-		pt[1].x = pt[0].x + 8;
-	if(pt[1].y - pt[0].y < 8)
-		pt[1].y = pt[0].y + 8;
+	size.cx = clamp(size.cx, 4.0, 100000.0);
+	size.cy = clamp(size.cy, 4.0, 100000.0);
 }
 
 bool DiagramItem::IsClick(Point p, const Diagram& diagram, bool relaxed) const
 {
 	if(IsLine())
-		return DistanceFromSegment(p, pt[0], pt[1]) < width + 10;
+		return DistanceFromSegment(p, pos, pos + size) < width + 10;
 	Rectf rect = GetRect();
 	Pointf cp = rect.CenterPoint();
 	if(rotate) {
@@ -99,8 +100,8 @@ bool DiagramItem::IsClick(Point p, const Diagram& diagram, bool relaxed) const
 			DiagramItem m = *this;
 			m.paper = Blue();
 			m.ink = Blue();
-			m.pt[0] = Pointf(0, 0);
-			m.pt[1] = Pointf(64, 64);
+			m.pos = Pointf(0, 0);
+			m.size = Sizef(64, 64);
 			m.Paint(p, diagram);
 			Image img = p.GetResult();
 			v = img;
@@ -111,6 +112,7 @@ bool DiagramItem::IsClick(Point p, const Diagram& diagram, bool relaxed) const
 	           [clamp(int(64 * (p.x - rect.left) / rect.GetWidth()), 0, 63)].a;
 }
 
+#if 0
 bool DiagramItem::IsTextClick(Point p0) const
 {
 	Zoom zoom = Diagram::TextZoom();
@@ -156,13 +158,13 @@ bool DiagramItem::IsTextClick(Point p0) const
 	int pos = txt.GetPos((int)p.x, PageY(0, (int)p.y), page);
 	return pos < txt.GetLength() && txt.GetRichPos(pos).chr != '\n' && txt.GetCaret(pos, page).Contains(p);
 }
+#endif
 
 Rect DiagramItem::GetTextEditRect() const
 {
 	if(IsLine()) {
-		int d = max(10, int(Distance(pt[0], pt[1]) + 0.5));
-		Point c = (pt[0] + pt[1]) / 2;
-		return Rect(c.x - d / 2, c.y, c.x + d, c.y);
+		int d = max(10, int(Length(size) + 0.5));
+		return Rect(pos.x - d / 2, pos.y, pos.x + d, pos.y);
 	}
 	return GetRect();
 }
@@ -170,7 +172,7 @@ Rect DiagramItem::GetTextEditRect() const
 void DiagramItem::Save(StringBuffer& r) const
 {
 	r << Shape[clamp(shape, 0, Shape.GetCount() - 1)] << ' ';
-	r << pt[0].x << ' ' << pt[0].y << ' ' << pt[1].x << ' ' << pt[1].y;
+	r << pos.x << ' ' << pos.y << ' ' << size.cx << ' ' << size.cy;
 	if(qtf.GetCount())
 		r << " " << AsCString(qtf);
 	auto col = [&](Color c) {
@@ -210,10 +212,10 @@ void DiagramItem::Load(CParser& p, const Diagram& diagram)
 	if(q < 0)
 		p.ThrowError("Unknown element");
 	shape = q;
-	this->pt[0].x = p.ReadDouble();
-	this->pt[0].y = p.ReadDouble();
-	this->pt[1].x = p.ReadDouble();
-	this->pt[1].y = p.ReadDouble();
+	this->pos.x = p.ReadDouble();
+	this->pos.y = p.ReadDouble();
+	this->size.cx = p.ReadDouble();
+	this->size.cy = p.ReadDouble();
 	auto col = [&] {
 		if(p.Id("null"))
 			return Color(Null);
@@ -266,13 +268,12 @@ void DiagramItem::Load(CParser& p, const Diagram& diagram)
 	FixPosition();
 }
 
-Size Diagram::GetSize() const
+void Diagram::GetSize0(Pointf& tl, Pointf& br) const
 {
-	if(!IsNull(size))
-		return size;
-	if(item.GetCount() == 0)
-		return Size(0, 0);
-	Pointf tl, br;
+	if(item.GetCount() == 0) {
+		tl = br = Pointf(0, 0);
+		return;
+	}
 	tl = br = item[0].GetRect().TopLeft();
 	for(const DiagramItem& m : item) {
 		Rectf r = m.GetRect();
@@ -286,6 +287,8 @@ Size Diagram::GetSize() const
 				p = rot.Transform(p);
 				p += cp;
 			}
+			p.x = max(p.x, 0.0);
+			p.y = max(p.y, 0.0);
 			tl.x = min(tl.x, p.x);
 			tl.y = min(tl.y, p.y);
 			br.x = max(br.x, p.x);
@@ -297,13 +300,32 @@ Size Diagram::GetSize() const
 		Do(r.BottomRight());
 	}
 	
+}
+
+Size Diagram::GetEditSize() const
+{
+	Pointf tl, br;
+	GetSize0(tl, br);
+	Size sz(int(ceil(br.x)), int(ceil(br.y)));
+	return IsNull(size) ? sz : Size(max(sz.cx, size.cx), max(sz.cy, size.cy));
+}
+
+Size Diagram::GetSize() const
+{
+	if(!IsNull(size))
+		return size;
+	Pointf tl, br;
+	GetSize0(tl, br);
 	Sizef fsz = br + tl;
 
 	Sizef isz = img.GetSize();
 	if(img_hd)
 		isz /= 2;
+
+	const double lim = 0.5 * INT_MAX;
 	
-	return Size((int)ceil(max(isz.cx, fsz.cx)), (int)ceil(max(isz.cy, fsz.cy)));
+	return Size((int)clamp(ceil(max(isz.cx, fsz.cx)), 0.0, lim),
+	            (int)clamp(ceil(max(isz.cy, fsz.cy)), 0.0, lim));
 }
 
 String Diagram::AddBlob(const String& data)
@@ -349,6 +371,11 @@ Rectf Diagram::GetBlobSvgPathBoundingBox(const String& id) const
 	return v.Is<Rectf>() ? (Rectf)v : (Rectf)Null;
 }
 
+void Diagram::SweepBlobs(const Index<String>& keep_ids)
+{
+	blob.RemoveIf([&](int i) { return keep_ids.Find(blob.GetKey(i)) < 0; });
+}
+
 void Diagram::Paint(Painter& w, const Diagram::PaintInfo& p) const
 {
 	w.Begin();
@@ -360,7 +387,7 @@ void Diagram::Paint(Painter& w, const Diagram::PaintInfo& p) const
 	if(p.display_grid)
 		for(const DiagramItem& m : item)
 			if(m.IsLine())
-				conn << m.pt[0] << m.pt[1];
+				conn << m.pos << m.pos + m.size;
 	for(int i = 0; i < item.GetCount(); i++) {
 		dword style = 0;
 		if(i == p.cursor)
@@ -387,6 +414,7 @@ void Diagram::Serialize(Stream& s)
 
 void Diagram::Save(StringBuffer& r) const
 {
+	r << "QDF 1.0;\n";
 	if(!IsNull(size))
 		r << "size " << size.cx << " " << size.cy << ";\n";
 	if(!IsNull(img)) {
@@ -422,7 +450,15 @@ void Diagram::Load(CParser& p)
 {
 	item.Clear();
 	blob.Clear();
+	img.Clear();
+	img_hd = false;
+	size = Null;
 	while(!p.IsEof())
+		if(p.Id("QDF")) {
+			p.ReadDouble();
+			p.PassChar(';');
+		}
+		else
 		if(p.Id("size")) {
 			size.cx = clamp(p.ReadInt(), 1, 10000);
 			size.cy = clamp(p.ReadInt(), 1, 10000);

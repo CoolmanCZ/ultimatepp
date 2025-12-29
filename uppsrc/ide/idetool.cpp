@@ -101,12 +101,11 @@ void Ide::OpenTopic(const String& topic)
 	OpenTopic(topic, String(), false);
 }
 
-void Ide::OpenATopic()
+void Ide::OpenATopic(const String& topic)
 {
-	String t = doc.GetCurrentLink();
-	if(!t.StartsWith("topic:"))
+	if(!topic.StartsWith("topic:"))
 		return;
-	OpenTopic(t);
+	OpenTopic(topic);
 }
 
 void Ide::IdeFlushFile()
@@ -530,37 +529,126 @@ void Ide::AsErrors()
 	SetErrorEditor();
 }
 
-void Ide::RemoveDs()
+Vector<String> Ide::FindXFiles(int where)
 {
-	if(designer || editor.IsReadOnly())
-		return;
-	static Index<String> ds = { "DLOG", "DDUMP", "DDUMPC", "DDUMPM", "DTIMING",
-	                            "DLOGHEX", "DDUMPHEX", "DTIMESTOP", "DHITCOUNT" };
-	editor.NextUndo();
-	int l = 0;
-	int h = editor.GetLineCount() - 1;
-	int ll, hh;
-	if(editor.GetSelection(ll, hh)) {
-		l = editor.GetLine(ll);
-		h = editor.GetLine(hh);
-	}
-	for(int i = h; i >= l; i--) {
-		String ln = editor.GetUtf8Line(i);
-		try {
-			CParser p(ln);
-			if(p.IsId()) {
-				String id = p.ReadId();
-				if(ds.Find(id) >= 0 && p.Char('(')) {
-					int pos = editor.GetPos(i);
-					int end = min(editor.GetLength(), editor.GetPos(i) + editor.GetLineLength(i) + 1);
-					editor.Remove(editor.GetPos(i), end - pos);
-				}
+	String nest_dir = GetPathNest(editfile);
+	
+	Vector<String> files;
+	if(where == 0)
+		files.Add(editfile);
+	else {
+		const Workspace& wspc = GetIdeWorkspace();
+		for(int i = 0; i < wspc.GetCount(); i++) { // find lowest file time
+			const Package& pk = wspc.GetPackage(i);
+			String n = wspc[i];
+			String pp = PackageDirectory(n);
+			for(int i = 0; i < pk.GetCount(); i++) {
+				String path = SourcePath(n, pk.file[i]);
+				String ext = ToLower(GetFileExt(path));
+				if(FileExists(path) &&
+				   (where != 1 || editfile.StartsWith(pp)) &&
+				   (where != 2 || GetPathNest(path) == nest_dir) &&
+				   (where < 0 || findarg(ext, ".cpp", ".h", ".hpp", ".c", ".m", ".cxx", ".cc", ".mm", ".icpp", ".i") >= 0))
+					files.Add(path);
 			}
 		}
-		catch(CParser::Error) {}
 	}
-	editor.GotoLine(l);
+	
+	return files;
 }
+
+void Ide::FindDs(int where, bool all)
+{
+	SaveFile();
+
+	Vector<String> files = FindXFiles(where);
+
+	NewFFound();
+
+	int n = 0;
+	Progress pi;
+	for(String fn : files) {
+		if(pi.SetCanceled(n++, files.GetCount()))
+			break;
+
+		if(GetFileLength(fn) < 10*1024*1024) {
+			String text = LoadFile(fn);
+			try {
+				CParser p(text);
+				bool ignore = false;
+				while(!p.IsEof()) {
+					CParser::Pos pos = p.GetPos();
+					if(p.Char('#')) {
+						if(!all) {
+							if(p.Id("if") || p.Id("ifdef"))
+								ignore = true;
+							else
+							if(p.Id("endif"))
+								ignore = false;
+						}
+						p.SkipLine();
+					}
+					else
+					if(p.IsId()) {
+						static Index<String> ds = {
+							"DLOG", "DDUMP", "DDUMPC", "DDUMPM", "DTIMING",
+						    "DLOGHEX", "DDUMPHEX", "DTIMESTOP", "DHITCOUNT"
+						};
+						static Index<String> ds_all = {
+							"DLOG", "DDUMP", "DDUMPC", "DDUMPM", "DTIMING",
+						    "DLOGHEX", "DDUMPHEX", "DTIMESTOP", "DHITCOUNT",
+							"RLOG", "RDUMP", "RDUMPC", "RDUMPM", "RTIMING",
+						    "RLOGHEX", "RDUMPHEX", "RTIMESTOP", "RHITCOUNT",
+							"LOG", "DUMP", "DUMPC", "DUMPM", "TIMING",
+						    "LOGHEX", "DUMPHEX", "TIMESTOP", "HITCOUNT",
+						};
+						String id = p.ReadId();
+						if((all ? ds_all : ds).Find(id) >= 0 && p.Char('(') && !ignore) {
+							String line;
+							for(const char *s = pos.lineptr; findarg(*s, '\0', '\r', '\n') < 0; s++)
+								line.Cat(*s);
+							AddFoundFile(fn, pos.line, line, pos.ptr - pos.lineptr, id.GetCount());
+						}
+					}
+					else
+						p.Skip();
+				}
+			}
+			catch(CParser::Error) {}
+		}
+	}
+	FFoundFinish();
+}
+
+void Ide::FindGitConflicts()
+{
+	SaveFile();
+
+	Vector<String> files = FindXFiles(-1);
+
+	NewFFound();
+
+	int n = 0;
+	Progress pi;
+	for(String fn : files) {
+		if(pi.SetCanceled(n++, files.GetCount()))
+			break;
+
+		if(GetFileLength(fn) < 10*1024*1024) {
+			FileIn in(fn);
+			int line = 0;
+			while(!in.IsEof()) {
+				line++;
+				String ln = in.GetLine();
+				if(ln.StartsWith("<<<<<<<"))
+					AddFoundFile(fn, line, ln, 0, 7);
+			}
+		}
+	}
+	FFoundFinish();
+}
+
+
 
 void Ide::CopyRich()
 {

@@ -22,7 +22,10 @@ DirDiffDlg::DirDiffDlg()
 	recent.Add(3, "3 Days");
 	recent.Add(7, "7 Days");
 	recent.Add(14, "14 Days");
-	recent.Add(32, "28 Days");
+	recent.Add(28, "28 Days");
+	recent.Add(60, "3 Months");
+	recent.Add(180, "6 Months");
+	recent.Add(365, "1 Year");
 	
 	compare.SetLabel(t_("Compare"));
 	int bcy = max(cy, compare.GetStdSize().cy);
@@ -32,10 +35,11 @@ DirDiffDlg::DirDiffDlg()
 	files_pane.Add(hidden.TopPos(2 * cy + 2 * div, bcy).LeftPos(0, bcx));
 	files_pane.Add(split_lines.TopPos(2 * cy + 2 * div, bcy).LeftPosZ(52, 100));
 	
-	files_pane.Add(   added.TopPos(3 * cy + 3 * div, bcy).LeftPosZ(2, 60));
+	files_pane.Add(added.TopPos(3 * cy + 3 * div, bcy).LeftPosZ(2, 60));
 	files_pane.Add(modified.TopPos(3 * cy + 3 * div, bcy).LeftPosZ(52, 70));
-	files_pane.Add( removed.TopPos(3 * cy + 3 * div, bcy).LeftPosZ(128, 80));
-	files_pane.Add(  recent.TopPos(3 * cy + 3 * div, bcy).RightPos(0, bcx));
+	files_pane.Add(removed.TopPos(3 * cy + 3 * div, bcy).LeftPosZ(128, 80));
+	files_pane.Add(recent.TopPos(3 * cy + 3 * div, bcy).RightPos(0, bcx + Zx(8)));
+	files_pane.Add(extension.TopPos(3 * cy + 3 * div, bcy).RightPos(bcx + Zx(8) + DPI(8), bcx));
 	
 	removed = 1;
 	added = 1;
@@ -70,6 +74,8 @@ DirDiffDlg::DirDiffDlg()
 	removed		<< [=] { ShowResult(); };
 	added		<< [=] { ShowResult(); };
 	find		<< [=] { ShowResult(); };
+	extension   << [=] { ShowResult(); };
+	recent      << [=] { ShowResult(); };
 	clearFind	<< [=] { find.Clear(); ShowResult();};
 	
 	files.WhenSel = THISBACK(File);
@@ -151,14 +157,17 @@ DirDiffDlg::DirDiffDlg()
 	Title("Compare directories");
 };
 
-void DirDiffDlg::GatherFilesDeep(Index<String>& files, const String& base, const String& path)
+void DirDiffDlg::GatherFilesDeep(VectorMap<String, Time>& files, const String& base, const String& path)
 {
 	FindFile ff(AppendFileName(AppendFileName(base, path), "*.*"));
 	while(ff) {
 		String p = (path.GetCount() ? path + '/' : String()) + ff.GetName();
 		if(hidden || !ff.IsHidden()) {
-			if(ff.IsFile())
-				files.FindAdd(p);
+			if(ff.IsFile()) {
+				Time ftm = ff.GetLastWriteTime();
+				Time& tm = files.GetAdd(p, ftm);
+				tm = max(tm, ftm);
+			}
 			else
 			if(ff.IsFolder())
 				GatherFilesDeep(files, base, p);
@@ -167,32 +176,32 @@ void DirDiffDlg::GatherFilesDeep(Index<String>& files, const String& base, const
 	}
 }
 
-bool DirDiffDlg::FileEqual(const String& f1, const String& f2, int& n)
+bool DirDiffDlg::FileEqual(const String& f1, const String& f2, int& kind)
 {
 	FileIn in1(f1);
 	FileIn in2(f2);
 	if(in1 && in2) {
-		in1.SetBufferSize(256 * 1024);
-		in2.SetBufferSize(256 * 1024);
+		kind = NORMAL_FILE;
+		if(in1.GetSize() != in2.GetSize())
+			return false;
+		
 		while(!in1.IsEof() && !in2.IsEof()) {
-			String a = in1.GetLine();
-			String b = in2.GetLine();
+			String a = in1.Get(64*1024);
+			String b = in2.Get(64*1024);
 			if(a != b)
 				return false;
 		}
 		return true;
 	}
 	else
-	{
-		n = (in1 ? DELETED_FILE : NEW_FILE);
-	}
-
+		kind = in1 ? DELETED_FILE : NEW_FILE;
+	
 	return false;
 }
 
 void DirDiffDlg::Compare()
 {
-	Index<String> fs;
+	VectorMap<String, Time> fs;
 	GatherFilesDeep(fs, ~dir1, Null);
 	GatherFilesDeep(fs, ~dir2, Null);
 
@@ -203,28 +212,39 @@ void DirDiffDlg::Compare()
 	removeright.Disable();
 	
 	files.Clear();
-	Vector<String> f = fs.PickKeys();
-	Sort(f);
+	SortByKey(fs);
 	Progress pi(t_("Comparing.."));
-	pi.SetTotal(f.GetCount());
+	pi.SetTotal(fs.GetCount());
 	
-	Date dlim = IsNull(recent) ? Null : GetSysDate() - (int)~recent;
-
 	list.Clear();
-	for(int i = 0; i < f.GetCount(); i++) {
+	Index<String> exts;
+	for(int i = 0; i < fs.GetCount(); i++) {
 		if(pi.StepCanceled())
 			break;
-		String p1 = AppendFileName(~dir1, f[i]);
-		String p2 = AppendFileName(~dir2, f[i]);
-		int n = NORMAL_FILE;
+		String p = fs.GetKey(i);
+		String p1 = AppendFileName(~dir1, p);
+		String p2 = AppendFileName(~dir2, p);
+		int kind = NORMAL_FILE;
 		auto IsGit = [&](const String& path) {
 			return path.Find("/.git/") >= 0 || path.Find("\\.git/") >= 0 || path.Find("\\.git\\") >= 0 || path.Find("/.git\\") >= 0;
 		};
-		if((IsNull(dlim) || FileGetTime(p1) >= dlim || FileGetTime(p2) >= dlim) && !FileEqual(p1, p2, n) &&
-		   !IsGit(p1) && !IsGit(p2))
-			list.Add(MakeTuple(f[i], p1, p2, n));
+		if(!FileEqual(p1, p2, kind) && !IsGit(p1) && !IsGit(p2)) {
+			exts.FindAdd(GetFileExt(p1));
+			FileInfo& m = list.Add();
+			m.file = p;
+			m.path1 = p1;
+			m.path2 = p2;
+			m.time = fs[i];
+			m.kind = kind;
+		}
 	}
-
+	
+	extension.Clear();
+	extension.Add(Null, "*.*");
+	for(int ii : GetSortOrder(exts))
+		extension.Add(exts[ii], "*" + exts[ii]);
+	extension.Enable();
+	
 	ShowResult();
 }
 
@@ -235,14 +255,14 @@ FileList::File DirDiffDlg::MakeFile(int i)
 	m.isdir = false;
 	m.unixexe = false;
 	m.hidden = false;
-	Image icn = WhenIcon(FileExists(list[i].b) ? list[i].b : list[i].c);
-	int k = list[i].d;
+	Image icn = WhenIcon(FileExists(list[i].path1) ? list[i].path1 : list[i].path2);
+	int k = list[i].kind;
 	if(IsNull(icn))
 		icn = CtrlImg::File();
-	m.icon = decode(k, FAILED_FILE, MakeImage(icn, [] (const Image& m) { return GetOver(m, DiffImg::Failed()); }),
-	                   PATCHED_FILE, MakeImage(icn, [] (const Image& m) { return GetOver(m, DiffImg::Patched()); }),
+	m.icon = decode(k, FAILED_FILE, AdjustImage(icn, [](const Image& m) { return GetOver(m, DiffImg::Failed()); }),
+	                   PATCHED_FILE, AdjustImage(icn, [](const Image& m) { return GetOver(m, DiffImg::Patched()); }),
 	                   icn);
-	m.name = list[i].a;
+	m.name = list[i].file;
 	m.font = decode(k, FAILED_FILE, StdFont().Strikeout().Italic(),
 	                   PATCHED_FILE, StdFont().Italic(), StdFont());
 	m.ink = cs[k];
@@ -256,13 +276,21 @@ FileList::File DirDiffDlg::MakeFile(int i)
 void DirDiffDlg::ShowResult()
 {
 	files.Clear();
-	String sFind = ToLower((String)~find);
-	for(int i = 0; i < list.GetCount(); i++)
-	{
-		int n = list[i].d;
-		if((n == NORMAL_FILE && modified || n == DELETED_FILE && removed
-		    || n == NEW_FILE && added || n == FAILED_FILE || n == PATCHED_FILE)
-		   && ToLower(list[i].a).Find(sFind) >= 0)
+	String sFind = ToLower(~~find);
+	String ext = ToLower(~~extension);
+	Date dlim = IsNull(recent) ? Null : GetSysDate() - (int)~recent;
+	for(int i = 0; i < list.GetCount(); i++) {
+		const FileInfo& fi = list[i];
+		int n = fi.kind;
+		String fn = ToLower(list[i].file);
+		if((IsNull(dlim) || fi.time >= dlim) &&
+		   (n == NORMAL_FILE && modified ||
+		    n == DELETED_FILE && removed ||
+		    n == NEW_FILE && added ||
+		    n == FAILED_FILE ||
+		    n == PATCHED_FILE) &&
+		   fn.Find(sFind) >= 0 &&
+		   fn.EndsWith(ext))
 			files.Add(MakeFile(i));
 	}
 	Title(AsString(files.GetCount()) + " files");

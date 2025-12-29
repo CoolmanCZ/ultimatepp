@@ -434,6 +434,8 @@ BuildMethods::BuildMethods()
 	builder <<= THISBACK(NewBuilder);
 	setdefault <<= THISBACK(SetDefault);
 
+	IdeHelpButton(help, "BuildMethods");
+
 	linkmode_lock.SetLabel("Lock link mode");
 }
 
@@ -602,7 +604,7 @@ String BuildMethods::GetSetupPrefix(const String& setupKey) const
 
 String BuildMethods::GetSetupPrefix(const Index<String>& buildersGroup) const
 {
-	return buildersGroup.GetCount() ? GetSetupPrefix(buildersGroup[0]) : "";
+	return buildersGroup.GetCount() ? GetSetupPrefix(buildersGroup[0]) : String();
 }
 
 void BuildMethods::InitSetups()
@@ -931,10 +933,7 @@ String Ide::GetCurrentIncludePath()
 	
 	static String clang_method;
 
-	VectorMap<String, String> bm;
-	if(clang_method.GetCount())
-		bm = GetMethodVars(clang_method);
-	if(bm.GetCount() == 0) {
+	if(IsNull(clang_method)) {
 		String exact, x64, clang;
 		for(FindFile ff(ConfigFile(GetMethodName("*"))); ff; ff.Next()) {
 			String n = ToLower(GetFileTitle(ff.GetName()));
@@ -946,20 +945,17 @@ String Ide::GetCurrentIncludePath()
 				clang = n;
 		}
 		clang_method = Nvl(exact, x64, clang);
-		if(clang_method.GetCount())
-			bm = GetMethodVars(clang_method);
 	}
+
+	VectorMap<String, String> bm;
+	if(clang_method.GetCount())
+		bm = GetMethodVars(clang_method);
 	
 	include_path = Join(GetUppDirs(), ";") + ';';
 	MergeWith(include_path, ";", GetVarsIncludes());
 	String inc1 = bm.Get("INCLUDE", "");
 	MergeWith(include_path, ";", inc1);
-	
-	VectorMap<String, String> bm2 = GetMethodVars(method); // add real method include paths at the end
-	String inc2 = bm2.Get("INCLUDE", "");
-	if(inc1 != inc2)
-		MergeWith(include_path, ";", inc2);
-	
+
 	IncludeAddPkgConfig(include_path, clang_method);
 	
 	String main_conf;

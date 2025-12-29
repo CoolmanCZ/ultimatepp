@@ -229,8 +229,6 @@ void LayDes::Paint2(Draw& w)
 	LayoutData& l = CurrentLayout();
 	Size lsz = LayoutZoom(l.size);
 	w.DrawRect(0, 0, lsz.cx, lsz.cy, SLtGray);
-	if(l.item.GetCount() == 0)
-		w.DrawText(DPI(30), DPI(30), "Right-click to insert item(s)", ArialZ(30).Italic(), SGray());
 	if(setting.paintgrid) {
 		int gx = minmax((int)~setting.gridx, 1, 32);
 		int gy = minmax((int)~setting.gridy, 1, 32);
@@ -317,28 +315,30 @@ void LayDes::Paint(Draw& w)
 		w.DrawRect(sz, SColorPaper());
 		w.DrawText(16, 16, "FILE ERROR: " + fileerror, ArialZ(14).Bold(), Red);
 	}
-	if(IsNull(currentlayout))
-		return;
 
-	if(layout_zoom) {
-		DrawPainter sw(w, sz);
-		sw.Co();
-		sw.Clear(SColorPaper());
-		sw.Offset(-sb.Get());
-		sw.Offset(MARGIN, MARGIN);
-		sw.Scale(GetScale());
-		Paint2(sw);
-		sw.End();
-		sw.End();
+	if(!IsNull(currentlayout)) {
+		if(layout_zoom) {
+			DrawPainter sw(w, sz);
+			sw.Co();
+			sw.Clear(SColorPaper());
+			sw.Offset(-sb.Get());
+			sw.Offset(MARGIN, MARGIN);
+			sw.Scale(GetScale());
+			Paint2(sw);
+			sw.End();
+			sw.End();
+		}
+		else {
+			w.DrawRect(sz, SColorPaper());
+			w.Offset(-sb.Get());
+			w.Offset(MARGIN, MARGIN);
+			Paint2(w);
+			w.End();
+			w.End();
+		}
 	}
-	else {
-		w.DrawRect(sz, SColorPaper());
-		w.Offset(-sb.Get());
-		w.Offset(MARGIN, MARGIN);
-		Paint2(w);
-		w.End();
-		w.End();
-	}
+	
+	PaintBasicHintsTopic(this, w, "ide/app/LayBeginnerInfo_en-us");
 }
 
 void  LayDes::SaveState()

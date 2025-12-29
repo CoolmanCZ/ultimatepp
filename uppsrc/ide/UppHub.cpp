@@ -52,9 +52,6 @@ void VerifyUppHubRequirements()
 
 class UppHubSettingsDlg final : public WithUppHubSettingsLayout<TopWindow> {
 public:
-	static constexpr auto GLOBAL_CONFIG_NAME = "UppHubDlgSettings";
-	
-public:
 	UppHubSettingsDlg();
 	
 	void LoadGlobalSettings();
@@ -73,15 +70,20 @@ UppHubSettingsDlg::UppHubSettingsDlg()
 	};
 }
 
+INITBLOCK
+{
+	RegisterGlobalConfig("UppHubDlgSettings");
+}
+
 void UppHubSettingsDlg::LoadGlobalSettings()
 {
-	LoadFromGlobal(*this, GLOBAL_CONFIG_NAME);
+	LoadFromGlobal(*this, "UppHubDlgSettings");
 	RefreshCtrls();
 }
 
 void UppHubSettingsDlg::SaveGlobalSettings()
 {
-	StoreToGlobal(*this, GLOBAL_CONFIG_NAME);
+	StoreToGlobal(*this, "UppHubDlgSettings");
 }
 
 void UppHubSettingsDlg::RefreshCtrls()
@@ -127,7 +129,7 @@ struct UppHubDlg : WithUppHubLayout<TopWindow> {
 	void  Menu(Bar& bar);
 	
 	UppHubNest *Get(const String& name) { return upv.FindPtr(name); }
-	UppHubNest *Current()               { return list.IsCursor() ? Get(list.Get("NAME")) : NULL; }
+	UppHubNest *Current()               { return list.IsCursor() ? Get(list.GetKey()) : nullptr; }
 
 	UppHubDlg();
 
@@ -144,8 +146,8 @@ UppHubDlg::UppHubDlg()
 	parent.Add(list.SizePos());
 	parent.AddFrame(splitter.Right(info, 500));
 	
-	list.AddKey("NAME");
-	list.AddColumn("Name").Sorting();
+	list.AddKey();
+	list.AddColumn("Package").Sorting();
 	list.AddColumn("Category").Sorting();
 	list.AddColumn("Description");
 	
@@ -193,7 +195,7 @@ UppHubDlg::UppHubDlg()
 	
 	update << [=] { Update(); };
 	
-	help << [=] { LaunchWebBrowser("https://www.ultimatepp.org/app$ide$UppHub_en-us.html"); };
+	IdeHelpButton(help, "UppHub");
 	
 	search.NullText("Search (Ctrl+K)");
 	search.SetFilter([](int c) { return (int)ToUpper(ToAscii(c)); });
@@ -205,11 +207,6 @@ UppHubDlg::UppHubDlg()
 	category ^= experimental ^= broken ^= [=] { SyncList(); };
 	
 	settings.LoadGlobalSettings();
-}
-
-INITBLOCK
-{
-	RegisterGlobalConfig(UppHubSettingsDlg::GLOBAL_CONFIG_NAME);
 }
 
 bool UppHubDlg::Key(dword key, int count)
@@ -232,7 +229,7 @@ void UppHubDlg::Menu(Bar& bar)
 		bar.Add("Open " + n->name + " Directory", [=] { ShellOpenFolder(p); });
 		bar.Add("Copy " + n->name + " Directory Path", [=] { WriteClipboardText(p); });
 		if(ide)
-			bar.Add("Terminal at " + n->name + " Directory", [=] { ide->LaunchTerminal(p); });
+			bar.Add("Terminal at " + n->name + " Directory", IdeImg::Terminal(), [=] { ide->LaunchTerminal(p); });
 		sep = true;
 	}
 
@@ -247,7 +244,7 @@ void UppHubDlg::Menu(Bar& bar)
 	bar.Add("Open UppHub Directory", [=] { ShellOpenFolder(hubdir); });
 	bar.Add("Copy UppHub Directory Path", [=] { WriteClipboardText(hubdir); });
 	if(ide)
-		bar.Add("Terminal at UppHub Directory", [=] { ide->LaunchTerminal(hubdir); });
+		bar.Add("Terminal at UppHub Directory", IdeImg::Terminal(), [=] { ide->LaunchTerminal(hubdir); });
 	bar.Separator();
 	bar.Add("Install everything..", [=] {
 		if(!PromptYesNo("Installing everything will take some time and will need a lot of storage space.&[/ Are you sure?"))
@@ -371,7 +368,7 @@ void UppHubDlg::Sync()
 	}
 	else {
 		qtf << "[* \1" << n->description << "\1]";
-		qtf << (loading ? "&[/ Loading more information]" : "&[/ Failed to get ]\1" + n->readme);
+		qtf << (loading ? String("&[/ Loading more information]") : String("&[/ Failed to get ]\1") + n->readme);
 	}
 	info <<= qtf;
 }
@@ -499,7 +496,8 @@ void UppHubDlg::SyncList()
 		   (broken || n.status != "broken"))
 			list.Add(n.name, AT(n.name), AT(n.category), AT(n.description), n.name);
 	}
-		         
+	
+	list.HeaderTab(0).SetText("Package (" + AsString(list.GetCount()) + ")");
 	list.DoColumnSort();
 	list.ScrollTo(sc);
 	if(!list.FindSetCursor(k))
@@ -540,11 +538,23 @@ void UppHubDlg::Update()
 	if(!PromptYesNo("Pull updates for all modules?"))
 		return;
 	UrepoConsole console;
+
+	int errors = 0;
 	for(const UppHubNest& n : upv) {
 		String dir = GetHubDir() + "/" + n.name;
-		if(DirectoryExists(dir))
-			console.Git(dir, "pull --rebase");
+		if(!DirectoryExists(dir))
+			continue;
+
+		if(console.Git(dir, "pull --rebase") != 0)
+			++errors;
 	}
+	if(errors == 0)
+		return;
+
+	ErrorOK(
+		Format("Update failed (%d errors). Review the logs to diagnose and resolve the issues.",
+	           errors));
+	console.Perform();
 }
 
 void UppHubDlg::Install(const Index<String>& ii_)

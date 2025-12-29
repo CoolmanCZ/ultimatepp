@@ -56,6 +56,7 @@ struct Navigator {
 	void NaviSort();
 
 	void           Navigate();
+	void           Navigate(bool usage);
 	void           NavigatorClick();
 	void           NavigatorEnter();
 	void           SyncCursor();
@@ -76,6 +77,7 @@ struct AssistEditor : CodeEditor, Navigator {
 	virtual void State(int reason);
 	virtual void PostInsert(int pos, const WString& s);
 	virtual void PostRemove(int pos, int size);
+	virtual void Paint(Draw& draw);
 
 	virtual int  GetCurrentLine();
 
@@ -158,6 +160,10 @@ struct AssistEditor : CodeEditor, Navigator {
 
 	VectorMap<String, MasterSourceCacheRecord> ms_cache;
 
+	void               EndBeginnerInfo();
+	
+	bool               show_beginner_info = false;
+
 	int                ToUtf8x(int line, int pos);
 	int                FromUtf8x(int line, int pos);
 	
@@ -197,10 +203,11 @@ struct AssistEditor : CodeEditor, Navigator {
 	void           Abbr();
 
 	Point          GetCurrentPos() const;
+	AnnotationItem FindAnnotation(Point pos, bool allow_define = false);
 	AnnotationItem FindCurrentAnnotation(bool allow_define = false);
 
 	void           DCopy();
-	String         FindCurrentNest(String *local_bases = nullptr);
+	AnnotationItem FindCurrentNest(String *local_bases = nullptr);
 	void           Virtuals();
 	void           Events();
 
@@ -218,7 +225,7 @@ struct AssistEditor : CodeEditor, Navigator {
 	bool           GetAnnotationRefs(Vector<String>& tl, String& coderef, int q = -1);
 	String         BestTopic(const Vector<String>& tl);
 	bool           GetAnnotationRef(String& t, String& coderef, int q = -1);
-	RichText       GetCodeTopic(const String& tl, const String& coderef);
+	RichText       GetCodeTopic(const String& tl, const String& coderef, bool skip_header);
 	void           SyncAnnotationPopup();
 	void           EditAnnotation(bool fastedit);
 	void           OpenTopic(String topic, String create, bool before);
@@ -233,6 +240,8 @@ struct AssistEditor : CodeEditor, Navigator {
 	void           SerializeNavigator(Stream& s);
 	void           SerializeNavigatorWorkspace(Stream& s);
 	void           SyncNavigatorPlacement();
+
+	void           ConvertToOverrides();
 
 	Event<int>     WhenFontScroll;
 	Event<>        WhenSelectionChanged;

@@ -73,12 +73,29 @@ Navigator::Navigator()
 {
 	list.NoHeader();
 	list.AddRowNumColumn().SetDisplay(navidisplay);
-	list.SetLineCy(max(16, GetStdFontCy()));
+	list.SetLineCy(max(DPI(16), GetStdFontCy()));
 	list.NoWantFocus();
 	list.WhenLeftClick = THISBACK(NavigatorClick);
+	list.WhenBar = [=](Bar& bar) {
+		if(!theide)
+			return;
+		int kind = KIND_NEST;
+		String name;
+		int ii = list.GetCursor();
+		if(ii >= 0 && ii < litem.GetCount()) {
+			const NavItem& m = *litem[ii];
+			kind = m.kind;
+			name = m.name;
+		}
+		bar.Add(kind != KIND_NEST, "Go to", [=] { Navigate(false); })
+		   .Key(IK_CLICK);
+		bar.Add(kind >= 0, "Usage", [=] { Navigate(true); })
+		   .Key(K_ALT|IK_CLICK);
+		theide->OnlineSearchMenu(bar, name, false);
+	};
 	
 	scope.NoHeader();
-	scope.AddColumn().SetDisplay(Single<ScopeDisplay>());
+	scope.AddColumn().AddIndex().SetDisplay(Single<ScopeDisplay>());
 	scope.SetLineCy(max(16, GetStdFontCy()));
 	scope.NoWantFocus();
 	scope.WhenSel = [=] { SetList(); };
@@ -94,9 +111,8 @@ Navigator::Navigator()
 	dlgmode = false;
 }
 
-AnnotationItem AssistEditor::FindCurrentAnnotation(bool allow_define)
+AnnotationItem AssistEditor::FindAnnotation(Point pos, bool allow_define)
 {
-	Point pos = GetCurrentPos();
 	AnnotationItem q;
 	bool line1st = true;
 	for(const AnnotationItem& m : annotations)
@@ -117,6 +133,11 @@ AnnotationItem AssistEditor::FindCurrentAnnotation(bool allow_define)
 				break;
 		}
 	return q;
+}
+
+AnnotationItem AssistEditor::FindCurrentAnnotation(bool allow_define)
+{
+	return FindAnnotation(GetCurrentPos(), allow_define);
 }
 
 void Navigator::SyncCursor()
@@ -142,7 +163,7 @@ void Navigator::SyncCursor()
 	}
 }
 
-void Navigator::Navigate()
+void Navigator::Navigate(bool usage)
 {
 	if(navigating)
 		return;
@@ -186,14 +207,12 @@ void Navigator::Navigate()
 		else
 		if(m.kind == KIND_LINE) {
 			theide->GotoPos(Null, m.pos);
-			if(m.kind == KIND_LINE) { // Go to line - restore file view
-				search.Clear();
-				Search();
-				navigating = false;
-			}
+			search.Clear(); // Go to line - restore file view
+			Search();
+			navigating = false;
 		}
 		else
-		if(GetAlt())
+		if(usage)
 			theide->Usage(m.id, m.name, m.pos);
 		else
 		if(IsNull(search)) // current file - do not cycle
@@ -203,6 +222,11 @@ void Navigator::Navigate()
 	}
 	navigating = false;
 	SyncCursor();
+}
+
+void Navigator::Navigate()
+{
+	Navigate(GetAlt());
 }
 
 void Navigator::NavigatorClick()
@@ -292,7 +316,33 @@ int Navigator::NavigatorDisplay::DoPaint(Draw& w, const Rect& r, const Value& q,
 		return GetTextSize(m.pretty, StdFont().Bold()).cx;
 	}
 
-	return PaintCpp(w, r, m.kind, m.name, m.pretty, ink, focuscursor, true);
+	String pretty;
+	const char *s = m.pretty;
+	const char *b = s;
+	while(*s) { // remove qualifications Foo(Upp::Point p) -> Foo(Point p)
+		if(iscib(*s)) {
+			pretty.Cat(b, s);
+			b = s;
+			try {
+				CParser p(s);
+				while(!p.IsEof()) {
+					p.ReadId();
+					if(!p.Char2(':', ':') || !p.IsId())
+						break;
+					b = p.GetPtr(); // skip any qualification
+				}
+				s = p.GetPtr();
+			}
+			catch(CParser::Error) {
+				if(*s) s++; // should not happen, but if it does, move on
+			}
+		}
+		else
+			s++;
+	}
+	pretty.Cat(b, s);
+
+	return PaintCpp(w, r, m.kind, m.name, pretty, ink, focuscursor, true);
 }
 
 void Navigator::NavigatorDisplay::Paint(Draw& w, const Rect& r, const Value& q, Color ink, Color paper, dword style) const
@@ -306,24 +356,32 @@ Size Navigator::NavigatorDisplay::GetStdSize(const Value& q) const
 	return Size(DoPaint(w, Size(999999, 999999), q, White(), White(), 0), Draw::GetStdFontCy());
 }
 
-int Navigator::ScopeDisplay::DoPaint(Draw& w, const Rect& r, const Value& q, Color ink, Color paper, dword style) const
+int Navigator::ScopeDisplay::DoPaint(Draw& w, const Rect& r, const Value& qa, Color ink, Color paper, dword style) const
 {
+	ValueArray va = qa;
+	Value q = va[0];
 	w.DrawRect(r, paper);
+	int x = 0;
 	if(IsNull(q) || q == "*") {
 		const char *txt = "*";
-		int x = 0;
 		w.DrawText(r.left, r.top, txt, StdFont().Bold().Italic(),
 		           style & CURSOR ? ink : HighlightSetup::GetHlStyle(HighlightSetup::INK_KEYWORD).color);
 		x += GetTextSize(txt, StdFont().Bold().Italic()).cx;
-		return x;
 	}
 	String h = q;
 	if(h.Find('\xff') >= 0)
-		return PaintFileName(w, r, h, ink);
-	else
+		x = PaintFileName(w, r, h, ink);
+	else {
 		h = FormatNest(h);
-	w.DrawText(r.left, r.top, h, StdFont(), ink);
-	return GetTextSize(h, StdFont()).cx;
+		w.DrawText(r.left, r.top, h, StdFont(), ink);
+		x = GetTextSize(h, StdFont()).cx;
+	}
+	
+	String ntxt = " (" + AsString(va[1]) + ")";
+	w.DrawText(r.left + x, r.top, ntxt, StdFont(), Gray());
+	x += GetTextSize(ntxt, StdFont()).cx;
+
+	return x;
 }
 
 void Navigator::ScopeDisplay::Paint(Draw& w, const Rect& r, const Value& q, Color ink, Color paper, dword style) const
@@ -363,20 +421,22 @@ void Navigator::Search()
 	s = Join(Split(s, '.'), "::") + (s.EndsWith(".") ? "::" : "");
 	int lineno = StrInt(s);
 	nitem.Clear();
-	Index<String> nests;
+	litem.Clear();
+	VectorMap<String, int> nests;
 	auto Nest = [&](const AnnotationItem& m, const String& path) {
 		if(m.nspace == m.nest)
 			return m.nest + "\xff" + path;
 		return m.nest;
 	};
-	nests.Add(Null);
+	nests.Add(Null, 0);
+	int all_count = 0;
 	String usearch_nest = ToUpper(search_nest);
 	String usearch_name = ToUpper(search_name);
-	if(!IsNull(lineno)) {
+	if(!IsNull(lineno) && lineno > 0) {
 		NavItem& m = nitem.Add();
 		m.pretty = "Go to line " + AsString(lineno);
 		m.kind = KIND_LINE;
-		m.pos.y = lineno;
+		m.pos.y = lineno - 1;
 		m.pos.x = 0;
 	}
 	else
@@ -387,9 +447,10 @@ void Navigator::Search()
 				NavItem& n = nitem.Add();
 				(AnnotationItem&)n = m;
 				n.path = theide->editfile;
-				nests.FindAdd(n.nest = Nest(m, theide->editfile));
+				all_count++;
+				nests.GetAdd(n.nest = Nest(m, theide->editfile), 0)++;
 			}
-		SortIndex(nests);
+		SortByKey(nests);
 	}
 	else {
 		navigator_global = true;
@@ -413,14 +474,15 @@ void Navigator::Search()
 									NavItem& n = nitem.Add();
 									(AnnotationItem&)n = m;
 									n.path = f.key;
-									nests.FindAdd(n.nest = Nest(m, f.key));
+									all_count++;
+									nests.GetAdd(n.nest = Nest(m, f.key), 0)++;
 									set.Add(m.id);
 								}
 							}
 					}
 		}
 		
-		SortIndex(nests);
+		SortByKey(nests);
 		const Workspace& wspc = GetIdeWorkspace();
 		String s = ToUpper(TrimBoth(~search));
 		for(int i = 0; i < wspc.GetCount(); i++) {
@@ -434,7 +496,8 @@ void Navigator::Search()
 					m.pos = Point(0, 0);
 					m.nest = "<files>";
 					m.uname = ToUpper(p[j]);
-					nests.FindAdd(m.nest);
+					all_count++;
+					nests.GetAdd(m.nest, 0)++;
 				}
 			}
 		}
@@ -442,16 +505,17 @@ void Navigator::Search()
 	
 	String k = scope.GetKey();
 	scope.Clear();
-	scope.Add("*");
+	scope.Add("*", all_count);
 	Index<String> set;
 	for(int nest_pass = 0; nest_pass < 3; nest_pass++)
-		for(String s : nests) {
+		for(auto kv : ~nests) {
+			String s = kv.key;
 			if(s.GetCount() &&
 			   set.Find(s) < 0 &&
 			   (nest_pass == 2 ? ToUpper(s).Find(usearch_nest) >= 0 :
 			    nest_pass == 1 ? s.Find(search_nest) >= 0 :
 			                     s == search_nest)) {
-				scope.Add(s);
+				scope.Add(s, kv.value);
 				set.Add(s);
 			}
 		}

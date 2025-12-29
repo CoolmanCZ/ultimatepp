@@ -313,9 +313,12 @@ bool ClangVisitor::ProcessNode(CXCursor cursor)
 		r.type = ci.Type();
 		r.pos = loc.pos;
 		r.id = id;
-		r.pretty0 = kind == CXCursor_MacroDefinition ? r.name
-	                : FetchString(clang_getCursorPrettyPrinted(cursor, pp_pretty));
-		r.pretty = kind == CXCursor_MacroDefinition ? r.name : CleanupPretty(r.pretty0);
+		if(kind == CXCursor_MacroDefinition)
+			r.pretty0 = r.pretty = r.name;
+		else {
+			r.pretty0 = FetchString(clang_getCursorPrettyPrinted(cursor, pp_pretty));
+			r.pretty = CleanupPretty(r.pretty0);
+		}
 		r.definition = clang_isCursorDefinition(cursor);
 		r.nspace = ci.Nspace();
 		r.bases = ci.Bases();
@@ -332,7 +335,7 @@ bool ClangVisitor::ProcessNode(CXCursor cursor)
 		}
 		else {
 			static String op = "operator";
-			int q = FindId(r.id, r.kind == CXCursor_ConversionFunction ? "operator" : r.name);
+			int q = FindId(r.id, r.kind == CXCursor_ConversionFunction ? String("operator") : r.name);
 			if(q >= 0) {
 				r.nest = r.id.Mid(0, q);
 				r.nest.TrimEnd("::");
@@ -443,6 +446,7 @@ void ClangVisitor::Do(CXTranslationUnit tu)
 	clang_PrintingPolicy_setProperty(pp_pretty, CXPrintingPolicy_TerseOutput, 1);
 	clang_PrintingPolicy_setProperty(pp_pretty, CXPrintingPolicy_Bool, 1);
 	clang_PrintingPolicy_setProperty(pp_pretty, CXPrintingPolicy_SuppressScope, 1);
+
 	initialized = true;
 	clang_visitChildren(cursor, clang_visitor, this);
 

@@ -1,50 +1,43 @@
 #include "CtrlLib.h"
 
 namespace Upp {
+
+Rect           DisplayPopup::screen_rect;
+Ptr<Ctrl>      DisplayPopup::ctrl;
+Rect           DisplayPopup::item;
+Value          DisplayPopup::value;
+Color          DisplayPopup::paper;
+Color          DisplayPopup::ink;
+dword          DisplayPopup::style;
+const Display *DisplayPopup::display;
+int            DisplayPopup::margin;
+bool           DisplayPopup::usedisplaystdsize_s;
 	
-void DisplayPopup::Pop::PopCtrl::Paint(Draw& w)
+DisplayPopup::DisplayPopup()
 {
-	Rect r = GetSize();
-	w.DrawRect(r, SColorPaper);
-	if(!p) return;
-	if(p->display) {
-		p->display->PaintBackground(w, r, p->value, p->ink, p->paper, p->style);
-		r.left += p->margin;
-		if(p->usedisplaystdsize)
-			r.top += (r.Height() - p->display->GetStdSize(p->value).cy) / 2;
-		p->display->Paint(w, r, p->value, p->ink, p->paper, p->style);
+	ONCELOCK {
+		Ctrl::InstallStateHook(StateHook);
+		Ctrl::InstallMouseHook(MouseHook);
+		Ctrl::InstallPaintHook(PaintHook);
 	}
 }
 
-Vector<DisplayPopup::Pop *>& DisplayPopup::Pop::all()
+void DisplayPopup::PaintHook(Ctrl *tw, Draw& w, const Rect& clip)
 {
-	static Vector<DisplayPopup::Pop *> all;
-	return all;
-}
-
-DisplayPopup::Pop::Pop()
-{
-	display = NULL;
-	paper = ink = Null;
-	style = 0;
-	item = Null;
-	margin = 0;
-	all().Add(this);
-	view.IgnoreMouse();
-	view.SetFrame(BlackFrame());
-	frame.IgnoreMouse();
-	frame.SetFrame(BlackFrame());
-	view.p = this;
-	frame.p = this;
-}
-
-DisplayPopup::Pop::~Pop()
-{
-	view.p = nullptr;
-	frame.p = nullptr;
-	int q = FindIndex(all(), this);
-	if(q >= 0)
-		all().Remove(q);
+	if(ctrl && !IsNull(screen_rect) && (tw == ctrl->GetTopCtrl() || tw && tw != ctrl->GetOwner())) {
+		Rect r = screen_rect - tw->GetScreenRect().TopLeft();
+		DrawFrame(w, r, SBlack());
+		r.Deflate(1, 1);
+		w.Clip(r);
+		w.DrawRect(r, SColorPaper);
+		if(display) {
+			display->PaintBackground(w, r, value, ink, paper, style);
+			r.left += margin;
+			if(usedisplaystdsize_s)
+				r.top += (r.Height() - display->GetStdSize(value).cy) / 2;
+			display->Paint(w, r, value, ink, paper, style);
+		}
+	}
 }
 
 Rect DisplayPopup::Check(Ctrl *ctrl, const Rect& item, const Value& value, const Display *display, int margin)
@@ -64,60 +57,57 @@ Rect DisplayPopup::Check(Ctrl *ctrl, const Rect& item, const Value& value, const
 	return Null;
 }
 
-void DisplayPopup::Pop::Sync()
+void DisplayPopup::RefreshRect()
 {
-	if(!IsMainThread()) {
-		Ptr<Pop> p;
-		PostCallback([=] { if(p) p->Sync(); });
-		return;
+	if(ctrl && !IsNull(screen_rect)) {
+		Ctrl *top = ctrl->GetTopCtrl();
+		top->RefreshFrame(screen_rect - top->GetScreenRect().TopLeft());
+		Ctrl *owner = top->GetOwner();
+		if(owner)
+			owner->RefreshFrame(screen_rect - owner->GetScreenRect().TopLeft());
 	}
+}
+
+void DisplayPopup::Sync()
+{
 	Rect r = Check(ctrl, item, value, display, margin);
+	RefreshRect();
 	if(IsNull(r))
-		WhenClose();
+		screen_rect = Null;
 	else {
 		Ctrl *top = ctrl->GetTopCtrl();
 		Size sz = display->GetStdSize(value);
 		Rect wa = top->GetScreenRect();
 		r.right = min(wa.right, r.left + sz.cx + 2 * margin);
+		if(wa.bottom < r.top + sz.cy)
+			return;
 		r.bottom = max(r.bottom, r.top + sz.cy);
-		r.Inflate(1, 1);
-		view.SetRect(r - top->GetScreenView().TopLeft());
-		frame.SetFrameRect(r - wa.TopLeft());
-		if(!frame.GetParent())
-			*top << view << frame;
+		Ctrl *owner = top->GetOwner();
+		if(owner) {
+			Rect owa = owner->GetScreenRect();
+			if(owa.bottom >= r.bottom)
+				r.right = min(max(wa.right, owa.right), r.left + sz.cx + 2 * margin);
+		}
+		screen_rect = r.Inflated(1, 1);
+		RefreshRect();
 	}
-}
-
-DisplayPopup::DisplayPopup()
-{
-	ONCELOCK {
-		Ctrl::InstallStateHook(StateHook);
-		Ctrl::InstallMouseHook(MouseHook);
-	}
-}
-
-void DisplayPopup::SyncAll()
-{
-	for(DisplayPopup::Pop *p : Pop::all())
-		if(p->ctrl && p->ctrl->IsOpen())
-			p->Sync();
 }
 
 bool DisplayPopup::StateHook(Ctrl *, int reason)
 {
 	if(reason == Ctrl::FOCUS)
-		SyncAll();
+		Sync();
 	return false;
 }
 
 
 bool DisplayPopup::MouseHook(Ctrl *, bool, int, Point, int, dword)
 {
-	SyncAll();
+	Sync();
 	return false;
 }
 
-void DisplayPopup::Pop::Set(Ctrl *_ctrl, const Rect& _item,
+void DisplayPopup::Set(Ctrl *_ctrl, const Rect& _item,
                             const Value& _value, const Display *_display,
                             Color _ink, Color _paper, dword _style, int _margin)
 {
@@ -126,6 +116,7 @@ void DisplayPopup::Pop::Set(Ctrl *_ctrl, const Rect& _item,
 	
 	if(item != _item || ctrl != _ctrl || value != _value || display != _display || ink != _ink ||
 	   paper != _paper || style != _style) {
+		RefreshRect();
 		item = _item;
 		ctrl = _ctrl;
 		value = _value;
@@ -134,59 +125,30 @@ void DisplayPopup::Pop::Set(Ctrl *_ctrl, const Rect& _item,
 		paper = _paper;
 		style = _style;
 		margin = _margin;
-		if(ctrl) {
-			String h = ctrl->GetTip();
-			view.Tip(h);
-			frame.Tip(h);
-		}
+		usedisplaystdsize_s = usedisplaystdsize;
 		Sync();
-		view.Refresh();
-		frame.Refresh();
 	}
-}
-
-void DisplayPopup::Set(Ctrl *ctrl, const Rect& item, const Value& v, const Display *display, Color ink, Color paper, dword style, int margin)
-{
-	if(IsNull(Check(ctrl, item, v, display, margin)))
-		return; // precheck to avoid creating / deleting popup too often, avoid flooding timer with PostCallback
-	if(!popup) {
-		popup.Create();
-		popup->usedisplaystdsize = usedisplaystdsize;
-		Ptr<DisplayPopup> pt = this;
-		popup->WhenClose << [=] { PostCallback([=] { if(pt) pt->popup.Clear(); }); };
-	}
-	popup->Set(ctrl, item, v, display, ink, paper, style, margin);
 }
 
 void DisplayPopup::Cancel()
 {
-	if(popup) {
-		popup->display = nullptr;
-		popup->Sync();
-	}
+	screen_rect = Null;
+	Sync();
 }
 
 bool DisplayPopup::IsOpen()
 {
-	return popup && popup->view.GetParent();
+	return ctrl && !IsNull(screen_rect);
 }
 
 bool DisplayPopup::HasMouse()
-{ // TODO: remove
-	return popup && (popup->view.HasMouse() || popup->frame.HasMouse());
+{
+	return ctrl && !IsNull(screen_rect) && screen_rect.Contains(GetMousePos());
 }
 
 void DisplayPopup::UseDisplayStdSize()
 {
 	usedisplaystdsize = true;
-	if(popup)
-		popup->usedisplaystdsize = true;
-}
-
-DisplayPopup::~DisplayPopup()
-{
-	if(popup)
-		popup.Clear();
 }
 
 }

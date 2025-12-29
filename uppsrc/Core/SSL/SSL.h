@@ -4,6 +4,9 @@
 #include <openssl/conf.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#include <openssl/kdf.h>
+#endif
 
 namespace Upp {
 	
@@ -121,8 +124,8 @@ public:
 	bool     IsEmpty() const                   { return !ssl_ctx; }
 
 	bool     Set(SSL_CTX *c)                   { Clear(); return !!(ssl_ctx = c); }
-	bool     Create(SSL_METHOD *meth)          { return Set(SSL_CTX_new(meth)); }
-	void     Clear()                           { if(ssl_ctx) { SSL_CTX_free(ssl_ctx); ssl_ctx = NULL; } }
+	bool     Create(SSL_METHOD *meth);
+	void     Clear();
 	SSL_CTX *Detach()                          { SSL_CTX *c = ssl_ctx; ssl_ctx = NULL; return c; }
 
 	operator SSL_CTX * () const                { return ssl_ctx; }
@@ -142,8 +145,6 @@ String SslGetLastError();
 String SslToString(X509_NAME *name);
 Date   Asn1ToDate(ASN1_STRING *time);
 String Asn1ToString(ASN1_STRING *s);
-
-#ifdef EVP_PKEY_KEYMGMT
 
 constexpr const int AES_GCM_MIN_ITERATION     = 10000;
 constexpr const int AES_GCM_MAX_ITERATION     = 1000000;
@@ -184,7 +185,4 @@ bool AES256Decrypt(Stream& in, const String& password, Stream& out, Gate<int64, 
 
 // Secure buffer
 #include "Buffer.hpp"
-
-#endif
-
 }

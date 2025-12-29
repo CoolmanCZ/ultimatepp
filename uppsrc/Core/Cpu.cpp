@@ -89,17 +89,9 @@ int CPU_Cores()
 	static int n;
 	ONCELOCK {
 #ifdef PLATFORM_WIN32
-#ifdef CPU_64
-		uint64 pa, sa;
-		GetProcessAffinityMask(GetCurrentProcess(), &pa, &sa);
-		for(int i = 0; i < 64; i++)
-			n += !!(sa & ((uint64)1 << i));
-#else
-		DWORD pa, sa;
-		GetProcessAffinityMask(GetCurrentProcess(), &pa, &sa);
-		for(int i = 0; i < 32; i++)
-			n += !!(sa & (1 << i));
-#endif
+		SYSTEM_INFO info;
+		GetSystemInfo(&info);
+		n = info.dwNumberOfProcessors;
 #elif defined(PLATFORM_POSIX)
 #ifdef PLATFORM_BSD
 		int mib[2];
@@ -107,15 +99,15 @@ int CPU_Cores()
 		mib[0] = CTL_HW;
 		mib[1] = HW_NCPU;
 		sysctl(mib, 2, &n, &len, NULL, 0);
-		n = minmax(n, 1, 256);
 #elif defined(PLATFORM_SOLARIS)
 		n = minmax((int)sysconf(_SC_NPROCESSORS_ONLN), 1, 256);
 #else
-		n = minmax(get_nprocs(), 1, 256);
+		n = get_nprocs();
 #endif
 #else
 		n = 1;
 #endif
+		n = max(n, 1); // sanity
 	}
 	return n;
 }

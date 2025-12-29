@@ -136,6 +136,7 @@ Image Unglyph(const Image& m);
 Image VertBlend(Image img1, Image img2, int y0, int y1);
 Image HorzBlend(Image img1, Image img2, int x0, int x1);
 Image HorzSymm(Image src);
+double Difference(const Image& a, const Image& b);
 
 bool   IsSingleColor(const Image& m, const Rect& rect);
 
@@ -170,7 +171,22 @@ void  SysImageRealized(const Image& img); // SystemDraw realized Image handle in
 void  SysImageReleased(const Image& img); // SystemDraw dropped Image handle
 
 Image MakeImage(const ImageMaker& m);
-Image MakeImage(const Image& image, Image (*make)(const Image& image));
+
+template <class T, class M>
+Image MakeImage(T key, M make, bool paintonly = false) {
+	return MakeValue(
+		[&] { return key(); },
+		[&] (Value& v) {
+			Image img = make();
+			if(paintonly && !IsNull(img) && img.GetRefCount() == 1)
+				SetPaintOnly__(img);
+			v = img;
+			return img.GetLength() * sizeof(RGBA);
+		}
+	).template To<Image>();
+};
+
+Image AdjustImage(const Image& image, Image (*make)(const Image& image));
 
 void SweepMkImageCache(); // deprecated, use AdjustValueCache();
 void SetMakeImageCacheMax(int m); // deprecated, use SetupValueCache
@@ -248,6 +264,7 @@ Image  DownSample2x(const Image& src, bool co = false);
 
 Image Upscale2x(const Image& src);
 Image Downscale2x(const Image& src);
+Image Downscale6x(const Image& src);
 
 void SetUHDMode(bool b = true);
 bool IsUHDMode();

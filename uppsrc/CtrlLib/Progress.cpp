@@ -67,14 +67,14 @@ void ProgressIndicator::Paint(Draw& w) {
 		w.DrawRect(r3, SColorPaper);
 		if(percent) {
 			String pt = Format("%d %%", (int)(100L * actual / max(total, 1)));
-			Size psz = GetTextSize(pt, StdFont());
+			Size psz = GetTextSize(pt, font);
 			int px = (sz.cx - psz.cx) / 2 + 2;
 			int py = (sz.cy - psz.cy) / 2 + 2;
 			w.Clip(r1);
-			w.DrawText(px, py, pt, StdFont(), SColorLight);
+			w.DrawText(px, py, pt,font, SColorLight);
 			w.End();
 			w.Clip(r2);
-			w.DrawText(px, py, pt, StdFont(), SColorText);
+			w.DrawText(px, py, pt, font, SColorText);
 			w.End();
 		}
 		w.End();
@@ -82,14 +82,14 @@ void ProgressIndicator::Paint(Draw& w) {
 	else {
 		Rect r = GetMargins();
 		if(sz.cx > sz.cy) {
-			ChPaint(w, sz, style->hlook);
+			ChPaint(this, w, sz, style->hlook);
 			w.Clip(r.left, r.top, sz.cx - r.left - r.right, sz.cy - r.top - r.bottom);
-			ChPaintNoCache(w, r.left + p0, r.top, p, sz.cy - r.top - r.bottom, style->hchunk);
+			ChPaintNoCache(this, w, r.left + p0, r.top, p, sz.cy - r.top - r.bottom, style->hchunk);
 		}
 		else {
-			ChPaint(w, sz, style->vlook);
+			ChPaint(this, w, sz, style->vlook);
 			w.Clip(r.left, r.top, sz.cx - r.left - r.right, sz.cy - r.top - r.bottom);
-			ChPaintNoCache(w, r.left, sz.cy - r.bottom - p - p0, sz.cx - r.left - r.right, p, style->vchunk);
+			ChPaintNoCache(this, w, r.left, sz.cy - r.bottom - p - p0, sz.cx - r.left - r.right, p, style->vchunk);
 		}
 		w.End();
 	}
@@ -125,6 +125,7 @@ void ProgressIndicator::Set(int _actual, int _total) {
 
 ProgressIndicator::ProgressIndicator() {
 	style = &StyleDefault();
+	font = StdFont();
 	Transparent();
 	NoWantFocus();
 	total = actual = 0;

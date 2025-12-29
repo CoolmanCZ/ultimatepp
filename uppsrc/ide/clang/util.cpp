@@ -68,6 +68,11 @@ bool IsHeaderFile(const String& path)
 	return findarg(ext, ".h", ".hxx", ".hpp", ".hh") >= 0;
 }
 
+bool IsTypedef(int kind)
+{
+	return kind == CXCursor_TypedefDecl;
+}
+
 bool IsStruct(int kind)
 {
 	return findarg(kind, CXCursor_StructDecl, CXCursor_UnionDecl, CXCursor_ClassDecl,
@@ -85,6 +90,11 @@ bool IsFunction(int kind)
 	                     CXCursor_Destructor, CXCursor_ConversionFunction, CXCursor_CXXMethod) >= 0;
 }
 
+bool IsMethod(int kind)
+{
+	return kind == CXCursor_CXXMethod;
+}
+
 bool IsVariable(int kind)
 {
 	return findarg(kind, CXCursor_VarDecl, CXCursor_FieldDecl) >= 0;
@@ -94,15 +104,20 @@ int FindId(const String& s, const String& id) {
 	if(id.GetCount() == 0)
 		return -1;
 	int q = 0;
+	int r = -1;
 	for(;;) {
 		q = s.Find(id, q);
 		if(q < 0)
-			return -1;
+			break;
 		if((q == 0 || !iscid(s[q - 1])) && // character before id
-		   (q + id.GetCount() >= s.GetCount() || !iscid(s[q + id.GetCount()]))) // and after..
-			return q;
-		q++;
+		   (q + id.GetCount() >= s.GetCount() || !iscid(s[q + id.GetCount()]))) { // and after..
+			r = q; // need to find last one...
+			q += id.GetCount();
+		}
+		else
+			q++;
 	}
+	return r;
 };
 
 String GetClass(const AnnotationItem& m)

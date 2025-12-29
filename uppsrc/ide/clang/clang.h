@@ -78,8 +78,11 @@ struct SourceLocation : Moveable<SourceLocation> {
 	String ToString() const                        { return path + ": " + AsString(pos); }
 };
 
-String RedefineMacros();
 String GetClangInternalIncludes();
+
+#ifdef PLATFORM_WIN32
+String GetLibClangVersion();
+#endif
 
 enum AdditionalKinds {
 	KIND_INCLUDEFILE = -1000,
@@ -89,14 +92,16 @@ enum AdditionalKinds {
 	KIND_ERROR,
 };
 
-Image  CxxIcon(int kind); // TODO: Move here
+Image  CxxIcon(int kind);
 int    PaintCpp(Draw& w, const Rect& r, int kind, const String& name, const String& pretty, Color ink, bool focuscursor, bool retval_last = false);
-String SignatureQtf(const String& name, const String& pretty, int pari = INT_MAX);
+String SignatureQtf(const String& name, const String& pretty, const String& nest, int pari = INT_MAX);
 String CppText(const String& name, const String& pretty);
 
 bool IsStruct(int kind);
+bool IsTypedef(int kind);
 bool IsTemplate(int kind);
 bool IsFunction(int kind);
+bool IsMethod(int kind);
 bool IsVariable(int kind);
 int  FindId(const String& s, const String& id);
 

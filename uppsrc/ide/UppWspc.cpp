@@ -13,7 +13,7 @@ Image OverLtRed(const Image& m)
 
 Image ImageOverRed(const Image& m)
 {
-	return MakeImage(m, OverLtRed);
+	return AdjustImage(m, OverLtRed);
 }
 
 Font WorkspaceWork::ListFont()
@@ -302,6 +302,7 @@ void WorkspaceWork::Fetch(Package& p, const String& pkg)
 		p.file.Clear();
 		p.file.AddPick(Package::File(String(HELPNAME)));
 		p.file.AddPick(Package::File(ConfigFile("global.defs")));
+		p.file.AddPick(Package::File(ConfigFile("valgrind.xml")));
 		for(String d : GetUppDirs()) {
 			Package::File sep(GetFileName(d));
 			sep.separator = true;
@@ -1044,7 +1045,7 @@ void WorkspaceWork::FileMenu(Bar& menu)
 	menu.Separator();
 	menu.Add("Open File Directory",THISBACK(OpenFileFolder));
 	menu.Add("Copy File Path", callback1(WriteClipboardText, GetActiveFilePath()));
-	menu.Add("Terminal at File Directory", [=] { LaunchTerminal(GetFileDirectory(GetActiveFilePath())); });
+	menu.Add("Terminal at File Directory", IdeImg::Terminal(), [=] { LaunchTerminal(GetFileDirectory(GetActiveFilePath())); });
 	if(IsActiveFile()) {
 		menu.Separator();
 		String p = GetActiveFilePath();
@@ -1237,7 +1238,7 @@ void WorkspaceWork::PackageMenu(Bar& menu)
 	if(!menu.IsScanKeys()) {
 		bool cando = !IsAux() && package.IsCursor();
 		String act = UnixPath(GetActivePackage());
-		menu.Add(cando, ~Format("Add package to '%s'", act), IdeImg::package_add(), THISBACK(AddNormalUses));
+		menu.AddMenu(cando, ~Format("Add package to '%s'", act), IdeImg::package_add(), THISBACK(AddNormalUses));
 		if(IsExternalMode())
 			menu.Add(cando, ~Format("Add subfolder packages to '%s'", act), THISBACK(AddFolderUses));
 		RemovePackageMenu(menu);
@@ -1250,7 +1251,7 @@ void WorkspaceWork::PackageMenu(Bar& menu)
 				BuildPackageMenu(menu);
 			}
 			menu.Add("Open Package Directory",THISBACK(OpenPackageFolder));
-			menu.Add("Terminal at Package Directory", [=] { LaunchTerminal(GetActivePackageDir()); });
+			menu.Add("Terminal at Package Directory", IdeImg::Terminal(), [=] { LaunchTerminal(GetActivePackageDir()); });
 		}
 	}
 }

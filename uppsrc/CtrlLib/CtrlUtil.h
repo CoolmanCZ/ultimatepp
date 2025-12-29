@@ -532,8 +532,24 @@ struct SelectDirButton : FileSelButton { SelectDirButton(const char *title = NUL
 
 Image MakeZoomIcon(double scale);
 
-void Set(ArrayCtrl& array, int ii, IdCtrls& m);
-void Get(ArrayCtrl& array, int ii, IdCtrls& m);
+void DrawRoundRect(Draw& w, const Rect& r, int radius, Color fill,
+                   int stroke_width, Color stroke);
+void DrawRoundRect(Draw& w, int x, int y, int cx, int cy, int radius, Color fill,
+                   int stroke_width, Color stroke);
+
+void EnableBasicHints(bool b);
+bool IsBasicHintsEnabled();
+
+void PaintBasicHints(Draw& w, const Rect& cr, const char *qtf);
+void PaintBasicHintsTopic(Draw& w, Size sz, const char *topic);
+
+void PaintBasicHints(Ctrl *ctrl, Draw& w, const Rect& cr, const char *qtf, const char *key);
+void PaintBasicHints(Ctrl *ctrl, Draw& w, const char *qtf, const char *key);
+void PaintBasicHintsTopic(Ctrl *ctrl, Draw& w, const Rect& cr, const char *topic);
+void PaintBasicHintsTopic(Ctrl *ctrl, Draw& w, const char *topic);
+
+void   Set(ArrayCtrl& array, int ii, IdCtrls& m);
+void   Get(ArrayCtrl& array, int ii, IdCtrls& m);
 
 void   UpdateSetDir(const char *path);
 void   UpdateSetUpdater(const char *exename);

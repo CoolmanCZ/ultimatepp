@@ -10,7 +10,7 @@ void Ide::UpgradeTheIDE()
 	String target_dir = idepath + "/" + name + ".new";
 	DeleteFolderDeep(target_dir);
 	RealizeDirectory(target_dir);
-
+	
 	newpath = target_dir + "/" + name + ".app";
 	bakpath = idepath + "/" + name + ".bak.app";
 	idepath << "/" << name << ".app";
@@ -20,6 +20,8 @@ void Ide::UpgradeTheIDE()
 	bakpath = String(~idepath, GetFileExtPos(idepath));
 	bakpath << ".bak" << GetExeExt();
 #endif
+
+	mainconfiglist.GoBegin();
 
 	int tbak = targetmode;
 	String tmbak = StoreAsString(release);
@@ -61,7 +63,6 @@ void Ide::UpgradeTheIDE()
 		}
 	}
 
-
 	LoadFromString(release, tmbak);
 	targetmode = tbak;
 }
@@ -72,7 +73,7 @@ void Ide::InstallDesktop()
 	if(PromptYesNo("Write theide.desktop to&[* \1" + apps + "\1]?&"
 	               "That should make theide available through desktop menu.")) {
 		String icon = ConfigFile("theide.png");
-		PNGEncoder().SaveFile(icon, IdeImg::PackageLarge());
+		PNGEncoder().SaveFile(icon, IdeImg::Icon256());
 		String path = apps + "/theide.desktop";
 		RealizePath(path);
 		Upp::SaveFile(path,

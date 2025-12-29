@@ -101,6 +101,7 @@ enum CtrlCoreFlags : dword {
 	K_PEN          = 0x80,
 
 	IK_DBL_CLICK   = 0x40000001, // this is just to get the info that the entry is equal to dbl-click to the menu
+	IK_CLICK   = 0x40000002, // this is just to get the info that the entry is equal to dbl-click to the menu
 
 	K_MOUSE_FORWARD = 0x40000002,
 	K_MOUSE_BACKWARD = 0x40000003
@@ -466,6 +467,7 @@ public:
 	                          int zdelta, dword keyflags);
 	typedef bool (*KeyHook)(Ctrl *ctrl, dword key, int count);
 	typedef bool (*StateHook)(Ctrl *ctrl, int reason);
+	typedef void (*PaintHook)(Ctrl *ctrl, Draw& draw, const Rect& clip);
 
 	static dword KEYtoK(dword);
 
@@ -601,6 +603,7 @@ private:
 	static  Vector<MouseHook>& mousehook();
 	static  Vector<KeyHook>&   keyhook();
 	static  Vector<StateHook>& statehook();
+	static  Vector<PaintHook>& painthook();
 
 	static Ptr<Ctrl> FocusCtrl() { return focusCtrl; }
 	static void      FocusCtrl(Ptr<Ctrl> fc) { focusCtrl = fc; }
@@ -944,6 +947,9 @@ public:
 	static  void   InstallStateHook(StateHook hook);
 	static  void   DeinstallStateHook(StateHook hook);
 
+	static  void   InstallPaintHook(PaintHook hook);
+	static  void   DeinstallPaintHook(PaintHook hook);
+
 	static  int    RegisterSystemHotKey(dword key, Function<void ()> cb);
 	static  void   UnregisterSystemHotKey(int id);
 
@@ -1219,6 +1225,7 @@ public:
 	bool    HasMouseDeep() const;
 	bool    HasMouseInFrame(const Rect& r) const;
 	bool    HasMouseIn(const Rect& r) const;
+	bool    HasMouseIn() const                 { return HasMouseIn(GetSize()); }
 	Point   GetMouseViewPos() const;
 	static Ctrl *GetMouseCtrl();
 
@@ -1431,7 +1438,7 @@ public:
 	       void   DoSkin();
 
 	String        Name() const;
-	static String Name(Ctrl *ctrl);
+	static String Name(const Ctrl *ctrl);
 
 #ifdef _DEBUG
 	virtual void   Dump() const;

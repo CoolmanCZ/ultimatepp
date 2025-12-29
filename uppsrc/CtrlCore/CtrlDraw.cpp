@@ -414,13 +414,15 @@ void Ctrl::UpdateArea0(SystemDraw& draw, const Rect& clip, int backpaint)
 	LLOG("========== UPDATE AREA " << UPP::Name(this) << ", clip: " << clip << " ==========");
 	ExcludeDHCtrls(draw, GetRect().GetSize(), clip);
 	auto DoCtrlPaint = [&](SystemDraw& w, const Rect& clip) {
-	#ifdef PLATFORM_WIN32
+	#if defined(PLATFORM_WIN32) && !defined(VIRTUALGUI)
 		PaintWinBarBackground(w, clip);
 	#endif
 		CtrlPaint(w, clip);
-	#ifdef PLATFORM_WIN32
+	#if defined(PLATFORM_WIN32) && !defined(VIRTUALGUI)
 		PaintWinBar(w, clip);
 	#endif
+		for(PaintHook h : painthook())
+			h(this, w, clip);
 	};
 	if(globalbackbuffer) {
 		DoCtrlPaint(draw, clip);
