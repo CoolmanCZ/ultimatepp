@@ -130,7 +130,7 @@ void GitBlame::ShowDetails()
 	if (row < 0)
 		return;
 
-	lines.GotoLine(row);
+	lines.GotoBarLine(row);
 	commitdata.ShowCommitData(GetGitDir(), blame.Get(row, GIT_HASH).ToString(), blame.Get(row, GIT_HASH_FILE).ToString());
 }
 
