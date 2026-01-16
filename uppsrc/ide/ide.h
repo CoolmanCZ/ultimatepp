@@ -293,6 +293,8 @@ struct EditorTabBar : public FileTabs {
 
 int    memcmp_i(const char *s, const char *t, int n);
 
+int    GetMatchLen(const char *s, const char *t);
+
 String ResolveTParam(const String& type, const Vector<String>& tparam);
 void   ResolveTParam(Vector<String>& type, const Vector<String>& tparam);
 String Qualify(const String& scope, const String& type, const String& usings);
@@ -673,6 +675,7 @@ public:
 	bool      win_deactivated = false;
 	bool      block_caret = false;
 	bool      bar_branch = true;
+	bool      macos_update_icon = false;
 	bool      search_downloads =
 #ifdef PLATFORM_MACOS
 		false
@@ -1109,6 +1112,8 @@ public:
 	String    GetTargetLogPath();
 	String    GetIdeLogPath();
 	void      OpenLog(const String& logFilePath);
+	bool      IsInLogFile();
+	bool      FindLOG();
 
 	String    include_path; // cached value of include path, GetIncludePath
 

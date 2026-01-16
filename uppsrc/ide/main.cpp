@@ -403,6 +403,11 @@ void AppMain___()
 		
 		ide.LoadConfig();
 
+#ifdef PLATFORM_COCOA
+		if(!ide.macos_update_icon)
+			Ctrl::SetAlwaysUseBundledIcon();
+#endif
+
 		if(!ide.disable_custom_caption)
 			ide.CustomTitleBar();
 
