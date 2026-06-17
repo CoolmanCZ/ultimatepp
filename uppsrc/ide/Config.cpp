@@ -4,7 +4,7 @@
 
 void Ide::SerializeWorkspace(Stream& s) {
 	int i;
-	int version = 22;
+	int version = 23;
 	s / version;
 	s.Magic(0x12354);
 	if(s.IsStoring()) {
@@ -63,6 +63,8 @@ void Ide::SerializeWorkspace(Stream& s) {
 		s % darkmode;
 	if(version >= 21)
 		s % minimize;
+	if(version >= 23)
+		s % scale;
 	s % editfile;
 	for(i = 0; i < 10; i++) {
 		s % bookmark[i];
@@ -187,7 +189,7 @@ void Sentinel(Stream& s, const char *txt)
 
 void Ide::Serialize(Stream& s)
 {
-	int version = 36;
+	int version = 37;
 	Sentinel(s, "before 12341234");
 	s.Magic(0x12341234);
 	Sentinel(s, "after magic");
@@ -276,6 +278,8 @@ void Ide::Serialize(Stream& s)
 	s % default_charset;
 	s % header_guards;
 	s % insert_include;
+	if(version >= 37)
+		s % experimental;
 	if(version >= 23)
 		s % libclang_options;
 	if(version >= 24)

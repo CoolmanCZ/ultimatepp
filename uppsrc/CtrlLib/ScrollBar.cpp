@@ -2,7 +2,7 @@
 
 namespace Upp {
 
-#define LLOG(x) // LOG(x)
+#define LLOG(x)  LOG(x)
 
 void Sb(Button::Style& bs, const Image& img)
 {
@@ -52,7 +52,6 @@ ScrollBar::ScrollBar() {
 	NoWantFocus();
 	style = NULL;
 	SetStyle(StyleDefault());
-	BackPaint();
 	is_active = false;
 }
 

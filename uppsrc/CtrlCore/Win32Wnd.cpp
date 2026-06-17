@@ -220,8 +220,9 @@ void Ctrl::InstallPanicBox()
 	InstallPanicMessageBox(&Win32PanicMessageBox);
 }
 
-extern bool is_custom_titlebar_available__;
 extern Event<const TopWindow *, TopWindow::CustomTitleBarMetrics&> custom_titlebar_metrics__;
+extern Function<bool (const TopWindow *)> is_custom_titlebar__;
+extern Function<Ctrl *(TopWindow *, Color, int)> custom_titlebar_make__;
 
 void Ctrl::InitWin32(HINSTANCE hInstance)
 {
@@ -282,12 +283,8 @@ void Ctrl::InitWin32(HINSTANCE hInstance)
 	Csizeinit();
 #undef ILOG
 
-	GlobalBackPaint();
-
-	is_custom_titlebar_available__ = IsWin11();
-
-	custom_titlebar_metrics__ = [=](const TopWindow *tw, TopWindow::CustomTitleBarMetrics& m) {
-		if(!tw->custom_titlebar)
+	custom_titlebar_metrics__ = [](const TopWindow *tw, TopWindow::CustomTitleBarMetrics& m) {
+		if(!tw->custom_bar)
 			return;
 		m.height = GetWin32TitleBarHeight(tw);
 		m.lm = 0;
@@ -296,7 +293,15 @@ void Ctrl::InitWin32(HINSTANCE hInstance)
 			m.lm = DPI(4) + min(icon.GetWidth(), 32);
 		m.rm = (tw->IsZoomable() ? 3 : 1) * GetWin32TitleBarButtonWidth();
 	};
+
+	is_custom_titlebar__ = [](const TopWindow *win) {
+		return win->IsCustomTitleBar__();
+	};
 	
+	custom_titlebar_make__ = [=](TopWindow *win, Color bk, int mincy) -> Ctrl * {
+		return win->MakeCustomTitleBar__(bk, mincy);
+	};
+
 	EnterGuiMutex();
 }
 
@@ -465,14 +470,40 @@ void Ctrl::UseImmersiveDarkModeForWindowBorder()
 	}
 }
 
+Rect Ctrl::AdjustWindowRect(const Rect& client, dword style, dword exstyle)
+{
+	Rect r = client;
+	TopWindow *tw = dynamic_cast<TopWindow *>(this);
+	if(tw && tw->custom_bar_frame) {
+		Rect mr(100, 100, 200, 200);
+		AdjustWindowRectEx(mr, style, FALSE, exstyle);
+		
+		r.left -= (100 - mr.left);
+		r.right += (mr.right - 200);
+		r.bottom += (mr.bottom - 200);
+		
+		r.top -= tw->GetCustomTitleBarMetrics().height;
+	}
+	else
+		AdjustWindowRectEx(r, style, FALSE, exstyle);
+	
+	return r;
+}
+
+Rect Ctrl::AdjustWindowRect(const Rect& client)
+{
+	HWND hwnd = GetHWND();
+	return hwnd ? AdjustWindowRect(client, ::GetWindowLong(hwnd, GWL_STYLE), ::GetWindowLong(hwnd, GWL_EXSTYLE))
+	            : client;
+}
+
 void Ctrl::Create(HWND parent, DWORD style, DWORD exstyle, bool savebits, int show, bool dropshadow)
 {
 	GuiLock __;
 	ASSERT_(IsMainThread(), "Window creation can only happen in the main thread");
 	LLOG("Ctrl::Create(parent = " << (void *)parent << ") in " <<UPP::Name(this) << LOG_BEGIN);
 	ASSERT(!IsChild() && !IsOpen());
-	Rect r = GetRect();
-	AdjustWindowRectEx(r, style, FALSE, exstyle);
+	Rect r = AdjustWindowRect(GetRect(), style, exstyle);
 	isopen = true;
 	Top *top = new Top;
 	SetTop(top);
@@ -647,10 +678,7 @@ LRESULT CALLBACK Ctrl::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 			int ticks = msecs();
 			String wname = w->Name();
 #endif
-			Ptr<Ctrl> pw = w;
 			l = w->WindowProc(message, wParam, lParam);
-			if(pw)
-				pw->SyncMoves();
 #if LOGTIMING
 			String msgname;
 			for(WinMsg *m = sWinMsg; m->ID; m++)
@@ -1093,9 +1121,7 @@ void Ctrl::WndSetPos(const Rect& rect)
 	LLOG("WndSetPos " << UPP::Name(this) << " " << rect);
 	HWND hwnd = GetHWND();
 	if(hwnd) {
-		Rect r = rect;
-		AdjustWindowRectEx(r, ::GetWindowLong(hwnd, GWL_STYLE), FALSE,
-		                   ::GetWindowLong(hwnd, GWL_EXSTYLE));
+		Rect r = AdjustWindowRect(rect);
 		SetWindowPos(hwnd, NULL, r.left, r.top, r.Width(), r.Height(),
 		             SWP_NOACTIVATE|SWP_NOZORDER);
 		if(HasFocusDeep()) {
@@ -1126,20 +1152,6 @@ void Ctrl::WndUpdate(const Rect& r)
 		ReleaseDC(hwnd, hdc);
 		DeleteObject(hrgn);
 	}
-}
-
-void  Ctrl::WndScrollView(const Rect& r, int dx, int dy)
-{
-	GuiLock __;
-	LLOG("WndScrollView " << UPP::Name(this));
-	if(caretCtrl && caretCtrl->GetTopCtrl() == this)
-		RefreshCaret();
-#ifdef PLATFORM_WINCE
-	::ScrollWindowEx(GetHWND(), dx, dy, r, r, NULL, NULL, 0);
-#else
-	::ScrollWindow(GetHWND(), dx, dy, r, r);
-#endif
-	SyncCaret();
 }
 
 void Ctrl::PopUpHWND(HWND owner, bool savebits, bool activate, bool dropshadow, bool topmost)

@@ -102,6 +102,9 @@ protected:
 	FrameBottom<EditString> input;
 	String line;
 	int    serial;
+	
+	String       text_buffer;
+	TimeCallback flush;
 
 	void CheckEndGroup();
 	void FlushConsole();
@@ -390,7 +393,6 @@ public:
 	virtual   void   Activate();
 	virtual   void   Layout();
 	virtual   void   Skin();
-	virtual   bool   IsCustomTitleBarDragArea(Point p);
 
 	virtual   bool   IsVerbose() const;
 	virtual   void   PutConsole(const char *s);
@@ -496,6 +498,7 @@ public:
 		Button freplace;
 		Button fdelete;
 		Image  icon;
+		String text;
 		
 		FoundList();
 	};
@@ -609,6 +612,7 @@ public:
 	bool      disable_uhd = false;
 	bool      darkmode = false;
 	bool      minimize = false;
+	int       scale = 0;
 	String    stdout_file;
 	String    recent_stdout_file;
 
@@ -632,8 +636,14 @@ public:
 	byte      default_charset;
 	bool      indent_spaces;
 	bool      show_status_bar;
-	bool      toolbar_in_row;
+	bool      toolbar_in_row =
+#ifdef PLATFORM_MACOS
+		true;
+#else
+		false;
+#endif
 	bool      disable_custom_caption = false;
+	bool      disable_custom_caption2 = true; // this one is initial config
 	bool      show_tabs;
 	bool      show_spaces;
 	bool      warnwhitespace;
@@ -648,6 +658,7 @@ public:
 	bool      thousands_separator;
 	bool      hline, vline;
 	bool      wrap_console_text;
+	bool      experimental = false;
 	bool      mute_sounds;
 	bool      line_numbers;
 	bool      header_guards;
@@ -678,11 +689,10 @@ public:
 	bool      macos_update_icon = false;
 	bool      search_downloads =
 #ifdef PLATFORM_MACOS
-		false
+		false;
 #else
-		true
+		true;
 #endif
-	;
 		
 
 	// Formats editor's code with Ide format parameters
@@ -697,7 +707,8 @@ public:
 	ParentCtrl              barrect; // to do custom caption clipping
 	CursorInfoCtrl          display, display_main;
 	ImageCtrl               indeximage, indeximage2;
-	bool                    fileinfo_visible = false; // show file time when cursor points to display
+	bool                    fileinfo_visible = false; // show file info when mouse cursor points to display
+	bool                    assemblyinfo_visible = false; // show assembly info when mouse cursor points to display_main
 
 	byte      hilite_scope;
 	int       hilite_bracket;
@@ -852,7 +863,7 @@ public:
 		void   Print();
 		void   DoDiff(FileDiff *diffdlg);
 		void   Diff();
-		void   DiffWith(const String& path);
+		void   DiffWith(const String& path, const Image& icon);
 		void   DiffFiles(const char *lname, const String& l, const char *rname, const String& r);
 		String LoadConflictFile(const String& n);
 
@@ -1046,6 +1057,7 @@ public:
 		void  FindDesignerItemReferences(const String& id, const String& name);
 		void  NavigatorDlg();
 		void  InsertParameters();
+		void  FindUnitializedMemberVariables(int scope);
 
 	void      HelpMenu(Bar& menu);
 	    void  ViewIdeLogFile();
@@ -1155,6 +1167,7 @@ public:
 	void      NewFFound();
 	ArrayCtrl& FFound();
 	void      FFoundSetIcon(const Image& m);
+	void      FFoundSetText(const String& text);
 	void      FFoundFinish();
 	void      ShowFound(ArrayCtrl& list);
 	void      CopyFound(ArrayCtrl& list, bool all);
@@ -1210,7 +1223,9 @@ public:
 	void      SyncClang();
 
 	Rect      GetFileInfoRect();
-	void      PaintFileInfo(Draw& w);
+	String    GetAssemblyInfoQtf();
+	Rect      GetAssemblyInfoRect(Size *tsz = nullptr);
+	void      PaintTitlebarInfo(Draw& w);
 
 	void      PassEditor(AssistEditor& editor2);
 	void      PassEditor();

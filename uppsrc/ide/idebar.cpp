@@ -248,6 +248,12 @@ void Ide::SearchMenu(Bar& menu)
 		bar.Add("In workspace files in current file nest", [=] { FindDs(2, true); });
 	});
 	menu.Add("Find GIT conflicts", [=] { FindGitConflicts(); });
+	if(experimental)
+		menu.Sub("Find uninitialized member variables", [=](Bar& bar) {
+			bar.Add("In current file package", [=] { FindUnitializedMemberVariables(0); });
+			bar.Add("In workspace files in current file nest", [=] { FindUnitializedMemberVariables(1); });
+			bar.Add("In workspace", [=] { FindUnitializedMemberVariables(2); });
+		});
 }
 
 void Ide::Edit(Bar& menu)
@@ -595,8 +601,8 @@ void Ide::Project(Bar& menu)
 	menu.MenuSeparator();
 	FilePropertiesMenu0(menu);
 	if(!IsEditorMode()) {
-		menu.MenuSeparator();
 		if(repo_dirs) {
+			menu.MenuSeparator();
 			String pp = GetActivePackageDir();
 			menu.AddMenu(FileExists(pp) && editfile_repo,
 			             (editfile_repo == SVN_DIR ? "Show svn history of " : "Show git history of ") + GetFileName(pp),
@@ -643,14 +649,14 @@ void Ide::FilePropertiesMenu(Bar& menu)
 	if(i >= 0 && i < fileindex.GetCount() && fileindex[i] < actual.file.GetCount())
 		path = SourcePath(actualpackage, actual.file[fileindex[i]]);
 	menu.Sub(candiff, "Compare with", [=](Bar& bar) {
-		bar.AddMenu(candiff, AK_DIFF, IdeImg::Diff(), THISBACK(Diff))
+		bar.AddMenu(candiff, AK_DIFF, IdeImg::Diff(), [=] { Diff(); })
 		    .Help("Show differences between the current and selected file");
 		bar.AddMenu(candiff && FileExists(GetTargetLogPath()),
-		            AK_DIFFLOG, IdeImg::DiffLog(), [=] { DiffWith(GetTargetLogPath()); })
+		            AK_DIFFLOG, IdeImg::DiffLog(), [=] { DiffWith(GetTargetLogPath(), IdeImg::DiffLog()); })
 		    .Help("Show differences between the current file and the log");
 		if(FileExists(path))
 			bar.AddMenu(candiff && FileExists(path), path,
-			            IdeImg::DiffNext(), [=] { DiffWith(path); })
+			            IdeImg::DiffNext(), [=] { DiffWith(path, IdeImg::DiffNext()); })
 			    .Help("Show differences between the current and the next file");
 		Vector<String> file;
 		if(bar.IsMenuBar()) {
@@ -669,7 +675,7 @@ void Ide::FilePropertiesMenu(Bar& menu)
 					sep = false;
 					if(++ii > 80) // sanity..
 						return;
-					bar.AddMenu(p, IdeImg::DiffNext(), [=] { DiffWith(p); })
+					bar.AddMenu(p, IdeImg::DiffNext(), [=] { DiffWith(p, IdeImg::DiffNext()); })
 					    .Help("Show differences between the current and that file");
 				}
 		}
@@ -949,8 +955,6 @@ void Ide::BrowseMenu(Bar& menu)
 				.Help("Go to given line");
 			AssistMenu(menu);
 			menu.Add(!designer, AK_GO_TO_LINE, THISBACK(GoToLine));
-			AssistEdit(menu);
-			Reformat(menu);
 			menu.MenuSeparator();
 		}
 
@@ -1171,12 +1175,16 @@ void Ide::EditorMenu(Bar& bar)
 	bar.MenuSeparator();
 	OnlineSearchMenu(bar);
     bar.Add(IsClipboardAvailableText() && (editor.IsSelection() || editor.GetLength() < 1024*1024),
-            "Compare with clipboard..", [=]() {
+            "Compare with clipboard..", IdeImg::DiffClip(), [=]() {
         DiffDlg& dlg = CreateNewWindow<DiffDlg>();
         dlg.diff.left.RemoveFrame(dlg.p);
-        dlg.diff.Set(ReadClipboardText(), editor.IsSelection() ? editor.GetSelection()
-                                                               : editor.Get());
+        String left = ReadClipboardText();
+        String right = editor.IsSelection() ? editor.GetSelection() : editor.Get();
+        dlg.diff.Set(left, right);
+        dlg.diff.indent <<= false;
+        dlg.diff.indent << [=, &dlg] { dlg.diff.Set(left, right); };
 		dlg.Title("Compare with clipboard");
+		dlg.Icon(IdeImg::DiffClip());
         dlg.OpenMain();
     });
 	bar.MenuSeparator();

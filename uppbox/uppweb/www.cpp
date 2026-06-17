@@ -12,18 +12,17 @@
 
 #define LLOG(x)  // LOG(x)
 
-String devdir   = GetHomeDirFile("upp.src");
+String targetdir = GetHomeDirFile("www2");
 String rootdir   = GetHomeDirFile("upp.stable");
-String uppbox    = rootdir + "/uppbox";
+String masterdir = GetHomeDirFile("upp.src");
+
+String uppbox    = masterdir + "/uppbox";
 String uppsrc    = rootdir + "/uppsrc";
-String devsrc    = devdir + "/uppsrc";
+//String devsrc    = devdir + "/uppsrc";
 String reference = rootdir + "/reference";
 String examples  = rootdir + "/examples";
-#ifdef _DEBUG
-String targetdir = GetHomeDirFile("www");
-#else
-String targetdir = "/var/www";
-#endif
+
+String webtopic  = "topic://uppweb";
 
 VectorMap<String, String> escape;
 
@@ -264,7 +263,7 @@ String FormatDateRFC822(const Time& t) {
 	              tz>0?"+":"",tz/60*100+(tz+1440)%60);
 }
 
-String Www(const char *topic, int lang, String topicLocation = "topic://uppweb/www/")
+String Www(const char *topic, int lang, String topicLocation = webtopic + "/www/")
 {
 	String strLang = ToLower(LNGAsText(lang));
 	String www = GatherTopics(tt, ttFullIds, String().Cat() << topicLocation << topic << "$" << strLang, "", false);
@@ -544,6 +543,7 @@ String FindPageDescription(const RichText& qtf)
 	return TrimDescription(description);
 }
 
+#if 0
 String AdSense3()
 {
 #ifdef _DEBUG
@@ -579,6 +579,7 @@ String AdLinks()
 	return LoadFile(GetRcFile("adlinks.txt"));
 #endif
 }
+#endif
 
 void ExportPage(int i)
 {
@@ -623,7 +624,7 @@ void ExportPage(int i)
 	}
 
 	if (tt[i].title.Find("How to contribute. Web page") < 0) {
-		String help = "topic://uppweb/www/contribweb$" + ToLower(LNGAsText(languages[ilang]));
+		String help = webtopic + "/www/contribweb$" + ToLower(LNGAsText(languages[ilang]));
 		qtflangs += " " + String("[^") + help + "^ [<A2 " + t_("Do you want to contribute?") + "]]";
 	}
 
@@ -651,8 +652,10 @@ void ExportPage(int i)
 	for (int iHtml = 0; iHtml < htmlrep.GetCount(); ++iHtml)
 		page.Replace(String("QTFHTMLTEXT") + FormatInt(iHtml), htmlrep[iHtml]);
 
-	if(path == "topic://uppweb/www/download$en-us")
+#if 0
+	if(path == webtopic + "/www/download$en-us")
 		page << AdSense3();
+#endif
 	Color bg = Color(210, 217, 210);
 	Htmls footer;
 	footer << HtmlTable().Border(0).Width(-100) / HtmlLine() +
@@ -670,10 +673,12 @@ void ExportPage(int i)
 					LoadFile(GetRcFile("facebook.txt")) +
 					"<br><br>" +
 //						"<p align=\"center\">" +
+#if 0
 					AdSense2() +
 					"<br><br>" +
 					AdLinks() +
 					(h > 25000 ? "<br><br>" + AdSense2() : "") +
+#endif
 					"<br><br><br>" +
 					"<br><br><br>" +
 					~(HtmlLink("https://sourceforge.net/projects/upp/") /
@@ -723,7 +728,7 @@ void ExportPage(int i)
 	else if(StartsWith(topicTitle, "reference"))
 		pageTitle = "Examples / " + pageTitle;
 
-	bool is_index = path == "topic://uppweb/www/index$en-us";
+	bool is_index = path == webtopic + "/www/index$en-us";
 	if(pageTitle != "U++" && !is_index)
 		pageTitle << " :: U++";
 
@@ -836,28 +841,14 @@ CONSOLE_APP_MAIN
 
 	RLOG("--- uppweb started at " << GetSysTime());
 
-	const Vector<String>& cmd = CommandLine();
+	bool isdev = false;
 	
-	if(cmd.GetCount() < 3) {
-		RLOG("Usage: uppweb rootdir targetdir [0|1]");
-		Exit(1);
+	if(CommandLine().GetCount() && CommandLine()[0] == "dev") {
+		isdev = true;
+		rootdir = masterdir;
+		targetdir << "/dev";
 	}
 	
-	rootdir = cmd[0];
-	targetdir = cmd[1];
-	
-	if(!DirectoryExists(rootdir)) {
-		RLOG(rootdir << " does not exist");
-		Exit(1);
-	}
-
-	if(!DirectoryExists(targetdir)) {
-		RLOG(targetdir << " does not exist");
-		Exit(1);
-	}
-	
-	bool isdev = cmd[2] == "1";
-
 	uppsrc = AppendFileName(rootdir, "uppsrc");
 
 	RealizeDirectory(targetdir);
@@ -866,6 +857,13 @@ CONSOLE_APP_MAIN
 	RLOG("TargetDir: " << targetdir);
 
 	String downloads = Downloads();
+
+	FindFile ff(AppendFileName(targetdir, "*.*"));
+	while(ff) {
+		if(ff.IsFile())
+			FileDelete(ff.GetPath());
+		ff.Next();
+	}
 
 	if (!DirectoryExists(rootdir)) {
 		Cout() << ("Directory " + DeQtf(rootdir) + " does not exist\n");
@@ -892,7 +890,7 @@ CONSOLE_APP_MAIN
 	escape.Add("LATESTGIT", version);
 #endif
 
-	String release = "17810";
+	String release = "18468";
 	escape.Add("RELEASE", release);
 	escape.Add("RELEASET", release);
 	escape.Add("UPDATETIME", Format("%`", GetUtcTime()));
@@ -910,7 +908,7 @@ CONSOLE_APP_MAIN
 			    HtmlCell().Right().Bottom()
 			              .Style("padding-bottom: 5px; "
 			                     "background-image: url('" + GetImageSrc(WWW::HB) + "')")
-			    / HtmlArial(14) / (AdSense() + "&nbsp;&nbsp;" + (isdev ? "<br>development version (master branch)" : ""))
+			    / HtmlArial(14) / (/*AdSense() + "&nbsp;&nbsp;" + */(isdev ? "<br>development version (master branch)" : ""))
 			);
 
 	bar.SetCount(languages.GetCount());
@@ -931,8 +929,8 @@ CONSOLE_APP_MAIN
 		{
 			IGNORE_RESULT(Www("reference", lang));
 
-			int ri = tt.Find("topic://uppweb/www/reference$" + ToLower(LNGAsText(lang)));
-			int di = tt.Find("topic://uppweb/www/examples$" + ToLower(LNGAsText(lang)));
+			int ri = tt.Find(webtopic + "/www/reference$" + ToLower(LNGAsText(lang)));
+			int di = tt.Find(webtopic + "/www/examples$" + ToLower(LNGAsText(lang)));
 
 			tt[di].text << MakeExamples(examples, "examples", lang, String("/") + FormatInt(di));
 			tt[di].text << tt[ri].text << '\n';
@@ -946,7 +944,7 @@ CONSOLE_APP_MAIN
 
 		bi << BarLink(Www("documentation", lang), t_("Documentation"));
 		{
-			int di = tt.Find("topic://uppweb/www/documentation$" + ToLower(LNGAsText(lang)));
+			int di = tt.Find(webtopic + "/www/documentation$" + ToLower(LNGAsText(lang)));
 			if (di >= 0) {
 				Index<String> x;
 				x.Clear();
@@ -1029,7 +1027,7 @@ CONSOLE_APP_MAIN
 
 	for(int i = 0; i < tt.GetCount(); i++) {
 		String topic = tt.GetKey(i);
-		links.Add(topic, topic == "topic://uppweb/www/index$en-us" ? "index.html" :
+		links.Add(topic, topic == webtopic + "/www/index$en-us" ? "index.html" :
 		                 memcmp(topic, "topic://", 8) ? topic : TopicFileNameHtml(topic, false));
 	}
 
@@ -1073,7 +1071,8 @@ CONSOLE_APP_MAIN
 
 	FileCopy(AppendFileName(uppbox, "uppweb/favicon.png"), AppendFileName(targetdir, "favicon.png"));
 	
-	uppsrc = AppendFileName(devdir, "uppsrc");
+//		rootdir = devdir;
+	targetdir << "/dev";
 
 	RLOG("Finished OK");
 }

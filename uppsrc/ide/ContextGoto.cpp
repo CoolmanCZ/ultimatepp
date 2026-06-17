@@ -54,13 +54,19 @@ String Ide::GetRefId(int pos, String& name, Point& ref_pos)
 	int li = editor.GetLinePos(lp);
 	ref_pos = Null;
 	
-	for(int pass = 0; pass < 2 && IsNull(ref_id); pass++)
+	bool macro = false; // so we have second chance to solve win32 W/A/ #defines (e.g. GetMessageA)
+	for(int pass = 0; pass < 2 && (IsNull(ref_id) || macro); pass++)
 		for(const ReferenceItem& m : editor.references) {
 			if(m.pos.y == li && m.pos.x <= lp && m.pos.x >= ci &&
-			   (GetNameFromId(m.id) == name || pass == 1)) {
+               (GetNameFromId(m.id) == name ||
+                pass == 1 &&
+                (!macro || GetNameFromId(m.id) == name + "A" || GetNameFromId(m.id) == name + "W")) // ugly solution for ugly Win32 W/A #defines
+			) {
 				ref_id = m.id;
 				ref_pos = m.ref_pos;
 				ci = m.pos.x;
+				macro = m.macro;
+				LOG("SET");
 			}
 		}
 

@@ -296,7 +296,7 @@ bool TextCompareCtrl::LineDiff(bool left, Vector<LineEdit::Highlight>& hln, Colo
 			}
 		}
 
-	if(matchlen > 1 || matchlen && !IsAlNum(s1[p1])) {
+	if(matchlen > 1) {
 		for(int i = 0; i < matchlen; i++)
 			hln[(left ? p1 : p2) + i].paper = eq_color;
 
@@ -306,6 +306,7 @@ bool TextCompareCtrl::LineDiff(bool left, Vector<LineEdit::Highlight>& hln, Colo
 		}
 		return true;
 	}
+
 	return false;
 }
 
@@ -324,14 +325,26 @@ void TextCompareCtrl::ScrollBarItems::Paint(Draw& w)
 void TextCompareCtrl::PaintScrollBarItems(Draw& w)
 {
 	Rect sr = scroll.y.GetSliderRect();
-	for(int pass = 0; pass < 2; pass++) {
-		Size isz = pass ? DiffImg::dot1().GetSize() : DiffImg::dot().GetSize();
-		for(int i = 0; i < lines.GetCount(); i++)
-			if(lines[i].level > 1)
-				w.DrawImage(sr.CenterPoint().x - isz.cx / 2,
-				            sr.top + scroll.y.GetSliderPos(i) - isz.cy / 2,
-				            pass ? DiffImg::dot1() : DiffImg::dot());
+	Size sz = sr.GetSize();
+	if(scrollbar_items_dirty || scrollbar_items.GetSize() != sz) {
+		ImagePainter p(sz);
+		p.Clear();
+		for(int pass = 0; pass < 2; pass++) {
+			Size isz = pass ? DiffImg::dot1().GetSize() : DiffImg::dot().GetSize();
+			int py = Null;
+			for(int i = 0; i < lines.GetCount(); i++)
+				if(lines[i].level > 1) {
+					int y = scroll.y.GetSliderPos(i) - sr.top - isz.cy / 2;
+					if(py != y) {
+						p.DrawImage(sz.cx / 2 - isz.cx / 2, y, pass ? DiffImg::dot1() : DiffImg::dot());
+						py = y;
+					}
+				}
+		}
+		scrollbar_items = p;
+		scrollbar_items_dirty = false;
 	}
+	w.DrawImage(sr.left, sr.top, scrollbar_items);
 }
 
 void TextCompareCtrl::Paint(Draw& draw)
@@ -475,14 +488,21 @@ void TextCompareCtrl::Paint(Draw& draw)
 			if(show_diff_highlight) {
 				WString ln_diff = l.text_diff.ToWString();
 				ln_diff = ExpandTabs(ln_diff);
-				if((int64)ln_diff.GetCount() * ln.GetCount() < 50000) {
-					if(left)
+				int l1 = 0;
+				int l2 = 0;
+				while(l1 < ln.GetCount() && findarg(ln[l1], ' ', '\t') >= 0)
+					l1++;
+				while(l2 < ln_diff.GetCount() && findarg(ln_diff[l2], ' ', '\t') >= 0)
+					l2++;
+				if(left)
 						ldiff = LineDiff(true, hln, GetDiffBgColor(),
-						         ~ln, 0, ln.GetCount(), ~ln_diff, 0, ln_diff.GetCount(), 0);
-					else
+						         ~ln, l1, ln.GetCount(), ~ln_diff, l2, ln_diff.GetCount(), 0);
+                else
 						ldiff = LineDiff(false, hln, GetDiffBgColor(),
-						         ~ln_diff, 0, ln_diff.GetCount(), ~ln, 0, ln.GetCount(), 0);
-				}
+						         ~ln_diff, l1, ln_diff.GetCount(), ~ln, l2, ln.GetCount(), 0);
+				if(ldiff && DirDiffDlg::GetIgnoreIndentation(this))
+					for(int i = 0; i < l1; i++)
+						hln[i].paper = paper_color;
 			}
 			if(show_white_space) {
 				for(int i = ln.GetCount(); i >= 0; --i) {
@@ -594,6 +614,7 @@ void TextCompareCtrl::Layout()
 	if(blame.GetCount())
 		n_width += Zx(8 * 40);
 	scroll.Set(scroll, (scroll.GetReducedViewSize() - Size(n_width, 0)) / letter, Size(maxwidth, lines.GetCount()));
+	scrollbar_items_dirty = true;
 	Refresh();
 }
 
@@ -644,6 +665,7 @@ void TextCompareCtrl::Set(int line, String text, bool diff, int number, int leve
 		maxwidth = tl;
 		Layout();
 	}
+	scrollbar_items_dirty = true;
 }
 
 void TextCompareCtrl::SelfScroll()

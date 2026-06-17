@@ -11,11 +11,11 @@ DirDiffDlg::DirDiffDlg()
 
 	hidden.SetLabel(t_("Hidden"));
 	split_lines.SetLabel(t_("Split long lines"));
-	
+
 	added.SetColor(Green()).SetLabel(t_("New"));
 	modified.SetLabel(t_("Modified"));
 	removed.SetColor(Red()).SetLabel(t_("Removed"));
-	
+
 	recent <<= Null;
 	recent.Add(Null, "All");
 	recent.Add(1, "1 Day");
@@ -26,21 +26,21 @@ DirDiffDlg::DirDiffDlg()
 	recent.Add(60, "3 Months");
 	recent.Add(180, "6 Months");
 	recent.Add(365, "1 Year");
-	
+
 	compare.SetLabel(t_("Compare"));
 	int bcy = max(cy, compare.GetStdSize().cy);
-	
+
 	files_pane.Add(dir1.TopPos(0, cy).HSizePos());
 	files_pane.Add(dir2.TopPos(cy + div, cy).HSizePos());
 	files_pane.Add(hidden.TopPos(2 * cy + 2 * div, bcy).LeftPos(0, bcx));
 	files_pane.Add(split_lines.TopPos(2 * cy + 2 * div, bcy).LeftPosZ(52, 100));
-	
+
 	files_pane.Add(added.TopPos(3 * cy + 3 * div, bcy).LeftPosZ(2, 60));
 	files_pane.Add(modified.TopPos(3 * cy + 3 * div, bcy).LeftPosZ(52, 70));
 	files_pane.Add(removed.TopPos(3 * cy + 3 * div, bcy).LeftPosZ(128, 80));
 	files_pane.Add(recent.TopPos(3 * cy + 3 * div, bcy).RightPos(0, bcx + Zx(8)));
 	files_pane.Add(extension.TopPos(3 * cy + 3 * div, bcy).RightPos(bcx + Zx(8) + DPI(8), bcx));
-	
+
 	removed = 1;
 	added = 1;
 	modified = 1;
@@ -48,7 +48,7 @@ DirDiffDlg::DirDiffDlg()
 	clearFind.SetLabel("X");
 	clearFind.RightPosZ(1, 16).VSizePosZ(1, 1);
 	find.AddChild(&clearFind);
-	
+
 	files_pane.Add(compare.TopPos(2 * cy + 2 * div, bcy).RightPos(0, bcx));
 	files_pane.Add(files.VSizePos(3 * cy + bcy + 4 * div, Zy(24)).HSizePos());
 	files_pane.Add(find.BottomPosZ(4, 19).HSizePosZ());
@@ -57,19 +57,19 @@ DirDiffDlg::DirDiffDlg()
 	files_diff.Set(files_pane, diff);
 	files_diff.SetPos(2000);
 	files_diff.SetMinPixels(0, Zx(256));
-	
+
 	Sizeable().Zoomable();
-	
+
 	seldir1.Attach(dir1);
 	seldir2.Attach(dir2);
-	
+
 	seldir1.Title("First directory to compare");
 	seldir2.Title("Second directory to compare");
-	
+
 	compare <<= THISBACK(Compare);
 	dir1 <<= THISBACK(ClearFiles);
 	dir2 <<= THISBACK(ClearFiles);
-	
+
 	modified	<< [=] { ShowResult(); };
 	removed		<< [=] { ShowResult(); };
 	added		<< [=] { ShowResult(); };
@@ -77,7 +77,7 @@ DirDiffDlg::DirDiffDlg()
 	extension   << [=] { ShowResult(); };
 	recent      << [=] { ShowResult(); };
 	clearFind	<< [=] { find.Clear(); ShowResult();};
-	
+
 	files.WhenSel = THISBACK(File);
 
 	diff.InsertFrameLeft(left);
@@ -96,7 +96,7 @@ DirDiffDlg::DirDiffDlg()
 	right.Add(copyleft.VSizePos().LeftPosZ(0, 70));
 	right.Add(removeright.VSizePos().LeftPosZ(74, 70));
 	right.Add(revertright.VSizePos().LeftPosZ(148, 70));
-	
+
 	auto SetupCopy = [=](Button& copy, bool left) {
 		copy.SetImage(left ? DiffImg::CopyLeft() : DiffImg::CopyRight());
 		copy.SetLabel("Copy");
@@ -104,7 +104,7 @@ DirDiffDlg::DirDiffDlg()
 		copy.Disable();
 		copy << [=] { Copy(left); };
 	};
-	
+
 	SetupCopy(copyleft, true);
 	SetupCopy(copyright, false);
 
@@ -122,38 +122,39 @@ DirDiffDlg::DirDiffDlg()
 			}
 		};
 	};
-	
+
 	SetupRevert(revertleft, &dir1);
 	SetupRevert(revertright, &dir2);
-	
+
 	auto SetupRemove = [=](Button& remove, TextCompareCtrl *text, EditString *dir)
 	{
 		remove.SetLabel("Remove");
 		remove.Tip("F8");
 		remove.SetImage(CtrlImg::remove());
 		remove.Disable();
-		
+
 		remove << [=] {
 			String path = AppendFileName(~*dir, files.GetCurrentName());
 			Backup(path);
 			SaveFile(path, text->RemoveSelected(HasCrs(path)));
 			Refresh();
 		};
-	
+
 		text->WhenSel << [=, &remove] {
 			remove.Enable(text->IsSelection());
 		};
 	};
-	
+
 	SetupRemove(removeleft, &diff.left, &dir1);
 	SetupRemove(removeright, &diff.right, &dir2);
-	
+
 	split_lines << [=] { File(); };
+	diff.indent << [=] { File(); };
 
 	Icon(DiffImg::DirDiff());
 
 	WhenIcon = [](const char *path) -> Image { return NativePathIcon(path); };
-	
+
 	Title("Compare directories");
 };
 
@@ -179,23 +180,19 @@ void DirDiffDlg::GatherFilesDeep(VectorMap<String, Time>& files, const String& b
 bool DirDiffDlg::FileEqual(const String& f1, const String& f2, int& kind)
 {
 	FileIn in1(f1);
+	in1.SetBufferSize(1024*256);
+	in1.SetBufferSize(1024*256);
 	FileIn in2(f2);
 	if(in1 && in2) {
 		kind = NORMAL_FILE;
-		if(in1.GetSize() != in2.GetSize())
-			return false;
-		
-		while(!in1.IsEof() && !in2.IsEof()) {
-			String a = in1.Get(64*1024);
-			String b = in2.Get(64*1024);
-			if(a != b)
+		while(!in1.IsEof() && !in2.IsEof())
+			if(in1.GetLine() != in2.GetLine())
 				return false;
-		}
 		return true;
 	}
 	else
 		kind = in1 ? DELETED_FILE : NEW_FILE;
-	
+
 	return false;
 }
 
@@ -210,12 +207,12 @@ void DirDiffDlg::Compare()
 
 	removeleft.Disable();
 	removeright.Disable();
-	
+
 	files.Clear();
 	SortByKey(fs);
 	Progress pi(t_("Comparing.."));
 	pi.SetTotal(fs.GetCount());
-	
+
 	list.Clear();
 	Index<String> exts;
 	for(int i = 0; i < fs.GetCount(); i++) {
@@ -238,13 +235,13 @@ void DirDiffDlg::Compare()
 			m.kind = kind;
 		}
 	}
-	
+
 	extension.Clear();
 	extension.Add(Null, "*.*");
 	for(int ii : GetSortOrder(exts))
 		extension.Add(exts[ii], "*" + exts[ii]);
 	extension.Enable();
-	
+
 	ShowResult();
 }
 
@@ -347,8 +344,8 @@ void DirDiffDlg::File()
 	};
 
 	diff.Set(Null, Null);
-	String f1 = LoadFile(p1);
-	String f2 = LoadFile(p2);
+	f1 = LoadFile(p1);
+	f2 = LoadFile(p2);
 	if(split_lines) {
 	    f1 = SplitLines(f1);
 	    f2 = SplitLines(f2);
@@ -397,10 +394,11 @@ void DirDiffDlg::Copy(bool left)
 	}
 	if(PromptYesNo("Copy [* \1" + src + "\1]&to [* \1" + dst + "\1] ?")) {
 		Backup(dst);
-		FileIn  in(src);
-		FileOut out(dst);
-		CopyStream(out, in);
-		out.Close();
+		String src_data = f1;
+		String dst_data = f2;
+		if(left)
+			Swap(src_data, dst_data);
+		SaveFile(dst, src_data);
 		Refresh();
 	}
 }

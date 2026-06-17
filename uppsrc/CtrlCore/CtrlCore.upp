@@ -8,6 +8,8 @@ uses
 
 library(WIN32) "advapi32 comdlg32 comctl32 imm32";
 
+library(PORTABLE_HYBRID) "brotlidec brotlicommon bz2 Xau uuid";
+
 pkg_config(POSIX !OSX !VIRTUALGUI) "freetype2 x11 xinerama xrender xft xdmcp fontconfig xcb xext";
 
 pkg_config(POSIX !X11 !OSX !VIRTUALGUI) "gtk+-3.0 libnotify";
@@ -97,12 +99,12 @@ file
 	GtkCtrl.h,
 	GtkCtrl.cpp,
 	GtkCapture.cpp,
-	GtkCSD.cpp,
 	GtkWnd.cpp,
 	GtkCreate.cpp,
 	GtkEvent.cpp,
 	GtkTop.h,
 	GtkTop.cpp,
+	GtkCustomBar.cpp,
 	GtkClip.cpp,
 	GtkDnD.cpp,
 	GtkApp.cpp,

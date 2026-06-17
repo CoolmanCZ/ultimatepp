@@ -197,24 +197,24 @@ void Ctrl::DndTargets(GdkDragContext *context)
 	for(GList *list = gdk_drag_context_list_targets(context); list; list = g_list_next (list)) {
 		String g = gdk_atom_name((GdkAtom)list->data);
 		if(text_targets.Find(g) >= 0) {
-			dnd_targets.Add("text");
+			dnd_targets.FindAdd("text");
 			if(dnd_text_target.IsEmpty())
 				dnd_text_target = g;
 		}
 		else
 		if(image_targets.Find(g) >= 0) {
-			dnd_targets.Add("image");
+			dnd_targets.FindAdd("image");
 			if(dnd_image_target.IsEmpty())
 				dnd_image_target = g;
 		}
 		else
 		if(files_targets.Find(g) >= 0) {
-			dnd_targets.Add("files");
+			dnd_targets.FindAdd("files");
 			if(dnd_files_target.IsEmpty())
 				dnd_files_target = g;
 		}
 		else
-			dnd_targets.Add(g);
+			dnd_targets.FindAdd(g);
 	}
 }
 
@@ -222,7 +222,6 @@ void Ctrl::GtkDragDataReceived(GtkWidget *widget, GdkDragContext *context,
                                gint x, gint y, GtkSelectionData *data,
                                guint info, guint time, gpointer user_data)
 {
-	LLOG("GtkDragDataReceived " << dnd_data_fmt);
 	dnd_data_wait = false;
 	if(dnd_data_fmt == "text") {
 		guchar *s = gtk_selection_data_get_text(data);
@@ -230,13 +229,29 @@ void Ctrl::GtkDragDataReceived(GtkWidget *widget, GdkDragContext *context,
 			dnd_data = (const char *)s;
 			g_free(s);
 		}
+		else // seems gtk_selection_data_get_text sometime does not work as expected
+		if(findarg(ToUpper(gdk_atom_name(gtk_selection_data_get_data_type(data))), "TEXT", "UTF8_STRING") >= 0)
+			dnd_data = GtkDataGet(data);
 	}
 	else
 	if(dnd_data_fmt == "image")
 		dnd_data = ImageClipFromPixbufUnref(gtk_selection_data_get_pixbuf(data));
 	else
-	if(dnd_data_fmt == "files")
-		dnd_data = FilesClipFromUrisFree(gtk_selection_data_get_uris(data));
+	if(dnd_data_fmt == "files") {
+		gchar **uris = gtk_selection_data_get_uris(data);
+		if(uris)
+			dnd_data = FilesClipFromUrisFree(uris);
+		else {
+			dnd_data.Clear();
+			String s = GtkDataGet(data);
+			StringStream ss(s);
+			while(!ss.IsEof()) {
+				String l = ss.GetLine();
+				if(l.StartsWith("file://"))
+					dnd_data << l << "\n";
+			}
+		}
+	}
 	else
 		dnd_data = GtkDataGet(data);
 }
@@ -288,7 +303,10 @@ PasteClip Ctrl::GtkDnd(GtkWidget *widget, GdkDragContext *context, gint x, gint 
 	if(w) {
 		GetMouseInfo(gdk_get_default_root_window(), mod);
 		CurrentState = mod;
-		CurrentMousePos = Point(SCL(x), SCL(y)) + w->GetScreenRect().TopLeft();
+		CurrentMousePos = Point(SCL(x), SCL(y));
+		int x1, y1;
+		gdk_window_get_position(w->gdk(), &x1, &y1);
+		CurrentMousePos += Point(SCL(x1), SCL(y1));
 		w->DnD(CurrentMousePos, clip);
 	}
 	gdk_drag_status(context, clip.IsAccepted() ? clip.GetAction() == DND_MOVE ? GDK_ACTION_MOVE
@@ -358,3 +376,4 @@ void Ctrl::DndExit()
 }
 
 #endif
+

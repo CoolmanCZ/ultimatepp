@@ -11,29 +11,6 @@ protected:
 Vector<WString>& coreCmdLine__();
 Vector<WString> SplitCmdLine__(const char *cmd);
 
-#ifdef PLATFORM_WINCE
-
-#define GUI_APP_MAIN \
-void GuiMainFn_();\
-\
-int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR lpCmdLine, int nCmdShow) \
-{ \
-	UPP::coreCmdLine__() = UPP::SplitCmdLine__(UPP::FromSystemCharset(lpCmdLine)); \
-	UPP::AppInitEnvironment__(); \
-	UPP::Ctrl::InitWin32(hInstance); \
-	try { \
-		GuiMainFn_(); \
-	} \
-	UPP::Ctrl::ExitWin32(); \
-	UPP::Ctrl::ShutdownThreads(); \
-	UPP::AppExit__(); \
-	return UPP::GetExitCode(); \
-} \
-\
-void GuiMainFn_()
-
-#else
-
 #define GUI_APP_MAIN \
 void GuiMainFn_();\
 \
@@ -71,10 +48,6 @@ BOOL WINAPI DllMain(HINSTANCE hinstDll, DWORD fdwReason, LPVOID lpReserved) \
 \
 void _DllMainAppInit()
 
-#endif
-
-#ifndef PLATFORM_WINCE
-
 class DHCtrl : public Ctrl {
 public:
 	virtual void    State(int reason);
@@ -109,6 +82,3 @@ public:
 	DHCtrl();
 	~DHCtrl();
 };
-
-#endif
-

@@ -50,7 +50,7 @@ bool GccBuilder::BuildPackage(const String& package, Vector<String>& linkfile, V
 	}
 
 	SaveBuildInfo(package);
-	
+
 	int i;
 	Package pkg;
 	pkg.Load(PackageFile(package));
@@ -68,13 +68,13 @@ bool GccBuilder::BuildPackage(const String& package, Vector<String>& linkfile, V
 	bool           error = false;
 
 	String pch_header;
-	
+
 	Index<String> nopch, noblitz;
 
 	bool blitz = HasFlag("BLITZ");
 	bool release = !HasFlag("DEBUG");
 	bool objectivec = HasFlag("OBJC");
-	
+
 	if(HasFlag("OSX"))
 		objectivec = true;
 
@@ -143,7 +143,7 @@ bool GccBuilder::BuildPackage(const String& package, Vector<String>& linkfile, V
 			}
 		}
 	}
-	
+
 	String cc = CmdLine(package, pkg);
 
 //	if(IsVerbose())
@@ -208,12 +208,12 @@ bool GccBuilder::BuildPackage(const String& package, Vector<String>& linkfile, V
 
 	String pch_use;
 	String pch_file;
-	
+
 	if(recompile > 2 && pch_header.GetCount()) {
 		String pch_header2 = CatAnyPath(outdir, GetFileTitle(pch_header) + "$pch.h");
 		pch_file = pch_header2 + ".gch";
 		SaveFile(pch_header2, "#include <" + pch_header + ">"); // CLANG needs a copy of header
-		
+
 		int pch_slot = AllocSlot();
 		StringBuffer sb;
 
@@ -328,7 +328,7 @@ bool GccBuilder::BuildPackage(const String& package, Vector<String>& linkfile, V
 	MergeWith(linkoptions, " ", Gather(pkg.link, config.GetKeys()));
 	if(linkoptions.GetCount())
 		linkoptions << ' ';
-	
+
 	bool making_lib = HasFlag("MAKE_LIB") || HasFlag("MAKE_MLIB");
 
 	if(!making_lib) {
@@ -411,7 +411,7 @@ bool GccBuilder::CreateLib(const String& product, const Vector<String>& obj,
 			llib << ' ' << GetPathQ(GetSharedLibPath(all_uses[i]));
 		for(int i = 0; i < all_libraries.GetCount(); i++)
 			llib << " -l" << GetPathQ(all_libraries[i]);
-		
+
 		if(HasFlag("POSIX"))
 			llib << " -Wl,-soname," << GetSoname(product);
 	}
@@ -443,7 +443,7 @@ bool GccBuilder::CreateLib(const String& product, const Vector<String>& obj,
 
 			// replace all '\' with '/'`
 			llib = UnixPath(llib);
-			
+
 			out << llib.Left(found);
 		#ifdef PLATFORM_WIN32
 			out << '\r';
@@ -500,11 +500,12 @@ bool GccBuilder::Link(const Vector<String>& linkfile, const String& linkoptions,
 	if(!Wait())
 		return false;
 	PutLinking();
-	
+
 	if(HasFlag("MAKE_MLIB") || HasFlag("MAKE_LIB"))
 		return CreateLib(ForceExt(target, ".a"), linkfile, Vector<String>(), Vector<String>(), linkoptions);
 
 	int time = msecs();
+	bool portable = HasFlag("PORTABLE_HYBRID");
 #ifdef PLATFORM_OSX
 	CocoaAppBundle();
 #endif
@@ -518,6 +519,9 @@ bool GccBuilder::Link(const Vector<String>& linkfile, const String& linkoptions,
 				lnk << " -m32";
 			if(HasFlag("DLL"))
 				lnk << " -shared";
+			if(portable)
+				lnk << " -static-libstdc++ -static-libgcc -Wl,-Bstatic";
+			else
 			if(!HasFlag("SHARED") && !HasFlag("SO"))
 				lnk << " -static";
 			if(HasFlag("WINCE"))
@@ -558,7 +562,7 @@ bool GccBuilder::Link(const Vector<String>& linkfile, const String& linkoptions,
 				String linklistM = "Producing link file list ...\n";
 				String odir = GetFileDirectory(linkfile[0]);
 				lfilename << GetFileFolder(linkfile[0]) << ".LinkFileList";
-					
+
 				linklistM  << lfilename;
 				UPP::SaveFile(lfilename, linklist);
 				lnk << " -L" << GetPathQ(odir)
@@ -576,12 +580,22 @@ bool GccBuilder::Link(const Vector<String>& linkfile, const String& linkoptions,
 			if(!HasFlag("SOLARIS") && !HasFlag("OSX") && !HasFlag("OBJC"))
 				lnk << " -Wl,--start-group ";
 			for(String s : pkg_config)
-				lnk << " `" << Host::CMDLINE_PREFIX << "pkg-config --libs " << s << "`";
+				if(portable) {
+					Vector<String> libs = Split(HostSys("pkg-config --libs " + s), CharFilterWhitespace);
+					libs.RemoveIf([&](int i) { return findarg(libs[i], "-ldl", "-lpthread", "-lrt", "-lm") >= 0; });
+					if(libs.GetCount())
+						lnk << ' ' << Join(libs, " ");
+				}
+				else
+					lnk << " `" << Host::CMDLINE_PREFIX << "pkg-config --libs " << s << "`";
 			for(int pass = 0; pass < 2; pass++) {
 				for(i = 0; i < lib.GetCount(); i++) {
 					String ln = lib[i];
+					if(portable && (ln == "dl" || ln == "pthread" || ln == "rt" || ln == "m"))
+						continue;
+
 					String ext = ToLower(GetFileExt(ln));
-					
+
 					// unix shared libs shall have version number AFTER .so (sic)
 					// so we shall find the true extension....
 					if(HasFlag("POSIX") && ext != ".so")
@@ -594,7 +608,7 @@ bool GccBuilder::Link(const Vector<String>& linkfile, const String& linkoptions,
 						if(pos >= 0 && ToLower(ln.Mid(pos, 3)) == ".so")
 							ext = ".so";
 					}
-							
+
 					if(pass == 0) {
 						if(ext == ".a")
 							lnk << ' ' << GetPathQ(FindInDirs(libpath, lib[i]));
@@ -610,6 +624,9 @@ bool GccBuilder::Link(const Vector<String>& linkfile, const String& linkoptions,
 				if(pass == 1 && !HasFlag("SOLARIS") && !HasFlag("OSX"))
 					lnk << " -Wl,--end-group";
 			}
+			if(portable)
+				lnk << " -Wl,-Bdynamic -lpthread -ldl -lrt -lm";
+    
 			PutConsole("Linking...");
 			bool error = false;
 			CustomStep(".pre-link", Null, error);
@@ -632,6 +649,8 @@ bool GccBuilder::Link(const Vector<String>& linkfile, const String& linkoptions,
 
 bool GccBuilder::Preprocess(const String& package, const String& file, const String& target, bool asmout)
 {
+	MakeBuild::PkgConfig(GetIdeWorkspace(), config, pkg_config);
+
 	Package pkg;
 	pkg.Load(PackageFile(package));
 	String packageDir = PackageDirectory(package);

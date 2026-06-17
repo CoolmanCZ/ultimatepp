@@ -1,27 +1,18 @@
 #include "ide.h"
 
-struct MainConfigDlg : public WithConfigLayout<TopWindow> {
-	const Workspace& wspc;
-	
-	bool Perform(const String& startwith);
-	
-	void Sync();
-
-	typedef MainConfigDlg CLASSNAME;
-
-	MainConfigDlg(const Workspace& wspc);
-};
-
 struct FlagsDlg : WithConfLayout<TopWindow> {
+	VectorMap<String, Tuple<String, Index<String>>> code_flags;
 	Index<String> recognized_flags;
+	int           standard_flags;
 
 	enum { CC_SET, CC_FLAG, CC_PACKAGES, CC_COUNT };
 	
 	void Options();
 	void Flags();
+	void Reload();
 
-	void Get(ArrayCtrl& a) { flags <<= a.Get(0); name <<= a.Get(1); Flags(); }
-	void Set(ArrayCtrl& a) { a.Set(0, ~flags); a.Set(1, ~name); Flags(); }
+	void Get(const Package::Config& cfg) { flags <<= cfg.param; name <<= cfg.name; Flags(); }
+	void Set(Package::Config& cfg)       { cfg.param = ~flags; cfg.name = ~name; }
 
 	FlagsDlg();
 	~FlagsDlg();
@@ -68,8 +59,6 @@ FlagsDlg::~FlagsDlg()
 
 FlagsDlg::FlagsDlg()
 {
-	VectorMap<String, Tuple<String, Index<String>>> code_flags;
-
 	CtrlLayoutOKCancel(*this, "Configuration flags");
 	
 	Sizeable().Zoomable();
@@ -118,22 +107,58 @@ FlagsDlg::FlagsDlg()
 	accepts.ColumnWidths("29 140 458 117");
 	accepts.EvenRowColor();
 	accepts.NoCursor();
-	for(int pass = 0; pass < 2; pass++) // second pass for "hidden" flags
-		for(const auto& f : ~code_flags)
-			if(IsNull(f.value.a) == pass) {
-				accepts.Add(false, f.key, AttrText(f.value.a).Italic(pass), Join(f.value.b.GetKeys(), ", "));
-				recognized_flags.FindAdd(f.key);
-			}
-	
+
 	flags.SetFilter(FlagFilterM);
 	flags << [=] { Flags(); };
 	gui <<= false;
 	debugcode <<= false;
 	gui << [=] { Options(); };
-	debugcode << [=] { Flags(); };
+	debugcode << [=] { Options(); };
 	recognized_flags.FindAdd("GUI");
 	recognized_flags.FindAdd("DEBUGCODE");
+	standard_flags = recognized_flags.GetCount();
+
+	search.NullText("Search");
+	search.SetFilter([](int c) { return ToUpper(c); });
+	search << [=] { Reload(); };
+
+	Reload();
 }
+
+void FlagsDlg::Reload()
+{
+	String s = ~search;
+	int c = accepts.GetCursor();
+	int sc = accepts.GetScroll();
+	accepts.Clear();
+	recognized_flags.Trim(standard_flags);
+	for(int pass = 0; pass < 2; pass++) // second pass for "hidden" flags
+		for(const auto& f : ~code_flags) {
+			String packages = Join(f.value.b.GetKeys(), ", ");
+			if(IsNull(f.value.a) == !!pass && ToUpper(f.key + f.value.a + packages).Find(s) >= 0) {
+				accepts.Add(false, f.key, AttrText(f.value.a).Italic(pass), packages);
+				recognized_flags.FindAdd(f.key);
+			}
+		}
+	accepts.ScrollTo(sc);
+	accepts.SetCursor(c);
+}
+
+struct MainConfigDlg : public WithConfigLayout<TopWindow> {
+	const Workspace& wspc;
+	
+	Array<Package::Config> config;
+	
+	bool Perform(const String& startwith);
+	
+	bool CanMove() const                     { return list.GetCount() == config.GetCount(); }
+	void Sync();
+	void LoadList(int setkey = -1, bool fix_search = true);
+
+	typedef MainConfigDlg CLASSNAME;
+
+	MainConfigDlg(const Workspace& wspc);
+};
 
 void MainConfigDlg::Sync()
 {
@@ -142,104 +167,152 @@ void MainConfigDlg::Sync()
 	remove.Enable(b);
 	duplicate.Enable(b);
 	edit.Enable(b);
+	b = b && CanMove();
 	up.Enable(b);
 	down.Enable(b);
+}
+
+void MainConfigDlg::LoadList(int setkey, bool fix_search)
+{
+	for(int pass = 0; pass < 2; pass++) {
+		String s = ~search;
+		int sc = list.GetScroll();
+		list.Clear();
+		for(int i = 0; i < config.GetCount(); i++)
+			if(ToUpper(config[i].param).Find(s) >= 0 || ToUpper(config[i].name).Find(s) >= 0)
+				list.Add(i, config[i].param, config[i].name);
+		list.ScrollTo(sc);
+		if(setkey < 0 || list.FindSetCursor(setkey))
+			break;
+		if(!fix_search) {
+			list.GoBegin();
+			break;
+		}
+		search <<= Null;
+	}
+	Sync();
 }
 
 MainConfigDlg::MainConfigDlg(const Workspace& wspc_) : wspc(wspc_) {
 	CtrlLayoutOKCancel(*this, "Main package configuration(s)");
 	Sizeable().Zoomable();
+
+	search.NullText("Search");
+	search.SetFilter(CharFilterToUpper);
+	search << [=] {
+		LoadList(list.GetKey(), false);
+	};
+
+	list.AddKey(); // index in config
 	list.AddColumn("Flags", 3);
 	list.AddColumn("Optional name", 2);
 	list.WhenSel = [=] {
 		Sync();
 	};
 	list.WhenDrag = [=] {
-		list.DoDragAndDrop(InternalClip(list, "main_config-item"), list.GetDragSample(), DND_MOVE);
+		if(CanMove())
+			list.DoDragAndDrop(InternalClip(list, "main_config-item"), list.GetDragSample(), DND_MOVE);
 	};
-	list.WhenDropInsert = [=](int line, PasteClip& d) {
+
+	list.WhenDropInsert = [=](int q, PasteClip& d) {
 		if(GetInternalPtr<ArrayCtrl>(d, "main_config-item") == &list && list.IsCursor() && d.Accept()) {
-			int q = list.GetCursor();
-			if(q == line)
-				return;
-			Vector<Value> h = list.ReadRow(q);
-			list.Remove(q);
-			if(q < line)
-				line--;
-			if(line >= 0 && line <= list.GetCount()) {
-				list.Insert(line);
-				list.Set(line, h);
-				list.SetCursor(line);
+			if(q >= 0 && q <= list.GetCount() && CanMove()) {
+				int from = list.GetKey();
+				if(from >= 0 && from < config.GetCount() && q != from) {
+					Package::Config h = config[from];
+					config.Remove(from);
+					if(from < q)
+						q--;
+					config.Insert(q) = h;
+					LoadList(q);
+				}
 			}
 		}
 	};
 
-	add.SetImage(IdeImg::add()) << [=] {
+	append.SetImage(IdeImg::add()) << [=] {
 		FlagsDlg cfg;
 		if(cfg.Run() == IDOK) {
-			list.Add(~cfg.flags, ~cfg.name);
-			list.GoEnd();
+			cfg.Set(config.Add());
+			LoadList(config.GetCount() - 1);
 		}
 	};
 
 	insert.SetImage(IdeImg::insert()) << [=] {
-		if(list.IsCursor()) {
+		int q = list.GetKey();
+		if(q >= 0 && q < config.GetCount()) {
 			FlagsDlg cfg;
 			if(cfg.Run() != IDOK)
 				return;
-			int q = list.GetCursor();
-			list.Insert(q);
-			list.SetCursor(q);
-			cfg.Set(list);
+			cfg.Set(config.Insert(q));
+			LoadList(q);
 		}
 	};
 
 	duplicate.SetImage(IdeImg::duplicate()) << [=] {
-		if(list.IsCursor()) {
+		int q = list.GetKey();
+		if(q >= 0 && q < config.GetCount()) {
 			FlagsDlg cfg;
-			cfg.Get(list);
+			cfg.Get(config[q]);
 			if(cfg.Run() != IDOK)
 				return;
-			int q = list.GetCursor() + 1;
-			list.Insert(q);
-			list.SetCursor(q);
-			cfg.Set(list);
+			q++;
+			cfg.Set(config.Insert(q));
+			LoadList(q);
 		}
 	};
 
 	list.WhenLeftDouble = edit.SetImage(IdeImg::pencil()) ^= [=] {
-		if(list.IsCursor()) {
+		int q = list.GetKey();
+		if(q >= 0 && q < config.GetCount()) {
 			FlagsDlg cfg;
-			cfg.Get(list);
+			cfg.Get(config[q]);
 			if(cfg.Run() != IDOK)
 				return;
-			cfg.Set(list);
+			cfg.Set(config[q]);
+			LoadList(q);
 		}
 	};
 
 	remove.SetImage(IdeImg::remove()) << [=] {
-		int q = list.GetCursor();
-		if(q >= 0 && PromptYesNo("Remove configuration?")) {
-			list.Remove(q);
+		int q = list.GetKey();
+		if(q >= 0 && q < config.GetCount() && PromptYesNo("Remove configuration?")) {
+			config.Remove(q);
 			if(q >= list.GetCount())
 				q--;
-			if(q >= 0)
-				list.SetCursor(q);
+			LoadList(q);
 		}
 	};
 	
 	up.SetImage(IdeImg::arrow_up()) << [=] {
-		list.SwapUp();
+		int q = list.GetKey();
+		if(q > 0 && q < config.GetCount())
+			config.Swap(q - 1, q);
+		LoadList(q - 1);
 	};
 
 	down.SetImage(IdeImg::arrow_down()) << [=] {
-		list.SwapDown();
+		int q = list.GetKey();
+		if(q >= 0 && q + 1 < config.GetCount())
+			config.Swap(q + 1, q);
+		LoadList(q + 1);
+	};
+
+	list.WhenBar = [=](Bar& bar) {
+		bar.Add("Append", IdeImg::add(), [=] { append.WhenAction(); });
+		bar.Add("Insert", IdeImg::insert(), [=] { insert.WhenAction(); });
+		bar.Add("Duplicate", IdeImg::duplicate(), [=] { duplicate.WhenAction(); });
+		bar.Add("Edit", IdeImg::pencil(), [=] { edit.WhenAction(); });
+		bar.Add("Remove", IdeImg::remove(), [=] { remove.WhenAction(); });
+		bool canmove = list.GetCount() == config.GetCount();
+		bar.Add(canmove, "Move up", IdeImg::arrow_up(), [=] { up.WhenAction(); });
+		bar.Add(canmove, "Move down", IdeImg::arrow_down(), [=] { down.WhenAction(); });
 	};
 }
 
 bool MainConfigDlg::Perform(const String& startwith) {
 	list.SetCursor(0);
-	list.FindSetCursor(startwith);
+	list.FindSetCursor(startwith, 1);
 	Sync();
 	return Run() == IDOK;
 }
@@ -248,21 +321,15 @@ void Ide::MainConfig() {
 	package.SetCursor(0);
 	if(package.GetCursor() != 0) return;
 	MainConfigDlg dlg(IdeWorkspace());
-	for(int i = 0; i < actual.config.GetCount(); i++) {
-		const Package::Config& f = actual.config[i];
-		dlg.list.Add(f.param, f.name);
-	}
+	dlg.config = clone(actual.config);
+	dlg.LoadList();
 	if(!dlg.Perform(mainconfigparam)) return;
 	actual.config.Clear();
-	for(int i = 0; i < dlg.list.GetCount(); i++) {
-		Package::Config& f = actual.config.Add();
-		f.param = dlg.list.Get(i, 0);
-		f.name = dlg.list.Get(i, 1);
-	}
+	actual.config = clone(dlg.config);
 	SavePackage();
 	if(dlg.list.IsCursor()) {
-		mainconfigparam = dlg.list.Get(0);
-		mainconfigname = Nvl((String)dlg.list.Get(1), mainconfigparam);
+		mainconfigparam = dlg.list.Get(1);
+		mainconfigname = Nvl((String)dlg.list.Get(2), mainconfigparam);
 		MakeTitle();
 	}
 	SyncMainConfigList();

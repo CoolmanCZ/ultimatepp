@@ -154,7 +154,7 @@ void Ctrl::SyncLayout(int force)
 	GuiLock __;
 	if(destroying)
 		return;
-	LLOG("SyncLayout " << Name() << " size: " << GetSize());
+	LLOG("SyncLayout " << Name() << " size: " << GetSize() << " force: " << force);
 	fullrefresh = false;
 	bool refresh = false;
 	Rect oview = GetView();
@@ -174,7 +174,6 @@ void Ctrl::SyncLayout(int force)
 	if(oview.Size() != view.Size() || force > 1) {
 		for(Ctrl& q : *this) {
 			q.rect = q.CalcRect(rect, view);
-			LLOG("Layout set rect " << q.Name() << " " << q.rect);
 			q.SyncLayout(force > 1 ? force : 0);
 		}
 		Refresh();
@@ -229,18 +228,6 @@ void Ctrl::SetPos0(LogPos p, bool _inframe)
 				Rect to = GetRect().Size();
 				UpdateRect0();
 				GetTopRect(to, true);
-				MoveCtrl *s = FindMoveCtrlPtr(top->scroll_move, this);
-				if(s && s->from == from && s->to == to) {
-					s->ctrl = NULL;
-					LLOG("SetPos Matched " << from << " -> " << to);
-				}
-				else {
-					MoveCtrl& m = top->move.Add(this);
-					m.ctrl = this;
-					m.from = from;
-					m.to = to;
-					LLOG("SetPos Add " << UPP::Name(this) << from << " -> " << to);
-				}
 				StateH(POSITION);
 				return;
 			}
@@ -264,10 +251,11 @@ void Ctrl::UpdateRect0(bool sync)
 		Rect pwa = GetPrimaryWorkArea();
 		rect = OffsetMegaRect(CalcRect(pwa, pwa));
 	}
-	LLOG("UpdateRect0 " << Name() << " to " << rect);
+
+	LLOG("UpdateRect0 " << Name() << " to " << rect << ", sync: " << sync);
 	LTIMING("UpdateRect0 SyncLayout");
 	if(sync)
-		SyncLayout();
+		SyncLayout(sync);
 }
 
 

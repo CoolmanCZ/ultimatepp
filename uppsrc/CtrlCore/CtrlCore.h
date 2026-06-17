@@ -19,7 +19,6 @@
 		#define GUIPLATFORM_KEYCODES_INCLUDE <Turtle/Keys.h>
 		//need to make SDL_keysym.h known before K_ enum
 		#define GUIPLATFORM_INCLUDE          <Turtle/Turtle.h>
-		#define GUIPLATFORM_NOSCROLL
 		#define PLATFORM_TURTLE
 		#define TURTLE
 	#elif VIRTUALGUI
@@ -27,7 +26,6 @@
 		#define GUIPLATFORM_INCLUDE          <VirtualGui/VirtualGui.h>
 	#elif PLATFORM_COCOA
 		#define GUIPLATFORM_INCLUDE          "Coco.h"
-		#define GUIPLATFORM_NOSCROLL
 	#elif PLATFORM_WIN32
 		#define GUIPLATFORM_INCLUDE "Win32Gui.h"
 	#else
@@ -499,12 +497,6 @@ private:
 		Rect GetView() const        { return Rect16(view.left, view.top, view.right, view.bottom); }
 	};
 
-	struct Scroll : Moveable<Scroll> {
-		Rect rect;
-		int  dx;
-		int  dy;
-	};
-
 	struct MoveCtrl : Moveable<MoveCtrl> {
 		Ptr<Ctrl>  ctrl;
 		Rect       from;
@@ -515,9 +507,6 @@ private:
 
 	struct Top {
 		GUIPLATFORM_CTRL_TOP_DECLS
-		Vector<Scroll> scroll;
-		VectorMap<Ctrl *, MoveCtrl> move;
-		VectorMap<Ctrl *, MoveCtrl> scroll_move;
 		Ptr<Ctrl>      owner;
 	};
 
@@ -581,7 +570,6 @@ private:
 	static  bool      ignorekeyup;
 	static  bool      mouseinview;
 	static  bool      mouseinframe;
-	static  bool      globalbackpaint;
 	static  bool      globalbackbuffer;
 	static  bool      painting;
 	static  int       EventLevel;
@@ -623,7 +611,6 @@ private:
 	void    UpdateRect(bool sync = true);
 	void    SetPos0(LogPos p, bool inframe);
 	void    SetWndRect(const Rect& r);
-	void    SyncMoves();
 
 	static  void  EndIgnore();
 	static  void  LRep();
@@ -676,16 +663,14 @@ private:
 	static bool      dndframe;
 	static PasteClip dndclip;
 
+	static int       last_mouse_action;
+
 	void    DnD(Point p, PasteClip& clip);
 	static void DnDRepeat();
 	static void DnDLeave();
 
 	void    SyncLayout(int force = 0);
-	bool    AddScroll(const Rect& sr, int dx, int dy);
 	Rect    GetClippedView();
-	void    ScrollRefresh(const Rect& r, int dx, int dy);
-	void    ScrollCtrl(Top *top, Ctrl *q, const Rect& r, Rect cr, int dx, int dy);
-	void    SyncScroll();
 	void    Refresh0(const Rect& area);
 	void    PaintCaret(SystemDraw& w);
 	void    CtrlPaint(SystemDraw& w, const Rect& clip);
@@ -700,8 +685,11 @@ private:
 	Rect    GetPreeditScreenRect();
 	void    SyncPreedit();
 	void    ShowPreedit(const WString& text, int cursor = INT_MAX);
-	static void HidePreedit();
-	static void PreeditSync(void (*enable_preedit)(Ctrl *top, bool enable));
+
+	static  void HidePreedit();
+	static  void PreeditSync(void (*enable_preedit)(Ctrl *top, bool enable));
+
+	static  bool MouseActiveCtrl(Ctrl *w, Point p);
 
 // System window interface...
 	void WndShow(bool b);
@@ -726,8 +714,6 @@ private:
 	bool HasWndFocus() const;
 
 	void WndInvalidateRect(const Rect& r);
-
-	void WndScrollView(const Rect& r, int dx, int dy);
 
 	void SetWndForeground();
 	bool IsWndForeground() const;
@@ -927,13 +913,6 @@ public:
 		MIDDLETRIPLE   = MIDDLE|TRIPLE
 	};
 
-	enum {
-		NOBACKPAINT,
-		FULLBACKPAINT,
-		TRANSPARENTBACKPAINT,
-		EXCLUDEPAINT,
-	};
-
 	static  Vector<Ctrl *> GetTopCtrls();
 	static  Vector<Ctrl *> GetTopWindows();
 	static  void   CloseTopCtrls();
@@ -1059,7 +1038,7 @@ public:
 	virtual String GetDesc() const;
 
 	virtual void   SetMinSize(Size sz) {}
-	
+
 	virtual void   Skin() {}
 
 	Event<>          WhenAction;
@@ -1201,12 +1180,6 @@ public:
 
 	static bool IsPainting()                             { return painting; }
 
-	void        ScrollView(const Rect& r, int dx, int dy);
-	void        ScrollView(int x, int y, int cx, int cy, int dx, int dy);
-	void        ScrollView(int dx, int dy);
-	void        ScrollView(const Rect& r, Size delta)    { ScrollView(r, delta.cx, delta.cy); }
-	void        ScrollView(Size delta)                   { ScrollView(delta.cx, delta.cy); }
-
 	void        Sync();
 	void        Sync(const Rect& r);
 
@@ -1294,11 +1267,6 @@ public:
 	void    UpdateAction();
 	void    UpdateActionRefresh();
 
-	Ctrl&   BackPaint(int bp = FULLBACKPAINT)  { backpaint = bp; return *this; }
-	Ctrl&   BackPaintHint()                    { return BackPaint(); }
-/*	Ctrl&   TransparentBackPaint()             { backpaint = TRANSPARENTBACKPAINT; return *this; }
-	Ctrl&   NoBackPaint()                      { return BackPaint(NOBACKPAINT); }
-	int     GetBackPaint() const               { return backpaint; }*/
 	Ctrl&   Transparent(bool bp = true)        { transparent = bp; return *this; }
 	Ctrl&   NoTransparent()                    { return Transparent(false); }
 	bool    IsTransparent() const              { return transparent; }
@@ -1402,7 +1370,7 @@ public:
 
 	static void SetUHDEnabled(bool set = true);
 	static bool IsUHDEnabled();
-	
+
 	static void SetDarkThemeEnabled(bool set = true);
 	static bool IsDarkThemeEnabled();
 
@@ -1429,8 +1397,6 @@ public:
 	static void   SetAppName(const String& appname);
 	static bool   IsCompositedGui();
 
-	static void   GlobalBackPaint(bool b = true);
-	static void   GlobalBackPaintHint();
 	static void   GlobalBackBuffer(bool b = true);
 
 	static void   ReSkin();
@@ -1491,6 +1457,17 @@ public:
 	CtrlIterator begin()            { CtrlIterator c; c.q = GetFirstChild(); return c; }
 	CtrlConstIterator end() const   { CtrlConstIterator c; c.q = NULL; return c; }
 	CtrlIterator end()              { CtrlIterator c; c.q = NULL; return c; }
+
+#ifdef DEPRECATED
+	Ctrl&   BackPaint(int bp = 0)   { return *this; }
+	Ctrl&   BackPaintHint()         { return BackPaint(); }
+
+	void    ScrollView(const Rect& r, int dx, int dy);
+	void    ScrollView(int x, int y, int cx, int cy, int dx, int dy);
+	void    ScrollView(int dx, int dy);
+	void    ScrollView(const Rect& r, Size delta)    { ScrollView(r, delta.cx, delta.cy); }
+	void    ScrollView(Size delta)                   { ScrollView(delta.cx, delta.cy); }
+#endif
 };
 
 inline Size GetScreenSize()  { return Ctrl::GetVirtualScreenArea().GetSize(); } // Deprecated

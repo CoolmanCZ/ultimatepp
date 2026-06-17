@@ -4,9 +4,14 @@ Time   ScanWwwTime(const char *s);
 
 String MIMECharsetName(byte charset);
 
-String UrlEncode(const char *s, const char *end);
+String UrlEncode(const char *p, const char *e);
 String UrlEncode(const char *s, int len);
 String UrlEncode(const String& s);
+
+String UrlEncodePath(const char *p, const char *e);
+String UrlEncodePath(const char *s, int len);
+String UrlEncodePath(const String& s);
+
 String UrlDecode(const char *s, const char *end, bool plus_is_space = true);
 String UrlDecode(const char *s, int len, bool plus_is_space = true);
 String UrlDecode(const String& s, bool plus_is_space = true);
@@ -171,11 +176,10 @@ class Socket : NoCopy {
 
 	static int              GetErrorCode();
 	static void             Init();
-	
-#ifdef PLATFORM_POSIX // Unix domain socket support
+
+    // Unix domain socket support
     bool                    NixConnect(const String& path, bool abstract);
     bool                    NixListen(const String& path, int n, bool reuse, bool abstract);
-#endif
 
 	Socket(const Socket&);
 
@@ -217,13 +221,11 @@ public:
 	void            Close();
 	void            Shutdown();
 
-#ifdef PLATFORM_POSIX
 	int             GetPeerPid() const;
 	bool            ConnectFileSystem(const String& path);
 	bool            ConnectAbstract(const String& path);
 	bool            ListenFileSystem(const String& path, int listen_count = 5, bool reuse = true);
 	bool            ListenAbstract(const String& path, int listen_count = 5, bool reuse = true);
-#endif
 
 	void            NoDelay();
 	void            Linger(int msecs);
@@ -419,7 +421,6 @@ class HttpRequest : public TcpSocket {
 	String       accept;
 	String       agent;
 	bool         force_digest;
-	bool         is_post;
 	bool         std_headers;
 	bool         hasurlvar;
 	bool		 keep_alive;
@@ -713,6 +714,8 @@ class WebSocket {
 public:
 	WebSocket& NonBlocking(bool b = true)               { socket->Timeout(b ? 0 : Null); return *this; }
 
+	WebSocket&  SSLServerNameIndication(const String& name)   { socket->SSLServerNameIndication(name); return *this; }
+	
 	WebSocket&  Headers(const String& h)                { request_headers = h; return *this; }
 	WebSocket&  ClearHeaders()                          { return Headers(Null); }
 	WebSocket&  AddHeaders(const String& h)             { request_headers.Cat(h); return *this; }

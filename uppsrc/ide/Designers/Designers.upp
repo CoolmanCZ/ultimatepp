@@ -14,5 +14,9 @@ file
 	TreeDes.cpp,
 	Xml.cpp,
 	Json.cpp,
-	md.cpp;
+	JsonValidator.h,
+	JsonValidator.cpp,
+	md.cpp,
+	export_md.cpp,
+	Designers.lay;
 

@@ -20,7 +20,8 @@ topic "GUI Tutorial";
 [2 $$19,0#53580023442335529039900623488521:gap]
 [C2 $$20,20#70211524482531209251820423858195:class`-nested]
 [b50;2 $$21,21#03324558446220344731010354752573:Par]
-[b83;* $$22,22#78EB85B566C7E078B53494D0FD53D992:subtitle]
+[b83;* $$22,5#78EB85B566C7E078B53494D0FD53D992:subtitle]
+[2 $$23,23#1BDAF836AD481778AD91861722C13AB2:toc]
 [2 $$0,0#00000000000000000000000000000000:Default]
 [{_}%EN-US 
 [s2; GUI Tutorial&]
@@ -32,62 +33,62 @@ attached in this tutorial are bundle with U`+`+ standard distribution,
 and they are localized in [* tutorial] assembly. So, you don`'t 
 need to rewrite it by yourself. Good luck!&]
 [s3; Table of contents&]
-[s0; &]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`_en`-us`#1^ 1. First steps]&]
-[s0;     [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`_en`-us`#1`_1^ 1.1 
+[s23; &]
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`_en`-us`#1^ 1. First steps]&]
+[s23;     [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`_en`-us`#1`_1^ 1.1 
 Creating GUI application project from template]&]
-[s0;     [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`_en`-us`#1`_2^ 1.2 
+[s23;     [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`_en`-us`#1`_2^ 1.2 
 GUI application main function]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#2^ 2. Application 
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#2^ 2. Application 
 window]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#3^ 3. Modifying 
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#3^ 3. Modifying 
 TopWindow properties]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#4^ 4. Painting 
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#4^ 4. Painting 
 the view area]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#5^ 5. Reacting 
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#5^ 5. Reacting 
 to input events]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#6^ 6. Multiple 
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#6^ 6. Multiple 
 main windows]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#7^ 7. Menu]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#8^ 8. Context 
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#7^ 7. Menu]&]
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#8^ 8. Context 
 menu]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#9^ 9. Context 
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#9^ 9. Context 
 menu alternative]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#10^ 10. Adding 
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#10^ 10. Adding 
 images]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#11^ 11. Toolbar]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#12^ 12. StatusBar 
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#11^ 11. Toolbar]&]
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#12^ 12. StatusBar 
 and decorative Frames]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#13^ 13. Adding 
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#13^ 13. Adding 
 child Ctrls `- widgets, reacting to widget events]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#14^ 14. More about 
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#14^ 14. More about 
 logical coordinates]&]
-[s0;     [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`_en`-us`#14`.1^ 14.1 
+[s23;     [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`_en`-us`#14`.1^ 14.1 
 Explanations]&]
-[s0;     [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`_en`-us`#14`.2^ 14.2 
+[s23;     [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`_en`-us`#14`.2^ 14.2 
 Minimal window size]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#15^ 15. Font`-zoomed 
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#15^ 15. Font`-zoomed 
 logical coordinates]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#16^ 16. Layouts]&]
-[s0;     [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`_en`-us`#16`.1^ 16.1 
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#16^ 16. Layouts]&]
+[s23;     [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`_en`-us`#16`.1^ 16.1 
 Referral implementation]&]
-[s0;     [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`_en`-us`#16`.2^ 16.2 
+[s23;     [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`_en`-us`#16`.2^ 16.2 
 Upp namespace agnostic implementation]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#17^ 17. Value 
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#17^ 17. Value 
 of widget]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#18^ 18. Accepting 
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#18^ 18. Accepting 
 and rejecting widgets]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#19^ 19. Widget 
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#19^ 19. Widget 
 edit status flags]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#20^ 20. Breaking 
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#20^ 20. Breaking 
 the modal loop]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#21^ 21. Creating 
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#21^ 21. Creating 
 and using custom widgets]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#22^ 22. Non`-modal 
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us`#22^ 22. Non`-modal 
 dialogs]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`_en`-us`#23^ 23. Refreshing 
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`_en`-us`#23^ 23. Refreshing 
 the UI periodically (time callback)]&]
-[s0; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`_en`-us`#24^ 24. Internationalizing 
+[s23; [^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`_en`-us`#24^ 24. Internationalizing 
 applications (i18n)]&]
 [s0; &]
 [s3;:1: 1. First steps&]

@@ -63,6 +63,33 @@ bool Ide::FindLOG()
 	if(!IsInLogFile())
 		return false;
 
+	String ln = editor.GetUtf8Line(editor.GetCursorLine());
+
+	for(const char *s = ln; *s;) { // try to find source file path first
+		if(*s == ' ' || *s == '\t') {
+			while(*s == ' ' || *s == '\t') s++;
+			if(*s)
+				for(const char *q = s + 1; *q; q++) {
+					String path = String(s, q);
+					if(FileExists(path)) {
+						while(*q) {
+							if(IsDigit(*q)) {
+								AddHistory();
+								EditFile(path);
+								editor.SetCursor(editor.GetPos(Atoi(q) - 1, 0));
+								AddHistory();
+								return true;
+							}
+							q++;
+						}
+						break;
+					}
+				}
+		}
+		else
+			s++;
+	}
+
 	Vector<String> files = FindXFiles(3);
 
 	int n = 0;
@@ -152,16 +179,17 @@ bool Ide::FindLOG()
 		}
 	}
 	
-	String ln = editor.GetUtf8Line(editor.GetCursorLine());
-	
 	LogLine bestl;
 	int best = -1;
 	int bestp = false;
+	int bestr = INT_MIN;
 	for(const LogLine& l : logs) {
 		int ml = GetMatchLen(l.text, ln);
-		if(ml > best || ml == best && l.priority > bestp) {
+		int rest = ml - l.text.GetCount();
+		if(CombineCompare(ml, best)(rest, bestr)(l.priority, bestp) > 0) {
 			best = ml;
 			bestp = l.priority;
+			bestr = rest;
 			bestl = l;
 		}
 	}
@@ -225,7 +253,7 @@ void Ide::FindDs(int where, bool all)
 							String line;
 							for(const char *s = pos.lineptr; findarg(*s, '\0', '\r', '\n') < 0; s++)
 								line.Cat(*s);
-							AddFoundFile(fn, pos.line, line, pos.ptr - pos.lineptr, id.GetCount());
+							AddFoundFile(fn, pos.line, line, (int)(pos.ptr - pos.lineptr), id.GetCount());
 						}
 					}
 					else

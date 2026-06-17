@@ -324,6 +324,7 @@ bool ClangVisitor::ProcessNode(CXCursor cursor)
 		r.bases = ci.Bases();
 		r.isvirtual = kind == CXCursor_CXXMethod && clang_CXXMethod_isVirtual(cursor);
 		r.isstatic = (IsFunction(r.kind) || IsVariable(r.kind)) && clang_Cursor_getStorageClass(cursor) == CX_SC_Static;
+		r.access = clang_getCXXAccessSpecifier(cursor);
 
 		if(findarg(r.kind, CXCursor_Constructor, CXCursor_Destructor) >= 0) {
 			int q = r.id.Find('(');
@@ -335,7 +336,7 @@ bool ClangVisitor::ProcessNode(CXCursor cursor)
 		}
 		else {
 			static String op = "operator";
-			int q = FindId(r.id, r.kind == CXCursor_ConversionFunction ? String("operator") : r.name);
+			int q = FindLastId(r.id, r.kind == CXCursor_ConversionFunction ? String("operator") : r.name);
 			if(q >= 0) {
 				r.nest = r.id.Mid(0, q);
 				r.nest.TrimEnd("::");
@@ -364,6 +365,7 @@ bool ClangVisitor::ProcessNode(CXCursor cursor)
 			rm.pos = sl.pos;
 			rm.id = ref_ci.Id();
 			rm.ref_pos = ref_loc.pos;
+			rm.macro = ref_ci.Kind() == CXCursor_MacroDefinition;
 		#if 0
 			DLOG("=======");
 			DDUMP(sl.pos);

@@ -289000,6 +289000,10 @@ aegis_rotl32(const uint32_t x, const int b)
 #    define EINVAL 22
 #endif
 
+#ifdef FORCEINLINE
+#undef FORCEINLINE
+#endif
+
 #if defined(_MSC_VER)
     #define FORCEINLINE __forceinline
 #elif defined(__GNUC__) || defined(__clang__)

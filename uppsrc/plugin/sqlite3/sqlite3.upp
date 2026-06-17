@@ -10,6 +10,8 @@ library(LINUX) dl;
 options
 	"-maes -msse4 -DSQLITE_CORE -DSQLITE_ENABLE_FTS4 -DSQLITE_ENABLE_FTS3_PARENTHESIS -DSQLITE_ENABLE_UUID";
 
+link(OSX) "-framework Security";
+
 file
 	Sqlite3.h,
 	Sqlite3Schema.h,

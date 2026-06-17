@@ -13,12 +13,34 @@ String IconDes::FormatImageName(const Slot& c)
 		if(c.flags & IML_IMAGE_FLAG_FIXED_SIZE)
 			r << " Sz";
 	}
-	if(c.flags & IML_IMAGE_FLAG_UHD)
-		r << " HD";
-	if(c.flags & IML_IMAGE_FLAG_DARK)
-		r << " Dk";
-	if(c.flags & IML_IMAGE_FLAG_S3)
-		r << " S3";
+	
+	int scale = ImlFlagsToDPIScale(c.flags);
+	r << decode(scale, DPI_100, " 100%", DPI_150, " 150%", DPI_200, " 200%", DPI_300, " 300%", "");
+
+	if(c.exp)
+		r << " X";
+	return r;
+}
+
+String IconDes::FormatImageNameQtf(const Slot& c)
+{
+	Size sz = c.image.GetSize();
+	String r;
+	r << "\1[g \1" << c.name << "\1 [@r " << sz.cx << "[@K x]" << sz.cy << "]";
+	if(c.flags & IML_IMAGE_FLAG_FIXED)
+		r << " [@B$Y Fxd]";
+	else {
+		if(c.flags & IML_IMAGE_FLAG_FIXED_COLORS)
+			r << " [@B$Y Clr]";
+		if(c.flags & IML_IMAGE_FLAG_FIXED_SIZE)
+			r << " [@B$Y Sz]";
+	}
+	
+	if(!(c.flags & (IML_IMAGE_FLAG_FIXED|IML_IMAGE_FLAG_FIXED_SIZE))) {
+		int scale = ImlFlagsToDPIScale(c.flags);
+		r << "[@B " << decode(scale, DPI_100, " 1[0 00`%]", DPI_150, " 15[0 0`%]", DPI_200, " 2[0 00`%]", DPI_300, " 3[0 00`%]", "") << "]";
+	}
+
 	if(c.exp)
 		r << " X";
 	return r;
@@ -36,7 +58,7 @@ void IconDes::SyncList()
 	for(int i = 0; i < slot.GetCount(); i++) {
 		Slot& c = slot[i];
 		if(ToUpper(c.name).Find(s) >= 0)
-			ilist.Add(i, FormatImageName(c), RawToValue(MakeTuple(c.image, c.flags)));
+			ilist.Add(i, FormatImageNameQtf(c), RawToValue(MakeTuple(c.image, c.flags)));
 	}
 	ilist.ScrollTo(sc);
 	ilist.FindSetCursor(q);
@@ -58,11 +80,6 @@ void IconDes::GoTo(int q)
 	ilist.FindSetCursor(q);
 }
 
-static int sCharFilterCid(int c)
-{
-	return IsAlNum(c) || c == '_' ? c : 0;
-}
-
 void IconDes::PlaceDlg(TopWindow& dlg)
 {
 	Rect r = ilist.GetScreenRect();
@@ -73,8 +90,9 @@ void IconDes::PlaceDlg(TopWindow& dlg)
 void IconDes::PrepareImageDlg(WithImageLayout<TopWindow>& dlg)
 {
 	CtrlLayoutOKCancel(dlg, "New image");
-	dlg.cx <<= 16;
-	dlg.cy <<= 16;
+	dlg.cx <<= 96;
+	dlg.cy <<= 96;
+	dlg.scale <<= 0;
 	if(IsCurrent()) {
 		Size sz = GetImageSize();
 		dlg.cx <<= sz.cx;
@@ -84,17 +102,31 @@ void IconDes::PrepareImageDlg(WithImageLayout<TopWindow>& dlg)
 		dlg.fixed <<= !!(flags & IML_IMAGE_FLAG_FIXED);
 		dlg.fixed_colors <<= !!(flags & IML_IMAGE_FLAG_FIXED_COLORS);
 		dlg.fixed_size <<= !!(flags & IML_IMAGE_FLAG_FIXED_SIZE);
-		
-		dlg.uhd <<= !!(flags & IML_IMAGE_FLAG_UHD);
+
 		dlg.dark <<= !!(flags & IML_IMAGE_FLAG_DARK);
 		
-		dlg.s3 <<= !!(flags & IML_IMAGE_FLAG_S3);
+		int scale = ImlFlagsToDPIScale(flags);
+		dlg.scale = decode(scale, DPI_100, 1, DPI_150, 2, DPI_200, 3, DPI_300, 4, 0);
 		
 		for(Ctrl& q : dlg)
-			if(dynamic_cast<Option *>(&q))
+			if(dynamic_cast<Option *>(&q) || dynamic_cast<Switch *>(&q))
 				q << [&] { dlg.Break(-1000); };
 	}
-	dlg.name.SetFilter(sCharFilterCid);
+	dlg.name.SetConvert(
+		LambdaConvert(
+			[](const Value& text) {
+				return text;
+			},
+			[](const Value& text) {
+				if(AsString(text).Find("__") >= 0)
+					return ErrorValue("Image names must not contain '__'");
+				return text;
+			},
+			[](int c) {
+				return IsAlNum(c) || c == '_' ? c : 0;
+			}
+		)
+	);
 }
 
 void IconDes::SyncDlg(WithImageLayout<TopWindow>& dlg)
@@ -113,12 +145,9 @@ dword IconDes::GetFlags(WithImageLayout<TopWindow>& dlg)
 		flags |= IML_IMAGE_FLAG_FIXED_COLORS;
 	if(dlg.fixed_size)
 		flags |= IML_IMAGE_FLAG_FIXED_SIZE;
-	if(dlg.uhd)
-		flags |= IML_IMAGE_FLAG_UHD;
 	if(dlg.dark)
 		flags |= IML_IMAGE_FLAG_DARK;
-	if(dlg.s3)
-		flags |= IML_IMAGE_FLAG_S3;
+	flags |= DPIScaleToImlFlags(get_i((int)~dlg.scale, DPI_600, DPI_100, DPI_150, DPI_200, DPI_300));
 	return flags;
 }
 

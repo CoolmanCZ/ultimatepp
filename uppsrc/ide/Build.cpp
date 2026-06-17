@@ -121,7 +121,7 @@ void Ide::PackageClean()
 
 void Ide::CleanUppOut()
 {
-	String out = GetOutputDir();
+	String out = GetUppOut();
 	if(!PromptYesNo(Format("Erase the whole output directory [* \1%s\1]?", out)))
 		return;
 	console.Clear();

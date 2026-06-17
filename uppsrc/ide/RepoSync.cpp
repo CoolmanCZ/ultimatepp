@@ -71,7 +71,7 @@ RepoSync::RepoSync()
 	list.SetLineCy(max(Draw::GetStdFontCy() + Zy(4), Zy(20)));
 	Sizeable().Zoomable();
 	BackPaint();
-	credentials.Show(TheIde() && TheIde()->IsVerbose());
+	credentials.Show(TheIde() && TheIde()->experimental);
 	credentials << [=] {
 		Index<String> hint;
 		for(const auto& w : ~work) {
@@ -222,7 +222,10 @@ bool RepoSync::ListGit(const String& path)
 		if(h.GetCount() > 3) {
 			if(!h.TrimEnd("/"))
 				h.TrimEnd("\\");
-			String file = AppendFileName(path, h.Mid(3));
+			String n = h.Mid(3);
+			n.TrimStart("\"");
+			n.TrimEnd("\"");
+			String file = AppendFileName(path, n);
 			actions = true;
 			int action = String("M.?DR").Find(h[1]);
 			if(action < 0 || h[0] != '?' && h[0] != ' ')

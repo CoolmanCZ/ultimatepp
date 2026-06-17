@@ -95,8 +95,6 @@ struct IconShow : public Ctrl {
 	dword flags;
 
 	void Paint(Draw& w);
-
-	IconShow() { BackPaint(); }
 };
 
 void   FloodFill(const Image& source, ImageBuffer& target, RGBA color, Point pt, int tolerance);
@@ -193,8 +191,6 @@ private:
 	bool         doselection = false;
 	bool         selectrect = false;
 	int          paste_mode;
-	bool         show_synthetics = true;
-	bool         show_downscaled = false;
 	bool         show_grid2 = true;
 	bool         antialiased = false;
 	int          fill_type = 0;
@@ -393,6 +389,7 @@ private:
 
 	static FileSel& ImgFile();
 	static String FormatImageName(const Slot& c);
+	static String FormatImageNameQtf(const Slot& c);
 
 public:
 	void  ListMenu(Bar& bar);

@@ -47,7 +47,9 @@ Value MakeValue_(const String& key, const M& m, int& sz)
 		}
 
 		int Make(Value& object) const override {
-			return m(object);
+			auto sz = m(object);
+			ASSERT(sz >= 0 && sz < INT_MAX);
+			return static_cast<int>(sz);
 		}
 		
 		Maker(const String& key, const M& m) : key(key), m(m) {}

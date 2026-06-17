@@ -97,6 +97,10 @@ void Ctrl::UseWayland()
 	sUseWayland = true;
 }
 
+extern Event<const TopWindow *, TopWindow::CustomTitleBarMetrics&> custom_titlebar_metrics__;
+extern Function<bool (const TopWindow *)> is_custom_titlebar__;
+extern Function<Ctrl *(TopWindow *, Color, int)> custom_titlebar_make__;
+
 bool InitGtkApp(int argc, char **argv, const char **envptr)
 {
 	LLOG(rmsecs() << " InitGtkApp");
@@ -121,8 +125,6 @@ bool InitGtkApp(int argc, char **argv, const char **envptr)
 	}
 
 	EnterGuiMutex();
-	
-	Ctrl::SetUHDEnabled(true);
 	
 	Ctrl::scale = 1;
 #if GTK_CHECK_VERSION(3, 10, 0)
@@ -154,6 +156,8 @@ bool InitGtkApp(int argc, char **argv, const char **envptr)
 		g_signal_connect_swapped(settings, "notify::gtk-application-prefer-dark-theme", G_CALLBACK(Ctrl::ThemeChanged), NULL);
 	}
 	
+	TopWindow::Init();
+
 	return true;
 }
 

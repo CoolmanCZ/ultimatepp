@@ -57,7 +57,7 @@ VectorMap<String, String> Ide::GetMethodVars(const String& method)
 	const String method_dir = GetFileFolder(method);
 	const Vector<String> categories_with_method_dir = {"PATH", "INCLUDE", "LIB" };
 	for (const auto& category : categories_with_method_dir) {
-		map.GetAdd(category) = ReplaceMethodDir(map.Get(category), method_dir);
+		map.GetAdd(category) = ReplaceMethodDir(map.Get(category, String()), method_dir);
 	}
 
 	return map;
@@ -412,7 +412,7 @@ CONSOLE_APP_MAIN
 		     "        a - rebuild all.\n"
 		     "        b - use BLITZ.\n"
 		     "        l - silent mode.\n"
-		     "        u - silent mode.\n"
+		     "        u - use target directory.\n"
 		     "        m - create a map file.\n"
 		     "        r - release mode.\n"
 		     "        d - debug mode without debug symbols.\n"

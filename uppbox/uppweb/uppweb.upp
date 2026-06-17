@@ -1,4 +1,4 @@
-description "Ultimate++ website generation and export. C++14/U++16 version\377";
+description "Ultimate++ website generation and export.\377";
 
 uses
 	RichText,
@@ -11,7 +11,8 @@ uses
 	Sql,
 	Painter,
 	VirtualGui,
-	plugin/FT_fontsys;
+	plugin/FT_fontsys,
+	Core/SSH;
 
 options(GCC) -DNOWSTRING;
 
@@ -62,5 +63,5 @@ file
 	2019.2.txt;
 
 mainconfig
-	"" = "STATIC_PNG X11 GUI NOSO";
+	"" = "STATIC_PNG X11 NOSO";
 

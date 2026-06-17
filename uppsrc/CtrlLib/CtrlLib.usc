@@ -884,7 +884,7 @@ ctrl EditString {
 	bool TrimRight = false;
 
 	PaintData(w) {
-		text = (.NotNull ? "!" : "") + "Str";
+		text = (.NotNull ? "!" : "") + "String";
 		if(.MaxLen != "")
 			text << "(" << .MaxLen << ")";
 		PaintText(w, text);

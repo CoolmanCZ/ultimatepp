@@ -86,7 +86,7 @@ bool Ctrl::IsWndForeground() const
 
 NSRect DesktopRect(const Rect& r)
 {
-	double scalei = 1.0 / DPI(1);
+	double scalei = 1.0 / Upp::Ctrl::SCL(1);
 	return NSMakeRect(scalei * r.left,
 	                  scalei * (Ctrl::GetScreenArea(r.TopLeft()).GetHeight() - r.top - r.GetHeight()),
 	                  scalei * r.GetWidth(), scalei * r.GetHeight());
@@ -187,6 +187,11 @@ Vector<Ctrl *> Ctrl::GetTopCtrls()
 
 void WakeUpGuiThread();
 
+inline CGRect CGRectDPI(const Upp::Rect& r) {
+	double sc = 1.0 / Upp::Ctrl::SCL(1);
+	return CGRectMake(sc * r.left, sc * r.top, sc * r.GetWidth(), sc * r.GetHeight());
+}
+
 void Ctrl::WndInvalidateRect(const Rect& r)
 {
 	GuiLock __;
@@ -202,13 +207,6 @@ void Ctrl::WndInvalidateRect(const Rect& r)
 			});
 		}
 	}
-}
-
-void Ctrl::WndScrollView(const Rect& r, int dx, int dy)
-{
-	GuiLock __;
-	LLOG("Scroll View " << r);
-	WndInvalidateRect(r);
 }
 
 bool Ctrl::IsWndOpen() const {
@@ -317,7 +315,7 @@ void TopWindow::SyncCaption()
 
 CGSize MMFrameSize(Size sz, dword style)
 {
-	double scale = 1.0 / DPI(1);
+	double scale = 1.0 / Upp::Ctrl::SCL(1);
 	return [NSWindow frameRectForContentRect:
 				(NSRect)CGRectMake(100, 100, scale * sz.cx, scale * sz.cy) styleMask:style].size;
 }

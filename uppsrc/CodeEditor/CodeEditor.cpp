@@ -119,6 +119,7 @@ void CodeEditor::Paint(Draw& w)
 		return;
 
 	int line0 = -1;
+	int access = -1; // 0 public, 1 protected, 2 private
 	for(int i = IsNull(end) ? 0 : end.y + 1; i <= start.y; i++) {
 		String l = GetUtf8Line(i);
 		bool hdr = false;
@@ -136,6 +137,25 @@ void CodeEditor::Paint(Draw& w)
 		catch(CParser::Error) {}
 		if(hdr) {
 			line0 = i;
+			while(i < GetScrollPos().y + 1) {
+				String l = GetUtf8Line(i);
+				CParser p(l);
+				try {
+					while(!p.IsEof())
+						if(p.Id("public"))
+							access = 0;
+						else
+						if(p.Id("protected"))
+							access = 1;
+						else
+						if(p.Id("private"))
+							access = 2;
+						else
+							p.Skip();
+				}
+				catch(CParser::Error) {}
+				i++;
+			}
 			break;
 		}
 		if(!empty && line0 < 0)
@@ -199,6 +219,13 @@ void CodeEditor::Paint(Draw& w)
 		x += GetTextSize(~r + ii, hln[ii].font, n).cx;
 		ii += n;
 	}
+	if(access >= 0) {
+		Font fnt = GetFont().Bold();
+		String atext = get_i(access, " public: ", " protected: ", " private: ");
+		Size asz = GetTextSize(atext, fnt);
+		w.DrawRect(x, 0, asz.cx, fnt.GetCy(), Blend(SColorPaper(), get_i(access, SLtGreen(), SYellow(), SLtRed()), 50));
+		w.DrawText(x, 0, atext, fnt, SColorText());
+	}
 }
 
 void CodeEditor::RefreshBlkHeader()
@@ -252,6 +279,7 @@ void CodeEditor::PostInsert(int pos, const WString& text) {
 		if(text.GetCount() > 200 || GetRefreshInfo(pos) != refresh_info || text.Find('\n') >= 0)
 			Refresh();
 		else
+		if(!console_mode)
 			CheckSyntaxRefresh(pos, text);
 	}
 	WhenUpdate();
@@ -341,7 +369,7 @@ void CodeEditor::CheckBrackets()
 	CancelBracketHighlight(highlight_bracket_pos0);
 	CancelBracketHighlight(highlight_bracket_pos);
 	if(!IsSelection()) {
-		if(GetSyntax(GetCursorLine())->CheckBrackets(*this, highlight_bracket_pos0, highlight_bracket_pos)) {
+		if(!console_mode && GetSyntax(GetCursorLine())->CheckBrackets(*this, highlight_bracket_pos0, highlight_bracket_pos)) {
 			RefreshLine(GetLine(highlight_bracket_pos0));
 			RefreshLine(GetLine(highlight_bracket_pos));
 			bracket_start = GetTimeClick();
@@ -826,7 +854,6 @@ void CodeEditor::Tip::Paint(Draw& w)
 CodeEditor::Tip::Tip()
 {
 	SetFrame(BlackFrame());
-	BackPaint();
 }
 
 bool CodeEditor::SyncCloseTip()

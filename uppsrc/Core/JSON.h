@@ -479,3 +479,5 @@ void LambdaIze(IO& io, const char *id, IZE ize)
 	LambdaIzeVar<IZE> var(ize);
 	io(id, var);
 }
+
+Value DereferenceJSONPointer(Value json, const char *path);

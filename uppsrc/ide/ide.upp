@@ -68,6 +68,7 @@ file
 	Insert.cpp,
 	Sequence.cpp,
 	idetool.cpp,
+	UnInitMembers.cpp,
 	Install.cpp,
 	Android.cpp,
 	idebar.cpp,
@@ -135,6 +136,7 @@ mainconfig
 	"" = "GUI PEAKMEM",
 	"" = "GUI HEAPLOG",
 	"" = "GUI X11",
+	"" = "GUI WAYLAND",
 	"" = "GUI DEBUGCODE";
 
 custom() "",

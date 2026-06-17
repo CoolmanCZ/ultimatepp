@@ -20,7 +20,22 @@ topic "GUI Tutorial";
 [2 $$19,0#53580023442335529039900623488521:gap]
 [C2 $$20,20#70211524482531209251820423858195:class`-nested]
 [b50;2 $$21,21#03324558446220344731010354752573:Par]
+[b83;* $$22,22#78EB85B566C7E078B53494D0FD53D992:subtitle]
+[2 $$23,23#1BDAF836AD481778AD91861722C13AB2:toc]
 [2 $$0,0#00000000000000000000000000000000:Default]
 [{_}%EN-US 
 [s2; Tutorial&]
-[s3; ]]
+[s5; The introduction paragraph should be placed here to provide 
+context and clearly outline the purpose of the content that follows.&]
+[s3; Table of contents&]
+[s23; &]
+[s23; 1. First paragraph&]
+[s23;     1.1 First subtitle&]
+[s23; &]
+[s3; 1. First paragraph&]
+[s22; 1.1 First subtitle&]
+[s5; The first paragraph content should be added here. Please ensure 
+that appropriate links to the table of contents are included 
+by creating the necessary references and then inserting corresponding 
+hyperlinks within the table of contents section.&]
+[s0; ]]

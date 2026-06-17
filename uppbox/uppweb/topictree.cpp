@@ -114,7 +114,7 @@ String TopicFileName2(String topic, bool dev)
 	String p = TopicFileName(uppbox, topic);
 	if(FileExists(p))
 		return p;
-	return TopicFileName(dev ? devsrc : uppsrc, topic);
+	return TopicFileName(/*dev ? devsrc : */uppsrc, topic);
 }
 
 String TopicFileNameHtml(const char *topic, bool dev)
@@ -138,12 +138,12 @@ String GetTopicLanguage(const String &topic);
 String GatherTopics(ArrayMap<String, Topic>& tt, Vector<String>& ttFullIds, const char *topic, String& title, String parentIds, bool dev)
 {
 	static StaticCriticalSection mapl;
-	LLOG("Gather topics: " << topic);
+	RLOG("Gather topics: " << topic);
 	int q;
 	INTERLOCKED_(mapl)
 		q = tt.Find(topic);
 	if(q < 0) {
-		LLOG("GatherTopics " << topic);
+		RLOG("GatherTopics " << topic << " " << TopicFileName2(topic, dev));
 		Topic p = ReadTopic(LoadFile(TopicFileName2(topic, dev)));
 		title = p.title;
 				

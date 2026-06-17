@@ -11,9 +11,16 @@ namespace Upp {
 NSString *PasteboardType(const String& fmt)
 {
 	return decode(fmt, "text", NSPasteboardTypeString, "png", NSPasteboardTypePNG,
-	                   "files", NSFilenamesPboardType, "url", NSURLPboardType,
+	                   "files", NSPasteboardTypeFileURL, "url", NSPasteboardTypeURL,
 	                   "rtf", NSPasteboardTypeRTF,
 	                   [NSString stringWithUTF8String:~fmt]);
+}
+
+bool IsStandardPasteboardType(NSString *type)
+{
+	return [type isEqual:NSPasteboardTypeString] || [type isEqual:NSPasteboardTypePNG] ||
+	       [type isEqual:NSPasteboardTypeFileURL] || [type isEqual:NSPasteboardTypeURL] ||
+	       [type isEqual:NSPasteboardTypeRTF];
 }
 
 NSPasteboard *Pasteboard(bool dnd = false)
@@ -34,6 +41,8 @@ NSPasteboard *Pasteboard(bool dnd = false)
 @implementation CocoClipboardOwner
 -(void)pasteboard:(NSPasteboard *)sender provideDataForType:(NSString *)type
 {
+	LLOG(Upp::ToString(type));
+	
 	Upp::GuiLock __;
 	auto render = [&](const Upp::String& fmt) -> Upp::String {
 		int q = data.Find(fmt);
@@ -43,8 +52,12 @@ NSPasteboard *Pasteboard(bool dnd = false)
 	};
 	
 	NSPasteboard *pasteboard = Upp::Pasteboard(dnd);
+	if(Upp::IsStandardPasteboardType(type)) {
+		LLOG("Standard type - clearning contents!");
+		[pasteboard clearContents];
+	}
 
-	if([type isEqualTo:NSPasteboardTypeString]) {
+	if([type isEqual:NSPasteboardTypeString]) {
 		Upp::String raw = render("text");
 		if(raw.GetCount() == 0 && source)
 			raw = source->GetDropData("text");
@@ -52,10 +65,26 @@ NSPasteboard *Pasteboard(bool dnd = false)
 	                forType:type];
 		return;
 	}
+	else if([type isEqual:NSPasteboardTypeFileURL]) {
+		Upp::String raw = render("files");
+		Upp::Value v = ParseJSON(raw);
+		if(!IsValueArray(v))
+			return;
+		Upp::ValueArray va = v;
+
+		NSMutableArray* array = [NSMutableArray array];
+		for(int i = 0; i < va.GetCount(); ++i) {
+			NSString *path = [NSString stringWithUTF8String:~va[i]];
+			[array addObject:[NSURL fileURLWithPath:path]];
+		}
+		[pasteboard writeObjects:array];
+		return;
+	}
+
+	bool is_png = [type isEqual:NSPasteboardTypePNG];
+	bool is_rtf = [type isEqual:NSPasteboardTypeRTF];
+	Upp::String fmt = is_png ? "png" : is_rtf ? "rtf" : Upp::ToString(type);
 	
-	Upp::String fmt = [type isEqualTo:NSPasteboardTypePNG] ? "png" :
-	                  [type isEqualTo:NSPasteboardTypeRTF] ? "rtf" :
-	                                                          Upp::ToString(type);
 	Upp::String raw = render(fmt);
 	if(raw.GetCount() == 0 && source)
 		raw = source->GetDropData(fmt);
@@ -166,6 +195,16 @@ bool IsFormatAvailable(NSPasteboard *pasteboard, const char *fmt)
 
 String ReadFormat(NSPasteboard *pasteboard, const char *fmt)
 {
+	if(bool is_files = String(fmt) == "files"; is_files || String(fmt) == "url") {
+		JsonArray array;
+		
+		NSArray *urls = [pasteboard readObjectsForClasses:@[[NSURL class]] options:nil];
+		for (NSURL *url : urls) {
+			array << String(is_files ? [url.path UTF8String] : [url.absoluteString UTF8String]);
+		}
+		return ~array;
+	}
+	
 	NSData *data = [pasteboard dataForType:PasteboardType(fmt)];
 	return String((const char *)[data bytes], [data length]);
 }
@@ -357,40 +396,31 @@ bool IsAvailableFiles(PasteClip& clip)
 Vector<String> GetFiles(PasteClip& clip)
 {
 	GuiLock __;
+	bool is_files = clip.IsAvailable("files");
+	bool is_url = clip.IsAvailable("url");
+	if(!is_files && !is_url) {
+		return {};
+	}
+	
+	Value v = ParseJSON(clip.Get(is_files ? "files" : "url"));
+	if(!IsValueArray(v))
+		return {};
+		
+	ValueArray va = v;
 	Vector<String> f;
-	String raw;
-	bool files = clip.IsAvailable("files");
-	if(files)
-		raw = clip.Get("files");
-	else
-	if(clip.IsAvailable("url"))
-		raw = clip.Get("url");
-	XmlNode n = ParseXML(raw);
-	for(const auto& e : n["plist"]["array"])
-		if(e.IsTag("string")) {
-			String fn = e.GatherText();
-			if(files ? fn.GetCount() : fn.TrimStart("file://"))
-				f.Add(fn);
-		}
+	for (int i = 0; i < va.GetCount(); ++i) {
+		f.Add(va[i]);
+	}
 	return f;
 }
 
 void AppendFiles(VectorMap<String, ClipData>& clip, const Vector<String>& files)
-{ // TODO (does not work in modern MacOS)
-#if 0
-	if(files.GetCount() == 0)
-		return;
-	String xml =
-		"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n"
-        "<plist version=\"1.0\"><array>\n"
-    ;
-	for(String f : files)
-		xml << XmlTag("string").Text(f);
-	xml << "</array></plist>";
-	DDUMP(xml);
-	clip.GetAdd("files") = xml;
-#endif
+{
+	JsonArray array;
+	for(auto f : files) {
+		array << f;
+	}
+	clip.GetAdd("files") = ~array;
 }
 
 Ctrl * Ctrl::GetDragAndDropSource()
@@ -431,8 +461,6 @@ int Ctrl::DoDragAndDrop(const char *fmts, const Image& sample, dword actions,
 	ASSERT_(sCurrentMouseEvent__, "Drag can only start within LeftDrag!");
 	if(!sCurrentMouseEvent__)
 		return DND_NONE;
-	if(data.GetCount() == 0)
-		return DND_NONE; // Cocoa crashes if there is nothing to drop
 	NSWindow *nswindow = (NSWindow *)GetTopCtrl()->GetNSWindow();
 	ASSERT_(nswindow, "Ctrl is not in open window");
 	if(!nswindow)
@@ -482,8 +510,8 @@ int Ctrl::DoDragAndDrop(const char *fmts, const Image& sample, dword actions,
 	ClipboardOwner(true)->source = NULL;
 
 	[pool release];
-
     CGImageRelease(cgimg);
+    ReleaseCapture();
     
     if(local_dnd_copy) // action was local and changed to copy in DragAndDrop
         return DND_COPY;

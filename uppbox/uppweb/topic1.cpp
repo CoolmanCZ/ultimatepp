@@ -62,12 +62,15 @@ Topic ReadTopic0(const char *text)
 void InitWwwTpp()
 {
 	String wwwtpp = GetHomeDirFile("upp.src/uppbox/uppweb/www.tpp");
+	DUMP(wwwtpp);
 	FindFile ff(AppendFileName(wwwtpp, "*"));
 	static Vector<String> data;
 	while(ff) {
 		RLOG(ff.GetName());
 		Topic p = ReadTopic0(LoadFile(AppendFileName(wwwtpp, ff.GetName())));
 		data.Add(p.text);
+	//	if(ff.GetName().StartsWith("Roadmap"))
+	//	RLOG(p.text);
 		RegisterTopic__("<uppweb/www.tpp/all.i>", GetFileTitle(ff.GetName()), p.title, data.Top(), data.Top().GetCount());
 		ff.Next();
 	}

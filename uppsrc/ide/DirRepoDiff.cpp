@@ -32,7 +32,7 @@ DirRepoDiffDlg::DirRepoDiffDlg()
 		for(String s : git)
 			l.Add(s, "git " + s);
 		AddSelectGit(l);
-		
+
 		branch[i] << [=] { Revs(i); };
 	};
 
@@ -40,10 +40,13 @@ DirRepoDiffDlg::DirRepoDiffDlg()
 		files_pane.Add(mode[i].TopPos(y, cy).HSizePos());
 		y += lcy;
 		files_pane.Add((i ? dir2 : dir1).TopPos(y, cy).HSizePos());
-		files_pane << branch[i].HSizePos(0, Zx(80)).TopPos(y, cy);
+		files_pane << branch[i].HSizePos(0, 2 * Zx(80)).TopPos(y, cy);
+		files_pane << log[i].RightPos(Zx(80), Zx(80) - DPI(2)).TopPos(y, cy);
 		files_pane << hash[i].RightPos(0, Zx(80) - DPI(2)).TopPos(y, cy);
-		hash[i].SetLabel("Copy hash");
+		hash[i].SetLabel("Copy Hash");
 		hash[i] << [=] { WriteClipboardText(~~r[i]); };
+		log[i].SetLabel("Copy Log");
+		log[i] << [=] { CopyGitRevisions(r[i]); };
 		y += lcy;
 		files_pane << r[i].HSizePos().TopPos(y, cy);
 		y += lcy + lcy / 2;
@@ -63,19 +66,19 @@ DirRepoDiffDlg::DirRepoDiffDlg()
 
 	files_pane.Add(files.VSizePos(y, Zy(24)).HSizePos());
 	files_pane.Add(find.BottomPosZ(6, 19).HSizePosZ());
-	
+
 	extension.Disable();
 
 	Mode(0);
 	Mode(1);
-	
+
 	compare ^= [=] { Compare(); };
-	
+
 	dir1 << [=] { SyncCompare(); };
 	dir2 << [=] { SyncCompare(); };
-	
+
 	session_id = String() << Random() << Random() << Random() << Random();
-	
+
 	branch[0].SetDropLines(32);
 	branch[1].SetDropLines(32);
 	r[0].SetDropLines(32);
@@ -116,16 +119,17 @@ void DirRepoDiffDlg::Mode(int i)
 	(i ? dir2 : dir1).Show(b);
 	branch[i].Show(!b);
 	hash[i].Show(!b);
+	log[i].Show(!b);
 	r[i].Show(!b);
 
 	if(!b) {
 		LoadBranches(branch[i], ~~dl);
 		Revs(i);
 	}
-	
+
 	ClearFiles();
 	SyncCompare();
-	
+
 	editable_left = !IsGit(0);
 	editable_right = !IsGit(1);
 }

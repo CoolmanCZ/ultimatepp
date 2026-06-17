@@ -45,6 +45,9 @@ problems.&]
 to use it`'s most important features.&]
 [s3;l160;i150;O0; [*^topic`:`/`/Core`/srcdoc`/Tutorial`$en`-us^ Core 
 Tutorial] `- the introduction to the foundations behind the framework.&]
+[s3;l320;i150;O0; [*^topic`:`/`/Core`/SSH`/srcdoc`/Tutorial`_en`-us^ Core 
+SSH Tutorial] `- a core supplementary tutorial that walks through 
+building applications leveraging the SSH protocol.&]
 [s3;l160;i150;O0; [*^topic`:`/`/CtrlLib`/srcdoc`/Tutorial`$en`-us^ GUI 
 Tutorial] `- learn how to build graphical user interfaces with 
 the U`+`+.&]

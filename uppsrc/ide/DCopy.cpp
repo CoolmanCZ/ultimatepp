@@ -52,7 +52,12 @@ void AssistEditor::DCopy()
 				String text;
 				for(int i = m.pos.y; i < GetLineCount(); i++) {
 					String l = GetUtf8Line(i);
-					int q = max(l.ReverseFind(';'), l.ReverseFind('{'));
+					int q = l.ReverseFind(';');
+					int w = l.ReverseFind('{');
+					if(q >= 0 && w >= 0)
+						q = min(q, w);
+					else
+						q = max(q, w);
 					if(q >= 0)
 						l.Trim(q);
 					text << l << ' ';
@@ -113,7 +118,7 @@ void AssistEditor::DCopy()
 				auto Clean = [](String& s) {
 					s = NormalizeSpaces((TrimBoth(Filter(s, [](int c) { return c < 32 ? 32 : c; }))));
 				};
-				
+
 				Clean(ret);
 				Clean(name);
 				Clean(params);
@@ -145,14 +150,15 @@ void AssistEditor::DCopy()
 					}
 					params = params2;
 				}
+				
+				if(ret.Find(' ') < 0) // int *foo() vs int* foo()
+					ret << ' ';
 
 				if(ret.GetCount() && name.GetCount() && params.GetCount()) { // prefer original text
 					if(m.definition) {
 						if(IsMethod(m.kind))
 							result << '\t';
-						if(ret.GetCount())
-							result << ret << ' ';
-						result << m.name << params << ";\n";
+						result << ret << m.name << params << ";\n";
 					}
 					else {
 						String cret;
@@ -196,7 +202,7 @@ void AssistEditor::DCopy()
 						}
 						else
 							cret = ret;
-						result << cret << ' ' << cls << m.name << params << "\n{\n}\n\n";
+						result << cret << cls << m.name << params << "\n{\n}\n\n";
 					}
 				}
 				else { // just in case our heuristics split of original text failed
@@ -212,7 +218,7 @@ void AssistEditor::DCopy()
 			if(m.kind == CXCursor_VarDecl) {
 				if(cls.GetCount()) { // class variable
 					if(m.definition) {
-						int q = FindId(m.pretty, m.name);
+						int q = FindLastId(m.pretty, m.name);
 						if(q >= 0) {
 							int w = m.pretty.ReverseFind(' ', q);
 							if(w >= 0)
@@ -223,14 +229,14 @@ void AssistEditor::DCopy()
 						String h = m.pretty;
 						h.TrimStart("static ");
 						h = TrimLeft(h);
-						int q = FindId(h, m.name);
+						int q = FindLastId(h, m.name);
 						if(q >= 0)
 							result << h.Mid(0, q) << cls << h.Mid(q) << ";\n";
 					}
 				}
 				else { // just toggle extern
 					String h = m.pretty;
-					if(FindId(GetUtf8Line(m.pos.y), "extern") < 0)
+					if(FindLastId(GetUtf8Line(m.pos.y), "extern") < 0)
 						h = "extern " + h;
 					result << h << ";\n";
 				}

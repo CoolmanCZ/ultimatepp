@@ -11,8 +11,14 @@ TextDiffCtrl::TextDiffCtrl()
 	left.SetLeft();
 	left.SetDiffBgColor(GreenDiffBg());
 	left.SetDiffBgColorBold(GreenDiffBgBold());
+	indent.SetImage(DiffImg::Indent());
+	indent.Tip("Compare indentation");
+	indent <<= true;
 	next.SetImage(DiffImg::Next());
+	next.Tip("Next difference");
 	prev.SetImage(DiffImg::Prev());
+	prev.Tip("Previous difference");
+	left.scroll.y.AddFrame(indent);
 	left.scroll.y.AddFrame(prev);
 	left.scroll.y.AddFrame(next);
 	next << [=] { FindDiff(true); };
@@ -72,13 +78,20 @@ static bool SmallDiff(const char *s1, const char *s2)
 
 void TextDiffCtrl::Set(Stream& l, Stream& r)
 {
-	Vector<String> ll = GetLineMap(l);
-	Vector<String> rl = GetLineMap(r);
+	bool ignore_indent = !indent;
+	Vector<String> ll = GetLineMap(l, ignore_indent);
+	Vector<String> rl = GetLineMap(r, ignore_indent);
 	Array<TextSection> sections = CompareLineMaps(ll, rl);
 	int outln = 0;
 	left.SetCount(0);
 	right.SetCount(0);
 	int firstdiff = -1;
+	if(ignore_indent) {
+		l.Seek(0);
+		ll = GetLineMap(l);
+		r.Seek(0);
+		rl = GetLineMap(r);
+	}
 	for(int i = 0; i < sections.GetCount(); i++) {
 		const TextSection& sec = sections[i];
 		bool diff = !sec.same;
@@ -269,6 +282,8 @@ Event<const String&, Vector<LineEdit::Highlight>&, const WString&> DiffDlg::When
 
 DiffDlg::DiffDlg()
 {
+	Icon(DiffImg::Diff());
+
 	Add(diff.SizePos());
 	Sizeable().Zoomable();
 	diff.InsertFrameLeft(p);
@@ -339,6 +354,7 @@ FileDiff::FileDiff(FileSel& fs_)
 	Icon(DiffImg::Diff());
 	diff.InsertFrameRight(r);
 	r <<= THISBACK(Open);
+	diff.indent << [=] { Finish(); };
 }
 
 void FileDiff::Set(const String& f)
