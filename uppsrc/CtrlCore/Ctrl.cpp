@@ -288,7 +288,7 @@ bool Ctrl::IsOpen() const
 {
 	GuiLock __;
 	const Ctrl *q = GetTopCtrl();
-	return q->IsVirtualPopUp() || q->isopen && q->IsWndOpen();
+	return q->isopen && q->IsWndOpen();
 }
 
 void Ctrl::Show(bool ashow) {
@@ -626,10 +626,7 @@ void Ctrl::Close()
 	if(GetParent()) return;
 	StateH(CLOSE);
 	USRLOG("   CLOSE " + Desc(this));
-	if(IsVirtualPopUp())
-		CloseVirtualPopUp();
-	else
-		WndDestroy();
+	WndDestroy();
 	visible = true;
 	popup = false;
 }
@@ -864,14 +861,6 @@ static bool _ClickFocus;
 bool Ctrl::ClickFocus() { return _ClickFocus; }
 void Ctrl::ClickFocus(bool cf) { _ClickFocus = cf; }
 
-Vector<Ctrl *> Ctrl::GetTopCtrls()
-{
-	Vector<Ctrl *> tops = GetTopWndCtrls();
-	for(Ctrl *c : virtual_popups)
-		if(c)
-			tops << c;
-	return tops;
-}
 
 Vector<Ctrl *> Ctrl::GetTopWindows()
 {
@@ -943,9 +932,23 @@ void Modality::End()
 }
 
 extern void (*whenSetStdFont)();
+extern void (*adjustDefaultFont)(Font& font);
 
 INITBLOCK {
 	whenSetStdFont = &Ctrl::ReSkin;
+
+	adjustDefaultFont = [](Font& font) {
+		Size wsz = Ctrl::GetPrimaryWorkArea().GetSize();
+		wsz.cy = max(wsz.cy - DPI(24), 0);
+		while(font.GetHeight() >= 0) {
+			Size csz = GetTextSize(sZoomText, font);
+			Size dsz = Size(99, 13 + 4);
+			Size sz = csz * Size(1000, 700) / dsz;
+			if(sz.cx <= wsz.cx && sz.cy <= wsz.cy)
+				break;
+			font.Height(font.GetHeight() - 1);
+		}
+	};
 }
 
 void (**Ctrl::skin)();

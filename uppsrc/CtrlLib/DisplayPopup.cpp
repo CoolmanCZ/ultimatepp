@@ -2,18 +2,18 @@
 
 namespace Upp {
 
-Rect              DisplayPopup::screen_rect;
-Ptr<Ctrl>         DisplayPopup::ctrl;
-Ptr<DisplayPopup> DisplayPopup::owner;
-Rect              DisplayPopup::item;
-Value             DisplayPopup::value;
-Color             DisplayPopup::paper;
-Color             DisplayPopup::ink;
-dword             DisplayPopup::style;
-const Display    *DisplayPopup::display;
-int               DisplayPopup::margin;
-bool              DisplayPopup::usedisplaystdsize_s;
-	
+Rect               DisplayPopup::screen_rect;
+Ptr<Ctrl>          DisplayPopup::ctrl;
+Ptr<DisplayPopup>  DisplayPopup::owner;
+Rect               DisplayPopup::item;
+Value              DisplayPopup::value;
+Color              DisplayPopup::paper;
+Color              DisplayPopup::ink;
+dword              DisplayPopup::style;
+Ptr<const Display> DisplayPopup::display;
+int                DisplayPopup::margin;
+bool               DisplayPopup::usedisplaystdsize_s;
+
 DisplayPopup::DisplayPopup()
 {
 	ONCELOCK {
@@ -26,7 +26,7 @@ DisplayPopup::DisplayPopup()
 void DisplayPopup::PaintHook(Ctrl *tw, Draw& w, const Rect& clip)
 {
 	if(ctrl && tw && !IsNull(screen_rect) && ctrl->HasMouseDeep() &&
-	   (tw == ctrl->GetTopCtrl() || tw->IsPopUp() && tw == ctrl->GetTopCtrl()->GetOwner())) {
+	   (tw == ctrl->GetTopCtrl() || tw == ctrl->GetTopCtrl()->GetOwner())) {
 		Rect r = screen_rect - tw->GetScreenRect().TopLeft();
 		DrawFrame(w, r, SBlack());
 		r.Deflate(1, 1);
@@ -138,6 +138,7 @@ void DisplayPopup::Cancel()
 {
 	if(owner == this) {
 		screen_rect = Null;
+		display = nullptr;
 		Sync();
 	}
 }

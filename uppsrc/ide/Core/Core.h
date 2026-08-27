@@ -56,21 +56,21 @@ class PPInfo {
 		bool                          guarded = false; // has include guards
 		int                           blitz = 0; // AUTO, APPROVED, PROHIBITED
 		Time                          time = Null; // file time
-		
+
 		bool                          dirty = true; // need to be rechecked for change (filetime)
-		
+
 		void Dirty()                          { dirty = true; time = Null; }
 		void Parse(Stream& in);
 		void Serialize(Stream& s);
 	};
-	
+
 	struct Dir : Moveable<Dir> {
 		Index<String>           subdirs;
 		VectorMap<String, Time> files;
-		
+
 		void Load(const String& dir);
 	};
-	
+
 	ArrayMap<String, PPFile>                   files;
 	Vector<String>                             includes; // include dirs
 	int                                        includes_base_count; // for trimming out additional includes
@@ -94,7 +94,7 @@ public:
 
 	void                  SetIncludes(Vector<String>&& includes);
 	void                  SetIncludes(const String& includes);
-	
+
 	void                  BaseIncludes();
 	void                  AddInclude(const String& include);
 
@@ -114,7 +114,7 @@ public:
 	                                         bool speculative = true);
 
 	Time                  GetTime(const String& path, VectorMap<String, Time> *ret_result = nullptr);
-	
+
 	const VectorMap<String, String>& GetFileDefines(const String& path) { return File(NormalizePath(path)).all_defines; }
 	const VectorMap<String, String>& GetFileFlags(const String& path)   { return File(NormalizePath(path)).flags; }
 
@@ -156,7 +156,7 @@ public:
 	virtual bool             IdeConsoleWait() = 0;
 	virtual bool             IdeConsoleWait(int slot) = 0;
 	virtual void             IdeConsoleOnFinish(Event<>  cb) = 0;
-	
+
 	virtual void             IdeProcessEvents() = 0;
 
 	virtual bool      IdeIsDebug() const = 0;
@@ -459,6 +459,7 @@ public:
 	Array<OptItem>           option;
 	Array<OptItem>           include;
 	Array<OptItem>           pkg_config;
+	Array<OptItem>           external_dependency;
 	Array<File>              file;
 	Array<Config>            config;
 	Array<CustomStep>        custom;
@@ -531,6 +532,12 @@ String GetExeExt();
 String NormalizeExePath(String exePath);
 String NormalizePathSeparator(String path);
 
+struct CompileCommand {
+	String command;
+	String file;
+	String ofile;
+};
+
 struct Builder {
 	Host            *host;
 	Index<String>    config;
@@ -565,13 +572,15 @@ struct Builder {
 	Vector<String>   CINC;
 	Vector<String>   Macro;
 
+	String           cc_inc; // for AddCommands only
+
 	VectorMap<String, int> tmpfilei; // for naming automatic response files
 	VectorMap<String, Time> dependencies; // dependencies of the last HdependFileTime call
-	
+
 	static VectorMap<String, String> cmdx_cache; // caching e.g. pkg-config
 
 	String                 CmdX(const char *s);
-	
+
 	Time                   HdependFileTime(const String& path);
 
 	virtual bool BuildPackage(const String& package, Vector<String>& linkfile, Vector<String>& immfile,
@@ -589,6 +598,7 @@ struct Builder {
 		const Index<String>& common_config, bool exporting) {}
 	virtual void AddCCJ(MakeFile& mfinfo, String package,
 		const Index<String>& common_config, bool exporting, bool last_ws) {}
+	virtual void AddCommands(Array<CompileCommand>& commands, const String& package) {}
 	virtual String GetTargetExt() const = 0;
 	virtual void SaveBuildInfo(const String& package) {}
 	virtual String GetBuildInfoPath() const { return String(); }
@@ -598,7 +608,6 @@ struct Builder {
 	virtual ~Builder() {}
 
 	void                   ChDir(const String& path);
-	String                 GetPathQ(const String& path) const;
 	Vector<Host::FileInfo> GetFileInfo(const Vector<String>& path) const;
 	Host::FileInfo         GetFileInfo(const String& path) const;
 	Time                   GetFileTime(const String& path) const;
@@ -606,6 +615,9 @@ struct Builder {
 	int                    Execute(const char *cl, Stream& out);
 	bool                   HasFlag(const char *f) const { return config.Find(f) >= 0; }
 };
+
+String TrimSlash(String s);
+String GetPathQ(const String& path);
 
 VectorMap<String, Builder *(*)()>& BuilderMap();
 void RegisterBuilder(const char *name, Builder *(*create)());
@@ -679,7 +691,7 @@ enum {
 	ITEM_SIGN,
 	ITEM_UPP,
 	ITEM_TYPE,
-	
+
 	ITEM_PTYPE = ITEM_TYPE + 10000,
 };
 
@@ -695,5 +707,24 @@ String CleanupId(const char *s);
 String CleanupPretty(const String& signature);
 
 Vector<ItemTextPart> ParsePretty(const String& name, const String& signature, int *fn_info = NULL);
+
+struct VcpkgInstalled : Moveable<VcpkgInstalled> {
+	String        name;
+	Index<String> triplets;
+	String        version;
+	String        desc;
+};
+
+bool                   IsVcpkgInstalled();
+bool                   InstallVcpkg(Function<int(const String&, const String& chdir)> sys);
+String                 VcpkgExe();
+Vector<VcpkgInstalled> VcpkgList();
+Vector<String>         RequiredExternalDependencies(const String& manager);
+String                 VcpkgTriplet(const String& builder, const String& compiler, bool so);
+String                 VcpkgTriplet(const VectorMap<String, String>& vars, bool so);
+Vector<String>         VcpkgTriplets();
+bool                   VcpkgHasInstalled(Vector<VcpkgInstalled>& items, const String& name, const String& triplet);
+bool                   VcpkgInstall(Function<int(const String&, const String& chdir)> sys, const String& name, const String& triplet);
+void                   VcpkgInstallMissing(Function<int(const String&, const String& chdir)> sys, const String& triplet);
 
 #endif

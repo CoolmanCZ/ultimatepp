@@ -21,7 +21,7 @@ void GatherAllFiles(const String& path, Index<String>& filei, VectorMap<String, 
 	if(path.GetCount() == 0)
 		return;
 	Sleep(0); // This is supposed to be superlazy
-	for(FindFile ff(path + "/*.*"); ff && !Thread::IsShutdownThreads(); ff.Next())
+	for(FindFile ff(path + "/*.*"); ff && !Thread::IsShutdownThreads() && file.GetCount() < 4000000; ff.Next())
 		if(ff.IsFolder() && *ff.GetName() != '.')
 			GatherAllFiles(ff.GetPath(), filei, file);
 		else
@@ -61,10 +61,10 @@ void IdeBackgroundThread()
 		
 		for(String d : dir)
 			GatherAllFiles(d, filei, file);
-
+		
 		if(TheIde() && TheIde()->search_downloads)
 			GatherAllFiles(GetDownloadFolder(), filei, file);
-
+		
 		{
 			Mutex::Lock __(s_allfiles_lock);
 			s_allfiles = pick(file);

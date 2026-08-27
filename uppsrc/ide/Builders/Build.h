@@ -66,12 +66,15 @@ public:
 	Index<String> cfg;
 	FileTime     start_time;
 
+	VectorMap<String, String> bm;
+	One<Builder> builder;
+
 	bool         makefile_svn_revision = true;
 
-	void CreateHost(Host& host, const String& method, bool darkmode, bool disable_uhd, int scale);
-	void CreateHost(Host& host, bool darkmode = false, bool disable_uhd = false, int scale = 0);
+	void CreateHost(Host& host, const String& method, bool darkmode, bool disable_uhd, int scale, bool exit_pause);
+	void CreateHost(Host& host, bool darkmode = false, bool disable_uhd = false, int scale = 0, bool exit_pause = false);
 
-	const TargetMode& GetTargetMode();
+	const TargetMode& GetTargetMode() const;
 	Index<String> PackageConfig(const Workspace& wspc, int package, const VectorMap<String, String>& bm,
 	                            String mainparam, Host& host, Builder& b, String *target = NULL);
 	One<Builder> CreateBuilder(Host *host);
@@ -95,7 +98,14 @@ public:
 	void Clean();
 	void RebuildAll();
 	void SaveMakeFile(const String& fn, bool exporting);
-	void SaveCCJ(const String& fn, bool exporting);
+
+	Array<CompileCommand> GetCompileCommands();
+
+	void  SaveCCJ(const String& fn, bool exporting);
+	
+#ifdef PLATFORM_WIN32
+	String GetVcpkgTriplet(const VectorMap<String, String>& bm) const;
+#endif
 
 	MakeBuild();
 
