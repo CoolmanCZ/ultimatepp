@@ -369,6 +369,7 @@ String SearchEnginesFile();
 int ApplyChanges(LineEdit& editor, const String& new_content);
 
 struct RepoDiff;
+class  UrepoConsole;
 
 struct Ide : public TopWindow, public WorkspaceWork, public IdeContext, public MakeBuild {
 public:
@@ -957,6 +958,8 @@ public:
 		void  SyncRepoDir(const String& working);
 		void  SyncRepo();
 
+		void  ClangTidyPackage(Bar& menu) override;
+
 	void      BuildMenu(Bar& menu);
 		void  BuildPackageMenu(Bar& menu) override;
 
@@ -1336,11 +1339,18 @@ public:
 
 	String GetAndroidSdkPath();
 
-	void TriggerIndexer0();
-	void TriggerIndexer();
+	void   TriggerIndexer0();
+	void   TriggerIndexer();
 
-	String GetVcpkgTriplet();
-	void   VcpkgInstallMissing(Function<int(const String&, const String& chdir)> sys);
+	String GetTargetTriplet();
+	void   SyncExternalDependencies(bool force = false, bool report_ok = false);
+
+#ifdef PLATFORM_WIN32
+	bool   IsVcpkgAvailable(UrepoConsole& console);
+	bool   IsVcpkgAvailable();
+#endif
+
+	void   CreateSBOM();
 
 	typedef   Ide CLASSNAME;
 

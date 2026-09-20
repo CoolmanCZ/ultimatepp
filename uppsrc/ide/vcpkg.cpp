@@ -2,6 +2,22 @@
 
 #ifdef PLATFORM_WIN32
 
+bool Ide::IsVcpkgAvailable(UrepoConsole& console)
+{
+	return ::IsVcpkgAvailable([&](const String& cmd, const String& chdir) { return console.System(cmd, chdir); });
+}
+
+bool Ide::IsVcpkgAvailable()
+{
+	UrepoConsole console;
+	return IsVcpkgAvailable(console);
+}
+
+String Ide::GetTargetTriplet()
+{
+	return MakeBuild::GetVcpkgTriplet(GetMethodVars(method));
+}
+
 void Finish(UrepoConsole& console, int errors)
 {
 	if(errors)
@@ -23,16 +39,6 @@ struct VcpkgDlg : WithVcpkgLayout<TopWindow> {
 	VcpkgDlg();
 };
 
-String Ide::GetVcpkgTriplet()
-{
-	return MakeBuild::GetVcpkgTriplet(GetMethodVars(method));
-}
-
-void Ide::VcpkgInstallMissing(Function<int(const String&, const String& chdir)> sys)
-{
-	::VcpkgInstallMissing(sys, GetVcpkgTriplet());
-}
-
 VcpkgDlg::VcpkgDlg()
 {
 	CtrlLayoutExit(*this, "vcpkg");
@@ -45,23 +51,10 @@ VcpkgDlg::VcpkgDlg()
 	
 	install_missing << [=] {
 		UrepoConsole console;
-		int errors = 0;
 		
-		TheIde()->VcpkgInstallMissing([&](const String& cmd, const String& chdir)
-		                             { return console.System(cmd, chdir); });
-/*		
-		for(int i = 0; i < missing_list.GetCount(); i++) {
-			String name = missing_list.Get(i, 0);
-			String triplet = missing_list.Get(i, 1);
-			if(!VcpkgInstall([&](const String& cmd, const String& chdir) { return console.System(cmd, chdir); }, name, triplet)) {
-				console.Log("Failed", SLtRed());
-				errors++;
-			}
-		}
-		
-		Finish(console, errors);
-		console.Perform();
-*/
+		InstallMissingExternalDependencies([&](const String& cmd, const String& chdir)
+		                                   { return console.System(cmd, chdir); },
+		                                   TheIde()->GetTargetTriplet());
 		SyncList();
 		SyncIde();
 	};
@@ -120,17 +113,10 @@ void VcpkgDlg::SyncList()
 
 void VcpkgDlg::Perform()
 {
-	if(!IsVcpkgInstalled()) {
-		if(!PromptYesNo("Install vcpkg?"))
-			return;
-		UrepoConsole console;
-		if(!InstallVcpkg([&](const String& cmd, const String& chdir) { return console.System(cmd, chdir); })) {
-			Exclamation("Installation failed");
-			return;
-		}
-		console.Log("Installation completed.", SGreen());
-		console.Perform();
-	}
+	extern bool no_vcpkg_install;
+	no_vcpkg_install = false;
+	if(!TheIde()->IsVcpkgAvailable())
+		return;
 	SyncList();
 	SyncIde();
 	Execute();
@@ -216,7 +202,7 @@ void VcpkgInstallDlg::Perform()
 
 	Index<String> ts;
 	if(TheIde())
-		ts.FindAdd(TheIde()->GetVcpkgTriplet());
+		ts.FindAdd(TheIde()->GetTargetTriplet());
 	for(const String& s : VcpkgTriplets())
 		ts.FindAdd(s);
 	int ni = ts.GetCount();

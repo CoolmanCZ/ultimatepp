@@ -232,6 +232,7 @@ bool Package::Load(const char *path)
 		config.Clear();
 		custom.Clear();
 		description.Clear();
+		license_id.Clear();
 		String f = LoadFile(path);
 		cr = f.Find('\r') >= 0;
 		time = FileGetTime(path);
@@ -280,6 +281,9 @@ bool Package::Load(const char *path)
 							description = String(~description, q);
 						}
 					}
+					else
+					if(p.Id("license_id"))
+						license_id = p.ReadString();
 					else
 					if(p.Id("acceptflags")) {
 						do
@@ -466,6 +470,8 @@ bool Package::Save(const char *path) const {
 			d << (int)ink.GetR() << ',' << (int)ink.GetG() << ',' << (int)ink.GetB();
 		out << "description " << AsCString(d) << ";\n\n";
 	}
+	if(license_id.GetCount())
+		out << "license_id " << AsCString(license_id) << ";\r\n";
 	if(charset > 0)
 		out << "charset " << AsCString(IdeCharsetName(charset)) << ";\n\n";
 	if(!IsNull(tabsize))

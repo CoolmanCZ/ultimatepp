@@ -11,6 +11,8 @@
 
 using namespace Upp;
 
+extern bool UMK; // this is umk (not theide)
+
 int CharFilterCid(int c);
 
 int    ReadLNG(CParser& p);
@@ -449,6 +451,7 @@ public:
 	bool                     noblitz;
 	bool                     nowarnings;
 	String                   description;
+	String                   license_id;
 	Vector<String>           accepts;
 	Array<OptItem>           flag;
 	Array<OptItem>           uses;
@@ -708,6 +711,33 @@ String CleanupPretty(const String& signature);
 
 Vector<ItemTextPart> ParsePretty(const String& name, const String& signature, int *fn_info = NULL);
 
+struct ExternalDependencyInfo : Moveable<ExternalDependencyInfo> {
+	String name;
+	String license;
+};
+
+ExternalDependencyInfo GetExternalDependencyInfo(const String& txt);
+
+Vector<ExternalDependencyInfo> RequiredExternalDependenciesInfo(const Package& pkg);
+Vector<ExternalDependencyInfo> RequiredExternalDependenciesInfo();
+
+Vector<String>         RequiredExternalDependencies(const Package& pkg);
+Vector<String>         RequiredExternalDependencies();
+
+Vector<String>         MissingExternalDependencies(const String& triplet);
+
+// provided by platform:
+
+String         ExternalDependenciesManagerId();
+Index<String>  InstalledExternalDependencies(const String& triplet);
+String         InstallMissingExternalDependenciesCommand(const String& triplet);
+bool           InstallMissingExternalDependencies(Function<int(const String&, const String& chdir)> sys,
+                                                  const String& triplet);
+bool           CanInstallMissingExternalDependencies();
+
+
+#ifdef PLATFORM_WIN32
+
 struct VcpkgInstalled : Moveable<VcpkgInstalled> {
 	String        name;
 	Index<String> triplets;
@@ -716,15 +746,16 @@ struct VcpkgInstalled : Moveable<VcpkgInstalled> {
 };
 
 bool                   IsVcpkgInstalled();
-bool                   InstallVcpkg(Function<int(const String&, const String& chdir)> sys);
+bool                   IsVcpkgAvailable(Function<int(const String&, const String& chdir)> sys);
 String                 VcpkgExe();
 Vector<VcpkgInstalled> VcpkgList();
-Vector<String>         RequiredExternalDependencies(const String& manager);
 String                 VcpkgTriplet(const String& builder, const String& compiler, bool so);
 String                 VcpkgTriplet(const VectorMap<String, String>& vars, bool so);
 Vector<String>         VcpkgTriplets();
 bool                   VcpkgHasInstalled(Vector<VcpkgInstalled>& items, const String& name, const String& triplet);
 bool                   VcpkgInstall(Function<int(const String&, const String& chdir)> sys, const String& name, const String& triplet);
-void                   VcpkgInstallMissing(Function<int(const String&, const String& chdir)> sys, const String& triplet);
+
+#endif
+
 
 #endif

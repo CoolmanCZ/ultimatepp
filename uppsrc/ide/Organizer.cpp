@@ -116,7 +116,56 @@ UsesDlg::UsesDlg()
 	CtrlLayoutOKCancel(*this, "Uses");
 	when.SetFilter(CondFilter);
 	text.SetDisplay(Single<UsesDisplay>());
-	text.WhenPush = [=] { New(); };
+	text.WhenPush = [this] { New(); };
+}
+
+struct ExtDepDlg : WithUppExtDepLayout<TopWindow> {
+	ExtDepDlg();
+	
+	String GetText() const;
+	void   SetText(String);
+};
+
+ExtDepDlg::ExtDepDlg()
+{
+	CtrlLayoutOKCancel(*this, "External dependency");
+	when.AddList("VCPKG");
+	when.AddList("DPKG");
+	when.AddList("POSIX");
+	when.Appending(" ");
+
+#ifdef PLATFORM_WIN32
+	when <<= "VCPKG";
+#else
+	when <<= "DPKG";
+#endif
+	
+	text.SetFilter([](int c) { return c == ' ' ? 0 : c; });
+	
+	for(String id : SPDXLicenses()) // TODO
+		license.AddList(id);
+	license.NullText("resolve automatically");
+}
+
+String ExtDepDlg::GetText() const
+{
+	String r = ~text;
+	if(!IsNull(license))
+		r << " license(" << AsCString(~license) << ")";
+	return r;
+}
+
+void ExtDepDlg::SetText(String txt)
+{
+	int q = txt.Find(' ');
+	if(q >= 0) {
+		text <<= txt.Mid(0, q);
+		ExternalDependencyInfo f = GetExternalDependencyInfo(txt);
+		text <<= f.name;
+		license <<= f.license;
+	}
+	else
+		text <<= txt;
 }
 
 void PackageEditor::SaveOptions() {
@@ -137,6 +186,7 @@ void PackageEditor::SaveOptions() {
 			f.nopch = nopch_file;
 			f.noblitz = noblitz_file;
 		}
+		actual.license_id = ~license_id;
 		SavePackage();
 	}
 }
@@ -218,6 +268,7 @@ void PackageEditor::PackageCursor()
 		spellcheck_comments <<= actual.spellcheck_comments;
 		noblitz = actual.noblitz;
 		nowarnings = actual.nowarnings;
+		license_id <<= actual.license_id;
 		String s;
 		for(int i = 0; i < actual.accepts.GetCount(); i++) {
 			if(i) s << ' ';
@@ -310,6 +361,12 @@ void PackageEditor::AddOption(int type)
 			SetOpt(option, USES, actual.uses.Add(), ~dlg.when, ~dlg.text);
 		return;
 	}
+	if(type == EXTERNAL_DEPENDENCY) {
+		ExtDepDlg dlg;
+		if(dlg.Run() == IDOK)
+			SetOpt(option, EXTERNAL_DEPENDENCY, opt[type]->Add(), ~dlg.when, ~dlg.GetText());
+		return;
+	}
 	WithUppOptDlg<TopWindow> dlg;
 	Prepare(dlg, type);
 	if(dlg.Run() != IDOK)
@@ -333,6 +390,20 @@ void PackageEditor::EditOption(bool duplicate)
 			dlg.text <<= m[i].text;
 			if(dlg.Run() == IDOK)
 				SetOpt(option, USES, duplicate ? actual.uses.Add() : m[i], ~dlg.when, ~dlg.text);
+		}
+		return;
+	}
+	if(type == EXTERNAL_DEPENDENCY) {
+		Array<OptItem>& m = *opt[type];
+		int i = option.Get(1);
+		if(i >= 0 && i < m.GetCount()) {
+			ExtDepDlg dlg;
+			if(duplicate)
+				dlg.Title(GetTitle().ToString() + " - duplicate");
+			dlg.when <<= m[i].when;
+			dlg.SetText(m[i].text);
+			if(dlg.Run() == IDOK)
+				SetOpt(option, EXTERNAL_DEPENDENCY, duplicate ? opt[type]->Add() : m[i], ~dlg.when, ~dlg.GetText());
 		}
 		return;
 	}
@@ -392,9 +463,9 @@ void PackageEditor::OptionMenu(Bar& bar)
 			bar.Add(b, "New " + opt_name[j] + "..", THISBACK1(AddOption, j));
 	bar.Separator();
 	b = option.IsCursor() && (int)option.Get(0) >= 0;
-	bar.Add(b, "Edit..", [=] { EditOption(false); })
+	bar.Add(b, "Edit..", [this] { EditOption(false); })
 		.Key(K_CTRL_ENTER);
-	bar.Add(b, "Duplicate..", [=] { EditOption(true); })
+	bar.Add(b, "Duplicate..", [this] { EditOption(true); })
 	   .Key(K_CTRL_D);
 	bar.Add(b, "Remove", THISBACK(RemoveOption))
 	   .Key(K_DELETE);
@@ -632,7 +703,14 @@ PackageEditor::PackageEditor()
 	CtrlLayoutOKCancel(*this, "Package organizer");
 	description.Disable();
 	description <<= THISBACK(Description);
+
+	for(String s : SPDXLicenses())
+		license_id.AddList(s);
 	
+	license_id.NullText("BSD-2-Clause");
+	
+	license_id << [this] { SaveOptions(); };
+
 	spellcheck_comments.Add(Null, "Default");
 	DlSpellerLangs(spellcheck_comments);
 	DlCharsetD(charset);
@@ -663,7 +741,7 @@ PackageEditor::PackageEditor()
 	Init(option);
 	option.WhenCursor = THISBACK(AdjustPackageOptionCursor);
 	option.WhenBar = THISBACK(OptionMenu);
-	option.WhenLeftDouble << [=] { EditOption(false); };
+	option.WhenLeftDouble << [this] { EditOption(false); };
 
 	Init(fileoption);
 	fileoption.WhenCursor = THISBACK(AdjustFileOptionCursor);
@@ -675,7 +753,7 @@ PackageEditor::PackageEditor()
 	bold <<=
 	italic <<= THISBACK(SaveOptionsLoad);
 	
-	merge << [=] { MergeNests(); };
+	merge << [this] { MergeNests(); };
 
 	FileCursor();
 }
@@ -688,7 +766,7 @@ MergeNestsDlg::MergeNestsDlg()
 {
 	CtrlLayoutOKCancel(*this, "Merge nests");
 	list.NoHeader().NoGrid().AddColumn();
-	mode << [=] { dir.Enable(~mode == 1); };
+	mode << [this] { dir.Enable(~mode == 1); };
 	dir.SetFilter(CharFilterFileName);
 	dir <<= "imported";
 	mode <<= 1;

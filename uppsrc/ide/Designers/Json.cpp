@@ -101,6 +101,8 @@ String LoadJson(TreeCtrl& tree, const String& json)
 
 void JsonTreeMenu(Bar& bar, TreeCtrl& tree)
 {
+	bar.Add(tree.IsCursor(), "Open all", [&tree] { tree.OpenDeep(tree.GetCursor()); });
+	bar.Separator();
 	bar.Add(CtrlImg::copy(), "Copy", [=, &tree] { CopyJsonNode(tree); }).Key(K_CTRL_C);
 	bar.Add("Copy path\t[double-click]", [=, &tree] { CopyJsonPath(tree); });
 }
@@ -128,30 +130,39 @@ void JsonViewDes::Validate(const String& path)
 	JsonSchemaChecker chk;
 	errors_frame.Show();
 	chk.WhenError = [&](const String& error) {
-		String path;
-		ValueArray va;
-		for(Value v : chk.data_path) {
-			MergeWith(path, "/", ~v);
-			va << v;
+		auto AddError = [&](const String& error, const Vector<Value>& data_path, const Vector<Value>& schema_path) {
+			String path;
+			ValueArray va;
+			for(Value v : data_path) {
+				MergeWith(path, "/", ~v);
+				va << v;
+			}
+			ValueArray sch_va;
+			String sch_path;
+			for(Value v : schema_path) {
+				MergeWith(sch_path, "/", ~v);
+				sch_va << v;
+			}
+			errors.Add(error, path, sch_path, va, sch_va);
+		};
+		AddError(error, chk.data_path, chk.schema_path);
+		for(const auto& se : chk.sub_errors) {
+			String indent;
+			for(int i = 0; i < se.sublevel; i++)
+				indent << "    ";
+			AddError(indent + se.error, se.data_path, se.schema_path);
 		}
-		ValueArray sch_va;
-		String schema_path;
-		for(Value v : chk.schema_path) {
-			MergeWith(schema_path, "/", ~v);
-			sch_va << v;
-		}
-		errors.Add(error, path, schema_path, va, sch_va);
 	};
 	chk.Validate(ParseJSON(schema), ParseJSON(json));
 	if(errors.GetCount() == 0)
-		errors.Add(AttrText("OK").NormalInk(SGreen()));
+		errors.Add(AttrText("Everything OK").Bold().Italic().NormalInk(SGreen()));
 }
 
 void JsonViewDes::EditMenu(Bar& bar)
 {
 	JsonTreeMenu(bar, tree);
 	bar.Separator();
-	bar.Add("Validate with schema..", [=] {
+	bar.Add("Validate with schema..", [this] {
 		String p = SelectFileOpen("*.json\t*.schema.json\t*.*");
 		if(IsNull(p))
 			return;
@@ -196,7 +207,7 @@ JsonViewDes::JsonViewDes()
 	errors.AddColumn("Path");
 	errors.AddColumn("Schema Path");
 	errors_frame.Hide();
-	errors.WhenSel = [=] {
+	errors.WhenSel = [this] {
 		if(errors.IsCursor()) {
 			ValueArray va = errors.Get(3);
 			GoTo(tree, va.Get());
@@ -213,7 +224,7 @@ JsonViewDes::JsonViewDes()
 	schema_tree.NoRoot();
 	SetupJsonTree(schema_tree);
 	
-	close_errors << [=] {
+	close_errors << [this] {
 		errors_frame.Hide();
 		schema_frame.Hide();
 		schema_path.GetAdd(filename) = Null;

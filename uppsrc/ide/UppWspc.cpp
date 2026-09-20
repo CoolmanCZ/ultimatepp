@@ -966,7 +966,7 @@ void WorkspaceWork::InsertSpecialMenu(Bar& menu)
 		.Help("Open file selector in Local directory for current package");
 	menu.Add("Insert home directory file(s)..", THISBACK1(AddFile, HOME_FILE))
 		.Help("Open file selector in current user's HOME directory");
-	menu.Add("Remove all files", [=] {
+	menu.Add("Remove all files", [this] {
 		if(PromptYesNo("Remove all files?")) {
 			actual.file.Clear();
 			noemptyload = true;
@@ -994,18 +994,18 @@ void WorkspaceWork::FileMenu(Bar& menu)
 	if(isaux)
 		InsertSpecialMenu(menu);
 	else {
-		menu.Add("New package file..", IdeCommonImg::PageAdd(), [=] { NewPackageFile(); });
+		menu.Add("New package file..", IdeCommonImg::PageAdd(), [this] { NewPackageFile(); });
 		menu.Add(!isaux, "Insert package directory file(s)..", THISBACK1(AddFile, PACKAGE_FILE))
 			.Help("Insert file relative to current package");
 		menu.Add(!isaux, "Insert topic++ group..", TopicImg::IGroup(), THISBACK(AddTopicGroup));
 	}
-	menu.Add("Insert separator..", IdeImg::SeparatorOpen(), [=] { AddSeparator(); })
+	menu.Add("Insert separator..", IdeImg::SeparatorOpen(), [this] { AddSeparator(); })
 		.Help("Add text separator line");
 	if(!isaux) {
-		menu.Sub("Miscellaneous", [=](Bar& menu) {
-			menu.Add("Sync package with files in package directory..", [=] { ::SyncPackage(GetActivePackage(), actual); SaveLoadPackage(); });
+		menu.Sub("Miscellaneous", [this](Bar& menu) {
+			menu.Add("Sync package with files in package directory..", [this] { ::SyncPackage(GetActivePackage(), actual); SaveLoadPackage(); });
 			InsertSpecialMenu(menu);
-			menu.Add("Import directory tree sources..", [=] { Import(); });
+			menu.Add("Import directory tree sources..", [this] { Import(); });
 		});
 	}
 	menu.Separator();
@@ -1017,15 +1017,15 @@ void WorkspaceWork::FileMenu(Bar& menu)
 		menu.Add("Close all groups", THISBACK(CloseAllGroups));
 		menu.Separator();
 		if(!isaux) {
-			menu.Sub("Build", [=] (Bar& menu) { BuildFileMenu(menu); });
+			menu.Sub("Build", [this] (Bar& menu) { BuildFileMenu(menu); });
 			Ide *ide = dynamic_cast<Ide *>(TheIde());
 			if(ide && ide->HasClangTidy()) {
 				menu.Separator();
 				
 				String path = NormalizePath(GetActiveFilePath());
 				
-				menu.Add(IsCSourceFile(path), "Check file with Clang-Tidy", IdeImg::ClangTidy(), [=] {
-					ide->ClangTidy([=](const String& p) {
+				menu.Add(IsCSourceFile(path), "Check file with Clang-Tidy", IdeImg::ClangTidy(), [this, ide, path] {
+					ide->ClangTidy([this, path](const String& p) {
 						return NormalizePath(p) == path;
 					});
 				});
@@ -1048,7 +1048,7 @@ void WorkspaceWork::FileMenu(Bar& menu)
 		.Key(organizer ? K_CTRL_DOWN : K_ALT|K_CTRL_DOWN)
 		.Help("Move current file one position towards package end");
 	if(isaux)
-		menu.Add(actual.file.GetCount(), "Remove all", [=] {
+		menu.Add(actual.file.GetCount(), "Remove all", [this] {
 			if(PromptYesNo("Remove all?")) {
 				actual.file.Clear();
 				SaveLoadPackageNS(false);
@@ -1057,7 +1057,7 @@ void WorkspaceWork::FileMenu(Bar& menu)
 	menu.Separator();
 	menu.Add("Open File Directory",THISBACK(OpenFileFolder));
 	menu.Add("Copy File Path", callback1(WriteClipboardText, GetActiveFilePath()));
-	menu.Add("Terminal at File Directory", IdeImg::Terminal(), [=] { LaunchTerminal(GetFileDirectory(GetActiveFilePath())); });
+	menu.Add("Terminal at File Directory", IdeImg::Terminal(), [this] { LaunchTerminal(GetFileDirectory(GetActiveFilePath())); });
 	if(IsActiveFile()) {
 		menu.Separator();
 		String p = GetActiveFilePath();
@@ -1107,6 +1107,7 @@ void WorkspaceWork::AddNormalUses()
 	actual.uses.Add().text = p;
 	SaveLoadPackage();
 	InvalidateIncludes();
+	TheIde()->SyncExternalDependencies();
 }
 
 void WorkspaceWork::AddFolderUses()
@@ -1261,9 +1262,10 @@ void WorkspaceWork::PackageMenu(Bar& menu)
 				menu.Add(cando && !main, "Delete package", THISBACK(DeletePackage));
 				menu.Separator();
 				BuildPackageMenu(menu);
+				ClangTidyPackage(menu);
 			}
 			menu.Add("Open Package Directory",THISBACK(OpenPackageFolder));
-			menu.Add("Terminal at Package Directory", IdeImg::Terminal(), [=] { LaunchTerminal(GetActivePackageDir()); });
+			menu.Add("Terminal at Package Directory", IdeImg::Terminal(), [this] { LaunchTerminal(GetActivePackageDir()); });
 		}
 	}
 }

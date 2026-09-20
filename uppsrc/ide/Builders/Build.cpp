@@ -115,9 +115,8 @@ void MakeBuild::CreateHost(Host& host, const String& method, bool darkmode, bool
 		host.AddExecutable(GetExeDirFile("bin/clang/bin"), "clang-format.exe");
 		
 		if(IsVcpkgInstalled()) {
-			String triplet = GetVcpkgTriplet(bm);
 			host.exedirs << GetExeDirFile("vcpkg");
-			host.exedirs << GetExeDirFile("vcpkg") + "/installed/" + triplet + "/bin";
+			host.exedirs << GetExeDirFile("vcpkg") + "/installed/" + GetVcpkgTriplet(bm) + "/bin";
 		}
 		
 		env.GetAdd("PATH") = Join(host.exedirs, ";");
@@ -530,18 +529,19 @@ bool MakeBuild::Build(const Workspace& wspc, String mainparam, String outfile, b
 	BeginBuilding(clear_console);
 
 #ifdef PLATFORM_WIN32
-	if(IsVcpkgInstalled() && builder) {
-		String vcpkg_triplet = GetVcpkgTriplet(bm);
-
-		PutConsole("Vcpkg triplet: " << vcpkg_triplet);
-
-		auto sys = [&](const String& cmd, const String& chdir) {
-			if(chdir.GetCount())
-				builder->ChDir(chdir);
-			return builder->Execute(cmd);
-		};
-		
-		VcpkgInstallMissing(sys, vcpkg_triplet);
+	if(builder) {
+		if(builder) {
+			String vcpkg_triplet = GetVcpkgTriplet(bm);
+	
+			PutConsole("Vcpkg triplet: " << vcpkg_triplet);
+			
+			InstallMissingExternalDependencies(
+				[&](const String& cmd, const String& chdir) {
+					if(chdir.GetCount())
+						builder->ChDir(chdir);
+					return builder->Execute(cmd);
+			}, vcpkg_triplet);
+		}
 	}
 #endif
 
