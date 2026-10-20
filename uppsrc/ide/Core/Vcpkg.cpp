@@ -1,10 +1,12 @@
 #include "Core.h"
 
-#ifdef PLATFORM_WIN32
-
 String VcpkgExe()
 {
+#ifdef PLATFORM_WIN32
 	return GetExeFolder() + "/vcpkg/vcpkg.exe";
+#else
+	return GetHomeDirFile("vcpkg/vcpkg");
+#endif
 }
 
 bool IsVcpkgInstalled()
@@ -14,9 +16,15 @@ bool IsVcpkgInstalled()
 
 bool InstallVcpkg(Function<int(const String&, const String& chdir)> sys)
 {
+#ifdef PLATFORM_WIN32
 	String exedir = GetExeFolder();
 	return sys("git clone https://github.com/microsoft/vcpkg.git", exedir) == 0 &&
 	       sys("cmd /c \"" + exedir + "/vcpkg/bootstrap-vcpkg.bat\"", Null) == 0;
+#else
+	String homedir = GetHomeDirectory();
+	return sys("git clone https://github.com/microsoft/vcpkg.git", homedir) == 0 &&
+	       sys("/bin/sh -e \"" + homedir + "/vcpkg/bootstrap-vcpkg.sh\"", Null) == 0;
+#endif
 }
 
 bool no_vcpkg_install;
@@ -48,13 +56,24 @@ Vector<VcpkgInstalled> VcpkgList()
 
 String VcpkgTriplet(const String& builder, const String& compiler, bool so)
 {
+#ifdef PLATFORM_WIN32
 	if(builder == "CLANG")
 		return compiler.Find("i686") >= 0 ? so ? "x86-mingw-dynamic-release" : "x86-mingw-static-release"
+											: compiler.Find("aarch64") >= 0 ? so ? "arm64-mingw-dynamic" : "arm64-mingw-static"
 		                                  : so ? "x64-mingw-dynamic-release" : "x64-mingw-static-release";
 	if(builder.StartsWith("MSC"))
-		return builder.Find("64") >= 0 ? so ? "x64-windows" : "x64-windows-static"
-		                               : so ? "x86-windows" : "x86-windows-static";
+		return builder.Find("ARM64") >= 0 ? so ? "arm64-windows" : "arm64-windows-static-release"
+				: builder.Find("64") >= 0 ? so ? "x64-windows-release" : "x64-windows-static-release" // 2026-10-19 - Switched to -release (=> skip debug builds)
+				: so ? "x86-windows" : "x86-windows-static";
 	return "x64-mingw-static-release";
+#else
+#ifdef CPU_ARM
+	String cpu = "arm64";
+#else
+	String cpu = "x64";
+#endif
+	return cpu + (so ? "-linux-dynamic" : "-linux");
+#endif
 }
 
 String VcpkgTriplet(const VectorMap<String, String>& vars, bool so)
@@ -89,10 +108,10 @@ bool VcpkgHasInstalled(Vector<VcpkgInstalled>& items, const String& name, const 
 
 bool VcpkgInstall(Function<int(const String&, const String& chdir)> sys, const String& name, const String& triplet)
 {
-	return sys(VcpkgExe() + " install " + name + ":" + triplet, Null) == 0;
+	return sys(VcpkgExe() + " install --recurse " + name + ":" + triplet, Null) == 0;
 }
 
-Index<String> InstalledExternalDependencies(const String& triplet)
+Index<String> VcpkgInstalledExternalDependencies(const String& triplet)
 {
 	Index<String> r;
 	Vector<VcpkgInstalled> installed = VcpkgList();
@@ -102,7 +121,7 @@ Index<String> InstalledExternalDependencies(const String& triplet)
 	return r;
 }
 
-bool InstallMissingExternalDependencies(Function<int(const String&, const String& chdir)> sys, const String& triplet)
+bool VcpkInstallMissingExternalDependencies(Function<int(const String&, const String& chdir)> sys, const String& triplet)
 {
 	bool ok = true;
 	Vector<String> missing = MissingExternalDependencies(triplet);
@@ -115,20 +134,3 @@ bool InstallMissingExternalDependencies(Function<int(const String&, const String
 	}
 	return ok;
 }
-
-String ExternalDependenciesManagerId()
-{
-	return "VCPKG";
-}
-
-bool CanInstallMissingExternalDependencies()
-{
-	return true;
-}
-
-String InstallMissingExternalDependenciesCommand(const String&)
-{
-	return Null;
-}
-
-#endif

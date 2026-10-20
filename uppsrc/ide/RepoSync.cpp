@@ -18,7 +18,7 @@ String GetSvnUrl(const String& repo_dir)
 	return ln.GetCount() ? ln[0] : String();
 }
 
-int UrepoConsole::Git(const char *dir, const char *command, bool pwd)
+int SysConsole::Git(const char *dir, const char *command, bool pwd)
 {
 	String h = GetCurrentDirectory();
 	SetCurrentDirectory(dir);
@@ -43,7 +43,7 @@ int UrepoConsole::Git(const char *dir, const char *command, bool pwd)
 	return code;
 }
 
-String RepoSync::SvnCmd(UrepoConsole& sys, const char *svncmd, const String& dir)
+String RepoSync::SvnCmd(SysConsole& sys, const char *svncmd, const String& dir)
 {
 	String cmd;
 	cmd << "svn " << svncmd << " --non-interactive ";
@@ -217,6 +217,7 @@ bool RepoSync::ListGit(const String& path)
 {
 	Vector<String> ln = Split(GitCmd(path, "status --porcelain ."), CharFilterCrLf);
 	bool actions = false;
+	Index<String> remove_dirs;
 	for(int i = 0; i < ln.GetCount(); i++) {
 		String h = ln[i];
 		if(h.GetCount() > 3) {
@@ -244,6 +245,19 @@ bool RepoSync::ListGit(const String& path)
 				an = as[action];
 				color = AColor(c[action]);
 			}
+
+			if(action == REMOVE) {
+				while(file.GetCount() > 3) {
+					String dir = GetFileFolder(file);
+					if(DirectoryExists(dir))
+						break;
+					file = dir;
+				}
+				if(remove_dirs.Find(file) >= 0)
+					continue;
+				remove_dirs.Add(file);
+			}
+				
 			int ii = list.GetCount();
 			list.Add(action, file, Null, AttrText(action < 0 ? h : file).Ink(color));
 			if(action >= 0) {
@@ -441,7 +455,7 @@ again:
 		else if(action != REPOSITORY && list.Get(i, 2) == 0)
 			changes = true;
 	}
-	UrepoConsole sys;
+	SysConsole sys;
 	int repoi = 0;
 	int l = 0;
 	while(l < list.GetCount()) {
@@ -464,6 +478,15 @@ again:
 		String message;
 		String filelist;   // <-- list of files to update
 		bool commit = false;
+		has_skips = false;
+		for(int i = l; i < list.GetCount(); i++) {
+			int action = list.Get(i, 0);
+			if(findarg(action, REPOSITORY, MESSAGE) >= 0)
+				break;
+			Value sw = list.Get(i, 2);
+			if(sw == 1)
+				has_skips = true;
+		}
 		while(l < list.GetCount()) {
 			int action = list.Get(l, 0);
 			if(action == REPOSITORY)
@@ -478,7 +501,7 @@ again:
 				String msg = list.Get(l, 3);
 				if(commit) {
 					if(svn_commit && sys.CheckSystem(SvnCmd(sys, "commit", repo_dir) << filelist << " -m \"" << msg << "\"") == 0 ||
-				       git_commit && sys.Git(repo_dir, "commit -m \"" << msg << "\"") == 0)
+				       git_commit && sys.Git(repo_dir, (has_skips ? "commit -m \"" : "commit -a -m \"") << msg << "\"") == 0)
 						msg.Clear();
 				}
 				msgmap.GetAdd(repo_dir) = msg;
@@ -523,7 +546,7 @@ again:
 	skip.Sweep();
 }
 
-bool RepoSync::GitFile(UrepoConsole& sys, int action, const String& path, bool revert)
+bool RepoSync::GitFile(SysConsole& sys, int action, const String& path, bool revert)
 {
 	String repo_dir = GetFileFolder(path);
 	String file = GetFileName(path);
@@ -532,11 +555,17 @@ bool RepoSync::GitFile(UrepoConsole& sys, int action, const String& path, bool r
 			sys.Git(repo_dir, "restore \"" + file + "\"");
 		return false;
 	}
-	sys.Git(repo_dir, "add \"" + file + "\"");
+
+	if(has_skips)
+		sys.Git(repo_dir, (action == REMOVE ? "rm -r \"" : "add \"") + file + "\"");
+	else
+	if(action == ADD)
+		sys.Git(repo_dir, "add \"" + file + "\"");
+
 	return true;
 }
 
-bool RepoSync::SvnFile(UrepoConsole& sys, String& filelist, int action, const String& path, bool revert)
+bool RepoSync::SvnFile(SysConsole& sys, String& filelist, int action, const String& path, bool revert)
 {
 	if(revert) {
 		if(action == REPLACE)

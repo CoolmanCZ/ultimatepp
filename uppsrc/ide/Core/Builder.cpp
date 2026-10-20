@@ -41,6 +41,17 @@ Time Builder::HdependFileTime(const String& path)
 	                          : HdependGetFileTime(path, &dependencies);
 }
 
+String Builder::EvalCmdX(const String& cmd)
+{
+	int q = cmdx_cache.Find(cmd);
+	if(q >= 0)
+		return cmdx_cache[q];
+	String h = Sys(cmd);
+	cmdx_cache.Add(cmd, h);
+	IdeProcessEvents();
+	return h;
+}
+
 String Builder::CmdX(const char *s)
 { // expand ` character delimited sections by executing them as commands
 	String r, cmd;
@@ -48,6 +59,7 @@ String Builder::CmdX(const char *s)
 	for(; *s; s++)
 		if(*s == '`') {
 			if(cmdf) {
+				r << EvalCmdX(cmd);
 				int q = cmdx_cache.Find(cmd);
 				if(q >= 0)
 					r << cmdx_cache[q];
@@ -88,4 +100,14 @@ int Builder::Execute(const char *cmdline)
 int Builder::Execute(const char *cl, Stream& out)
 {
 	return host->Execute(CmdX(cl), out);
+}
+
+void Builder::AddVCPKGPaths()
+{
+	if(IsVCPKG() && RequiredExternalDependenciesInfo().GetCount()) {
+		String libs = GetFileFolder(VcpkgExe()) + "/installed/" + VcpkgTriplet(bm, config.Find("SHARED") >= 0 || config.Find("SO") >= 0);
+		
+		include << libs + "/include";
+		libpath << libs + "/lib";
+	}
 }

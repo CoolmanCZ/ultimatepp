@@ -1,15 +1,13 @@
 #include "ide.h"
 
-#ifdef PLATFORM_WIN32
-
-bool Ide::IsVcpkgAvailable(UrepoConsole& console)
+bool Ide::IsVcpkgAvailable(SysConsole& console)
 {
 	return ::IsVcpkgAvailable([&](const String& cmd, const String& chdir) { return console.System(cmd, chdir); });
 }
 
 bool Ide::IsVcpkgAvailable()
 {
-	UrepoConsole console;
+	SysConsole console;
 	return IsVcpkgAvailable(console);
 }
 
@@ -18,7 +16,7 @@ String Ide::GetTargetTriplet()
 	return MakeBuild::GetVcpkgTriplet(GetMethodVars(method));
 }
 
-void Finish(UrepoConsole& console, int errors)
+void Finish(SysConsole& console, int errors)
 {
 	if(errors)
 		console.Log(String() << "There were errors (" << errors << ")", SLtRed());
@@ -50,7 +48,8 @@ VcpkgDlg::VcpkgDlg()
 	list.ColumnWidths("140 396 79 281");
 	
 	install_missing << [=] {
-		UrepoConsole console;
+		SysConsole console;
+		console.Title("VCPKG Installing missing packages");
 		
 		InstallMissingExternalDependencies([&](const String& cmd, const String& chdir)
 		                                   { return console.System(cmd, chdir); },
@@ -66,25 +65,26 @@ VcpkgDlg::VcpkgDlg()
 			return;
 		String name = ~list.GetKey();
 		if(PromptYesNo("Remove [* \1" + name + "\1]?")) {
-			UrepoConsole console;
+			SysConsole console;
+			console.Title("VCPKG Removing " + name);
 			int errors = 0;
 			for(String triplet : Split(~list.Get(list.GetCursor(), 1), ' ')) {
-				if(console.System(VcpkgExe() + " remove " + name + ":" + triplet)) {
+				if(console.System(VcpkgExe() + " remove " + name + ":" + triplet + " --recurse")) {
 					console.Log("Failed", SLtRed());
 					errors++;
 				}
 			}
 			Finish(console, errors);
-			console.Perform();
 			SyncList();
 			SyncIde();
 		}
 	};
 	
 	update << [=] { // TODO!
-		UrepoConsole console;
+		SysConsole console;
 		console.System("git pull --no-rebase", GetFileFolder(VcpkgExe()));
 		console.System(VcpkgExe() + " update");
+		console.System(VcpkgExe() + " upgrade --no-dry-run");
 		console.Perform();
 	};
 	
@@ -135,9 +135,10 @@ struct VcpkgInstallDlg : WithVcpkgInstallLayout<TopWindow> {
 	
 	Vector<Item>  items;
 	Index<String> ts;
+	bool          selector = false;
 	
-	void Perform();
-	void Sync();
+	String Perform();
+	void   Sync();
 };
 
 void VcpkgDlg::Install()
@@ -186,7 +187,7 @@ void VcpkgInstallDlg::Sync()
 		list.FindSetCursor(key);
 }
 
-void VcpkgInstallDlg::Perform()
+String VcpkgInstallDlg::Perform()
 {
 	for(Value l : ParseJSON(Sys(VcpkgExe() + " search --x-json"))) {
 		Item& m = items.Add();
@@ -224,23 +225,28 @@ void VcpkgInstallDlg::Perform()
 	
 	if(ExecuteOK()) {
 		String name = ~list.GetKey();
-		if(name.GetCount() == 0)
-			return;
+		
+		if(selector)
+			return name;
 
-		int errors = 0;
-		UrepoConsole console;
-		for(int i = 0; i < triplets.GetCount(); i++) {
-			if((bool)~*triplets.GetCtrl(i, 0)) {
-				if(console.System(VcpkgExe() + " install " + name + ":" + ts[i])) {
-					console.Log("Failed", SLtRed());
-					errors++;
+		if(name.GetCount()) {
+			int errors = 0;
+			SysConsole console;
+			console.Title("VCPKG Installing " + name);
+			for(int i = 0; i < triplets.GetCount(); i++) {
+				if((bool)~*triplets.GetCtrl(i, 0)) {
+					if(console.System(VcpkgExe() + " install " + name + ":" + ts[i] + " --recurse")) {
+						console.Log("Failed", SLtRed());
+						errors++;
+					}
 				}
 			}
+			
+			Finish(console, errors);
+			console.Perform();
 		}
-		
-		Finish(console, errors);
-		console.Perform();
 	}
+	return Null;
 }
 
 void Ide::Vcpkg()
@@ -249,4 +255,16 @@ void Ide::Vcpkg()
 	dlg.Perform();
 }
 
-#endif
+String VCPKGSelectExternalDependency()
+{
+	VcpkgInstallDlg dlg;
+	dlg.Title("Select external dependency");
+	dlg.selector = true;
+	dlg.triplets.Hide();
+	Ctrl::Logc lp = dlg.list.Ctrl::GetPos().x;
+	Ctrl::Logc rp = dlg.triplets.Ctrl::GetPos().x;
+	lp.SetB(rp.GetA() - lp.GetA() + rp.GetB());
+	dlg.list.SetPosX(lp);
+	dlg.list.WhenLeftDouble = dlg.Acceptor(IDOK);
+	return dlg.Perform();
+}

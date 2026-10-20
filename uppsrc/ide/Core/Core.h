@@ -458,6 +458,7 @@ public:
 	Array<OptItem>           target;
 	Array<OptItem>           library;
 	Array<OptItem>           static_library;
+	Array<OptItem>           dynamic_library;
 	Array<OptItem>           link;
 	Array<OptItem>           option;
 	Array<OptItem>           include;
@@ -571,6 +572,8 @@ struct Builder {
 	bool             allow_pch;
 	FileTime         start_time;
 
+	VectorMap<String, String> bm;
+
 	Index<String>    pkg_config; // names of packages for pkg-config
 	Vector<String>   CINC;
 	Vector<String>   Macro;
@@ -582,6 +585,7 @@ struct Builder {
 
 	static VectorMap<String, String> cmdx_cache; // caching e.g. pkg-config
 
+	String                 EvalCmdX(const String& cmd);
 	String                 CmdX(const char *s);
 
 	Time                   HdependFileTime(const String& path);
@@ -617,6 +621,7 @@ struct Builder {
 	int                    Execute(const char *cmdline);
 	int                    Execute(const char *cl, Stream& out);
 	bool                   HasFlag(const char *f) const { return config.Find(f) >= 0; }
+	void                   AddVCPKGPaths();
 };
 
 String TrimSlash(String s);
@@ -728,6 +733,9 @@ Vector<String>         MissingExternalDependencies(const String& triplet);
 
 // provided by platform:
 
+bool HasDPKG();
+bool HasRPM();
+
 String         ExternalDependenciesManagerId();
 Index<String>  InstalledExternalDependencies(const String& triplet);
 String         InstallMissingExternalDependenciesCommand(const String& triplet);
@@ -735,8 +743,10 @@ bool           InstallMissingExternalDependencies(Function<int(const String&, co
                                                   const String& triplet);
 bool           CanInstallMissingExternalDependencies();
 
-
-#ifdef PLATFORM_WIN32
+inline bool IsRPM()    { return ExternalDependenciesManagerId() == "RPM"; }
+inline bool IsDPKG()   { return ExternalDependenciesManagerId() == "DPKG"; }
+inline bool IsVCPKG()  { return ExternalDependenciesManagerId() == "VCPKG"; }
+inline bool IsBREW()   { return ExternalDependenciesManagerId() == "BREW"; }
 
 struct VcpkgInstalled : Moveable<VcpkgInstalled> {
 	String        name;
@@ -754,8 +764,9 @@ String                 VcpkgTriplet(const VectorMap<String, String>& vars, bool 
 Vector<String>         VcpkgTriplets();
 bool                   VcpkgHasInstalled(Vector<VcpkgInstalled>& items, const String& name, const String& triplet);
 bool                   VcpkgInstall(Function<int(const String&, const String& chdir)> sys, const String& name, const String& triplet);
+Index<String>          VcpkgInstalledExternalDependencies(const String& triplet);
+bool                   VcpkInstallMissingExternalDependencies(Function<int(const String&, const String& chdir)> sys, const String& triplet);
 
-#endif
-
+Value                  GetBrewJson(Gate<int, int> progress);
 
 #endif

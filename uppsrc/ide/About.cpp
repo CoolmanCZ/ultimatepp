@@ -184,6 +184,10 @@ Size SplashCtrl::MakeLogo(Ctrl& parent, Array<Ctrl>& ctrl, bool splash)
 		h << "X11";
 #endif
 
+	String em = ExternalDependenciesManagerId();
+	if(em.GetCount())
+		h << " " << em;
+
 #ifdef PLATFORM_WIN32
 	String cv = Sys(GetExeDirFile("bin/clang/bin/c++") + " --version");
 	String version;

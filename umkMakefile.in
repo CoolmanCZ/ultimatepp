@@ -44,8 +44,6 @@ OutDir_plugin_zstd = $(UPPOUT)plugin/zstd/GCC-Gcc-Linux-Posix-Shared/
 Macro_plugin_zstd = $(Macro)
 OutDir_Core = $(UPPOUT)Core/GCC-Gcc-Linux-Posix-Shared/
 Macro_Core = $(Macro)
-OutDir_plugin_pcre = $(UPPOUT)plugin/pcre/GCC-Gcc-Linux-Posix-Shared/
-Macro_plugin_pcre = $(Macro)
 
 OutDir = $(OutDir_umk)
 OutFile = ./umk
@@ -73,8 +71,7 @@ prepare: \
 	$(OutDir_plugin_lzma) \
 	$(OutDir_plugin_lz4) \
 	$(OutDir_plugin_zstd) \
-	$(OutDir_Core) \
-	$(OutDir_plugin_pcre)
+	$(OutDir_Core)
 
 $(OutFile): build_info  \
 	$(OutDir_umk)Console.o \
@@ -87,7 +84,6 @@ $(OutFile): build_info  \
 	$(OutDir_ide_Core)Core.a \
 	$(OutDir_ide_Android)Android.a \
 	$(OutDir_ide_Java)Java.a \
-	$(OutDir_plugin_png)pngreg.o \
 	$(OutDir_plugin_png)png.a \
 	$(OutDir_Draw)Draw.a \
 	$(OutDir_Esc)Esc.a \
@@ -95,8 +91,7 @@ $(OutFile): build_info  \
 	$(OutDir_plugin_lzma)lzma.a \
 	$(OutDir_plugin_lz4)lz4.a \
 	$(OutDir_plugin_zstd)zstd.a \
-	$(OutDir_Core)Core.a \
-	$(OutDir_plugin_pcre)pcre.a
+	$(OutDir_Core)Core.a
 	$(LINKER) -o "$(OutFile)" -Wl,-s $(LIBPATH) -Wl,-O,2 $(LDFLAGS) -Wl,--start-group  \
 		$(OutDir_umk)Console.o \
 		$(OutDir_umk)IdeContext.o \
@@ -108,7 +103,6 @@ $(OutFile): build_info  \
 			$(OutDir_ide_Core)Core.a \
 			$(OutDir_ide_Android)Android.a \
 			$(OutDir_ide_Java)Java.a \
-		$(OutDir_plugin_png)pngreg.o \
 			$(OutDir_plugin_png)png.a \
 			$(OutDir_Draw)Draw.a \
 			$(OutDir_Esc)Esc.a \
@@ -117,7 +111,6 @@ $(OutFile): build_info  \
 			$(OutDir_plugin_lz4)lz4.a \
 			$(OutDir_plugin_zstd)zstd.a \
 			$(OutDir_Core)Core.a \
-			$(OutDir_plugin_pcre)pcre.a \
 			`pkg-config --libs libpng` \
 			`pkg-config --libs freetype2` \
 			`pkg-config --libs fontconfig` \
@@ -125,6 +118,13 @@ $(OutFile): build_info  \
 			`pkg-config --libs xcb` \
 			`pkg-config --libs expat` \
 			-lbz2 \
+			-llzma \
+			-llz4 \
+			-lzstd \
+			-llz4 \
+			-lxxhash \
+			-lpcre2-8 \
+			-lpcre2-32 \
 			-lpthread \
 			-ldl \
 			-lrt \
@@ -179,7 +179,6 @@ $(OutDir_umk)Console.o: $(UPPDIR1)umk/Console.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -194,6 +193,7 @@ $(OutDir_umk)Console.o: $(UPPDIR1)umk/Console.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -222,7 +222,6 @@ $(OutDir_umk)Console.o: $(UPPDIR1)umk/Console.cpp \
 	$(UPPDIR1)Esc/Esc.h \
 	$(UPPDIR1)ide/Builders/Android.h \
 	$(UPPDIR1)ide/Builders/Build.h \
-	$(UPPDIR1)ide/Builders/BuilderComponents.h \
 	$(UPPDIR1)ide/Builders/Builders.h \
 	$(UPPDIR1)ide/Builders/ClangTidy.h \
 	$(UPPDIR1)ide/Core/Core.h \
@@ -231,7 +230,6 @@ $(OutDir_umk)Console.o: $(UPPDIR1)umk/Console.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)umk/Console.cpp \
 	$(UPPDIR1)umk/umake.h \
@@ -284,7 +282,6 @@ $(OutDir_umk)IdeContext.o: $(UPPDIR1)umk/IdeContext.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -299,6 +296,7 @@ $(OutDir_umk)IdeContext.o: $(UPPDIR1)umk/IdeContext.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -327,7 +325,6 @@ $(OutDir_umk)IdeContext.o: $(UPPDIR1)umk/IdeContext.cpp \
 	$(UPPDIR1)Esc/Esc.h \
 	$(UPPDIR1)ide/Builders/Android.h \
 	$(UPPDIR1)ide/Builders/Build.h \
-	$(UPPDIR1)ide/Builders/BuilderComponents.h \
 	$(UPPDIR1)ide/Builders/Builders.h \
 	$(UPPDIR1)ide/Builders/ClangTidy.h \
 	$(UPPDIR1)ide/Core/Core.h \
@@ -336,7 +333,6 @@ $(OutDir_umk)IdeContext.o: $(UPPDIR1)umk/IdeContext.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)umk/IdeContext.cpp \
 	$(UPPDIR1)umk/umake.h \
@@ -389,7 +385,6 @@ $(OutDir_umk)MakeBuild.o: $(UPPDIR1)umk/MakeBuild.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -404,6 +399,7 @@ $(OutDir_umk)MakeBuild.o: $(UPPDIR1)umk/MakeBuild.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -432,7 +428,6 @@ $(OutDir_umk)MakeBuild.o: $(UPPDIR1)umk/MakeBuild.cpp \
 	$(UPPDIR1)Esc/Esc.h \
 	$(UPPDIR1)ide/Builders/Android.h \
 	$(UPPDIR1)ide/Builders/Build.h \
-	$(UPPDIR1)ide/Builders/BuilderComponents.h \
 	$(UPPDIR1)ide/Builders/Builders.h \
 	$(UPPDIR1)ide/Builders/ClangTidy.h \
 	$(UPPDIR1)ide/Core/Core.h \
@@ -441,7 +436,6 @@ $(OutDir_umk)MakeBuild.o: $(UPPDIR1)umk/MakeBuild.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)umk/MakeBuild.cpp \
 	$(UPPDIR1)umk/umake.h \
@@ -494,7 +488,6 @@ $(OutDir_umk)Export.o: $(UPPDIR1)umk/Export.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -509,6 +502,7 @@ $(OutDir_umk)Export.o: $(UPPDIR1)umk/Export.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -537,7 +531,6 @@ $(OutDir_umk)Export.o: $(UPPDIR1)umk/Export.cpp \
 	$(UPPDIR1)Esc/Esc.h \
 	$(UPPDIR1)ide/Builders/Android.h \
 	$(UPPDIR1)ide/Builders/Build.h \
-	$(UPPDIR1)ide/Builders/BuilderComponents.h \
 	$(UPPDIR1)ide/Builders/Builders.h \
 	$(UPPDIR1)ide/Builders/ClangTidy.h \
 	$(UPPDIR1)ide/Core/Core.h \
@@ -546,7 +539,6 @@ $(OutDir_umk)Export.o: $(UPPDIR1)umk/Export.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)umk/Export.cpp \
 	$(UPPDIR1)umk/umake.h \
@@ -599,7 +591,6 @@ $(OutDir_umk)UppHub.o: $(UPPDIR1)umk/UppHub.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -614,6 +605,7 @@ $(OutDir_umk)UppHub.o: $(UPPDIR1)umk/UppHub.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -642,7 +634,6 @@ $(OutDir_umk)UppHub.o: $(UPPDIR1)umk/UppHub.cpp \
 	$(UPPDIR1)Esc/Esc.h \
 	$(UPPDIR1)ide/Builders/Android.h \
 	$(UPPDIR1)ide/Builders/Build.h \
-	$(UPPDIR1)ide/Builders/BuilderComponents.h \
 	$(UPPDIR1)ide/Builders/Builders.h \
 	$(UPPDIR1)ide/Builders/ClangTidy.h \
 	$(UPPDIR1)ide/Core/Core.h \
@@ -651,7 +642,6 @@ $(OutDir_umk)UppHub.o: $(UPPDIR1)umk/UppHub.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)umk/umake.h \
 	$(UPPDIR1)umk/UppHub.cpp \
@@ -704,7 +694,6 @@ $(OutDir_umk)umake.o: $(UPPDIR1)umk/umake.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -719,6 +708,7 @@ $(OutDir_umk)umake.o: $(UPPDIR1)umk/umake.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -747,7 +737,6 @@ $(OutDir_umk)umake.o: $(UPPDIR1)umk/umake.cpp \
 	$(UPPDIR1)Esc/Esc.h \
 	$(UPPDIR1)ide/Builders/Android.h \
 	$(UPPDIR1)ide/Builders/Build.h \
-	$(UPPDIR1)ide/Builders/BuilderComponents.h \
 	$(UPPDIR1)ide/Builders/Builders.h \
 	$(UPPDIR1)ide/Builders/ClangTidy.h \
 	$(UPPDIR1)ide/Core/Core.h \
@@ -756,7 +745,6 @@ $(OutDir_umk)umake.o: $(UPPDIR1)umk/umake.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)umk/umake.cpp \
 	$(UPPDIR1)umk/umake.h \
@@ -812,7 +800,6 @@ $(OutDir_ide_Builders)CppBuilder.o: $(UPPDIR1)ide/Builders/CppBuilder.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -827,6 +814,7 @@ $(OutDir_ide_Builders)CppBuilder.o: $(UPPDIR1)ide/Builders/CppBuilder.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -855,7 +843,6 @@ $(OutDir_ide_Builders)CppBuilder.o: $(UPPDIR1)ide/Builders/CppBuilder.cpp \
 	$(UPPDIR1)Esc/Esc.h \
 	$(UPPDIR1)ide/Builders/Android.h \
 	$(UPPDIR1)ide/Builders/Build.h \
-	$(UPPDIR1)ide/Builders/BuilderComponents.h \
 	$(UPPDIR1)ide/Builders/Builders.h \
 	$(UPPDIR1)ide/Builders/ClangTidy.h \
 	$(UPPDIR1)ide/Builders/CppBuilder.cpp \
@@ -865,7 +852,6 @@ $(OutDir_ide_Builders)CppBuilder.o: $(UPPDIR1)ide/Builders/CppBuilder.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Builders)  $(UPPDIR1)ide/Builders/CppBuilder.cpp -o $(OutDir_ide_Builders)CppBuilder.o
@@ -916,7 +902,6 @@ $(OutDir_ide_Builders)MakeFile.o: $(UPPDIR1)ide/Builders/MakeFile.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -931,6 +916,7 @@ $(OutDir_ide_Builders)MakeFile.o: $(UPPDIR1)ide/Builders/MakeFile.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -959,7 +945,6 @@ $(OutDir_ide_Builders)MakeFile.o: $(UPPDIR1)ide/Builders/MakeFile.cpp \
 	$(UPPDIR1)Esc/Esc.h \
 	$(UPPDIR1)ide/Builders/Android.h \
 	$(UPPDIR1)ide/Builders/Build.h \
-	$(UPPDIR1)ide/Builders/BuilderComponents.h \
 	$(UPPDIR1)ide/Builders/Builders.h \
 	$(UPPDIR1)ide/Builders/ClangTidy.h \
 	$(UPPDIR1)ide/Builders/MakeFile.cpp \
@@ -969,7 +954,6 @@ $(OutDir_ide_Builders)MakeFile.o: $(UPPDIR1)ide/Builders/MakeFile.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Builders)  $(UPPDIR1)ide/Builders/MakeFile.cpp -o $(OutDir_ide_Builders)MakeFile.o
@@ -1020,7 +1004,6 @@ $(OutDir_ide_Builders)GccBuilder.o: $(UPPDIR1)ide/Builders/GccBuilder.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -1035,6 +1018,7 @@ $(OutDir_ide_Builders)GccBuilder.o: $(UPPDIR1)ide/Builders/GccBuilder.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -1063,7 +1047,6 @@ $(OutDir_ide_Builders)GccBuilder.o: $(UPPDIR1)ide/Builders/GccBuilder.cpp \
 	$(UPPDIR1)Esc/Esc.h \
 	$(UPPDIR1)ide/Builders/Android.h \
 	$(UPPDIR1)ide/Builders/Build.h \
-	$(UPPDIR1)ide/Builders/BuilderComponents.h \
 	$(UPPDIR1)ide/Builders/Builders.h \
 	$(UPPDIR1)ide/Builders/BuilderUtils.h \
 	$(UPPDIR1)ide/Builders/ClangTidy.h \
@@ -1074,7 +1057,6 @@ $(OutDir_ide_Builders)GccBuilder.o: $(UPPDIR1)ide/Builders/GccBuilder.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Builders)  $(UPPDIR1)ide/Builders/GccBuilder.cpp -o $(OutDir_ide_Builders)GccBuilder.o
@@ -1125,7 +1107,6 @@ $(OutDir_ide_Builders)MscBuilder.o: $(UPPDIR1)ide/Builders/MscBuilder.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -1140,6 +1121,7 @@ $(OutDir_ide_Builders)MscBuilder.o: $(UPPDIR1)ide/Builders/MscBuilder.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -1168,7 +1150,6 @@ $(OutDir_ide_Builders)MscBuilder.o: $(UPPDIR1)ide/Builders/MscBuilder.cpp \
 	$(UPPDIR1)Esc/Esc.h \
 	$(UPPDIR1)ide/Builders/Android.h \
 	$(UPPDIR1)ide/Builders/Build.h \
-	$(UPPDIR1)ide/Builders/BuilderComponents.h \
 	$(UPPDIR1)ide/Builders/Builders.h \
 	$(UPPDIR1)ide/Builders/ClangTidy.h \
 	$(UPPDIR1)ide/Builders/coff.h \
@@ -1179,7 +1160,6 @@ $(OutDir_ide_Builders)MscBuilder.o: $(UPPDIR1)ide/Builders/MscBuilder.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Builders)  $(UPPDIR1)ide/Builders/MscBuilder.cpp -o $(OutDir_ide_Builders)MscBuilder.o
@@ -1230,7 +1210,6 @@ $(OutDir_ide_Builders)JavaBuilder.o: $(UPPDIR1)ide/Builders/JavaBuilder.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -1245,6 +1224,7 @@ $(OutDir_ide_Builders)JavaBuilder.o: $(UPPDIR1)ide/Builders/JavaBuilder.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -1273,7 +1253,6 @@ $(OutDir_ide_Builders)JavaBuilder.o: $(UPPDIR1)ide/Builders/JavaBuilder.cpp \
 	$(UPPDIR1)Esc/Esc.h \
 	$(UPPDIR1)ide/Builders/Android.h \
 	$(UPPDIR1)ide/Builders/Build.h \
-	$(UPPDIR1)ide/Builders/BuilderComponents.h \
 	$(UPPDIR1)ide/Builders/Builders.h \
 	$(UPPDIR1)ide/Builders/ClangTidy.h \
 	$(UPPDIR1)ide/Builders/JavaBuilder.cpp \
@@ -1283,7 +1262,6 @@ $(OutDir_ide_Builders)JavaBuilder.o: $(UPPDIR1)ide/Builders/JavaBuilder.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Builders)  $(UPPDIR1)ide/Builders/JavaBuilder.cpp -o $(OutDir_ide_Builders)JavaBuilder.o
@@ -1334,7 +1312,6 @@ $(OutDir_ide_Builders)ScriptBuilder.o: $(UPPDIR1)ide/Builders/ScriptBuilder.cpp 
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -1349,6 +1326,7 @@ $(OutDir_ide_Builders)ScriptBuilder.o: $(UPPDIR1)ide/Builders/ScriptBuilder.cpp 
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -1377,7 +1355,6 @@ $(OutDir_ide_Builders)ScriptBuilder.o: $(UPPDIR1)ide/Builders/ScriptBuilder.cpp 
 	$(UPPDIR1)Esc/Esc.h \
 	$(UPPDIR1)ide/Builders/Android.h \
 	$(UPPDIR1)ide/Builders/Build.h \
-	$(UPPDIR1)ide/Builders/BuilderComponents.h \
 	$(UPPDIR1)ide/Builders/Builders.h \
 	$(UPPDIR1)ide/Builders/ClangTidy.h \
 	$(UPPDIR1)ide/Builders/ScriptBuilder.cpp \
@@ -1387,7 +1364,6 @@ $(OutDir_ide_Builders)ScriptBuilder.o: $(UPPDIR1)ide/Builders/ScriptBuilder.cpp 
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Builders)  $(UPPDIR1)ide/Builders/ScriptBuilder.cpp -o $(OutDir_ide_Builders)ScriptBuilder.o
@@ -1438,7 +1414,6 @@ $(OutDir_ide_Builders)Cocoa.o: $(UPPDIR1)ide/Builders/Cocoa.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -1453,6 +1428,7 @@ $(OutDir_ide_Builders)Cocoa.o: $(UPPDIR1)ide/Builders/Cocoa.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -1481,7 +1457,6 @@ $(OutDir_ide_Builders)Cocoa.o: $(UPPDIR1)ide/Builders/Cocoa.cpp \
 	$(UPPDIR1)Esc/Esc.h \
 	$(UPPDIR1)ide/Builders/Android.h \
 	$(UPPDIR1)ide/Builders/Build.h \
-	$(UPPDIR1)ide/Builders/BuilderComponents.h \
 	$(UPPDIR1)ide/Builders/Builders.h \
 	$(UPPDIR1)ide/Builders/ClangTidy.h \
 	$(UPPDIR1)ide/Builders/Cocoa.cpp \
@@ -1491,7 +1466,6 @@ $(OutDir_ide_Builders)Cocoa.o: $(UPPDIR1)ide/Builders/Cocoa.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Builders)  $(UPPDIR1)ide/Builders/Cocoa.cpp -o $(OutDir_ide_Builders)Cocoa.o
@@ -1556,6 +1530,7 @@ $(OutDir_ide_Builders)AndroidProject.o: $(UPPDIR1)ide/Builders/AndroidProject.cp
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -1646,6 +1621,7 @@ $(OutDir_ide_Builders)AndroidApplicationMakeFile.o: $(UPPDIR1)ide/Builders/Andro
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -1736,6 +1712,7 @@ $(OutDir_ide_Builders)AndroidMakeFile.o: $(UPPDIR1)ide/Builders/AndroidMakeFile.
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -1826,6 +1803,7 @@ $(OutDir_ide_Builders)AndroidModuleMakeFile.o: $(UPPDIR1)ide/Builders/AndroidMod
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -1902,7 +1880,6 @@ $(OutDir_ide_Builders)AndroidBuilder.o: $(UPPDIR1)ide/Builders/AndroidBuilder.cp
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -1917,6 +1894,7 @@ $(OutDir_ide_Builders)AndroidBuilder.o: $(UPPDIR1)ide/Builders/AndroidBuilder.cp
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -1950,7 +1928,6 @@ $(OutDir_ide_Builders)AndroidBuilder.o: $(UPPDIR1)ide/Builders/AndroidBuilder.cp
 	$(UPPDIR1)ide/Builders/AndroidBuilder.cpp \
 	$(UPPDIR1)ide/Builders/AndroidBuilder.h \
 	$(UPPDIR1)ide/Builders/Build.h \
-	$(UPPDIR1)ide/Builders/BuilderComponents.h \
 	$(UPPDIR1)ide/Builders/Builders.h \
 	$(UPPDIR1)ide/Builders/BuilderUtils.h \
 	$(UPPDIR1)ide/Builders/ClangTidy.h \
@@ -1961,7 +1938,6 @@ $(OutDir_ide_Builders)AndroidBuilder.o: $(UPPDIR1)ide/Builders/AndroidBuilder.cp
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Builders)  $(UPPDIR1)ide/Builders/AndroidBuilder.cpp -o $(OutDir_ide_Builders)AndroidBuilder.o
@@ -2012,7 +1988,6 @@ $(OutDir_ide_Builders)AndroidBuilderCommands.o: $(UPPDIR1)ide/Builders/AndroidBu
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -2027,6 +2002,7 @@ $(OutDir_ide_Builders)AndroidBuilderCommands.o: $(UPPDIR1)ide/Builders/AndroidBu
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -2066,7 +2042,6 @@ $(OutDir_ide_Builders)AndroidBuilderCommands.o: $(UPPDIR1)ide/Builders/AndroidBu
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Builders)  $(UPPDIR1)ide/Builders/AndroidBuilderCommands.cpp -o $(OutDir_ide_Builders)AndroidBuilderCommands.o
@@ -2117,7 +2092,6 @@ $(OutDir_ide_Builders)AndroidBuilderUtils.o: $(UPPDIR1)ide/Builders/AndroidBuild
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -2132,6 +2106,7 @@ $(OutDir_ide_Builders)AndroidBuilderUtils.o: $(UPPDIR1)ide/Builders/AndroidBuild
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -2171,7 +2146,6 @@ $(OutDir_ide_Builders)AndroidBuilderUtils.o: $(UPPDIR1)ide/Builders/AndroidBuild
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Builders)  $(UPPDIR1)ide/Builders/AndroidBuilderUtils.cpp -o $(OutDir_ide_Builders)AndroidBuilderUtils.o
@@ -2222,7 +2196,6 @@ $(OutDir_ide_Builders)AndroidModuleMakeFileBuilder.o: $(UPPDIR1)ide/Builders/And
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -2237,6 +2210,7 @@ $(OutDir_ide_Builders)AndroidModuleMakeFileBuilder.o: $(UPPDIR1)ide/Builders/And
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -2276,7 +2250,6 @@ $(OutDir_ide_Builders)AndroidModuleMakeFileBuilder.o: $(UPPDIR1)ide/Builders/And
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Builders)  $(UPPDIR1)ide/Builders/AndroidModuleMakeFileBuilder.cpp -o $(OutDir_ide_Builders)AndroidModuleMakeFileBuilder.o
@@ -2327,7 +2300,6 @@ $(OutDir_ide_Builders)Blitz.o: $(UPPDIR1)ide/Builders/Blitz.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -2342,6 +2314,7 @@ $(OutDir_ide_Builders)Blitz.o: $(UPPDIR1)ide/Builders/Blitz.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -2371,7 +2344,6 @@ $(OutDir_ide_Builders)Blitz.o: $(UPPDIR1)ide/Builders/Blitz.cpp \
 	$(UPPDIR1)ide/Builders/Android.h \
 	$(UPPDIR1)ide/Builders/Blitz.cpp \
 	$(UPPDIR1)ide/Builders/Build.h \
-	$(UPPDIR1)ide/Builders/BuilderComponents.h \
 	$(UPPDIR1)ide/Builders/Builders.h \
 	$(UPPDIR1)ide/Builders/ClangTidy.h \
 	$(UPPDIR1)ide/Core/Core.h \
@@ -2380,7 +2352,6 @@ $(OutDir_ide_Builders)Blitz.o: $(UPPDIR1)ide/Builders/Blitz.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Builders)  $(UPPDIR1)ide/Builders/Blitz.cpp -o $(OutDir_ide_Builders)Blitz.o
@@ -2431,7 +2402,6 @@ $(OutDir_ide_Builders)Build.o: $(UPPDIR1)ide/Builders/Build.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -2446,6 +2416,7 @@ $(OutDir_ide_Builders)Build.o: $(UPPDIR1)ide/Builders/Build.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -2479,7 +2450,6 @@ $(OutDir_ide_Builders)Build.o: $(UPPDIR1)ide/Builders/Build.cpp \
 	$(UPPDIR1)ide/Builders/AndroidBuilder.h \
 	$(UPPDIR1)ide/Builders/Build.cpp \
 	$(UPPDIR1)ide/Builders/Build.h \
-	$(UPPDIR1)ide/Builders/BuilderComponents.h \
 	$(UPPDIR1)ide/Builders/Builders.h \
 	$(UPPDIR1)ide/Builders/ClangTidy.h \
 	$(UPPDIR1)ide/Core/Core.h \
@@ -2489,7 +2459,6 @@ $(OutDir_ide_Builders)Build.o: $(UPPDIR1)ide/Builders/Build.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Builders)  $(UPPDIR1)ide/Builders/Build.cpp -o $(OutDir_ide_Builders)Build.o
@@ -2540,7 +2509,6 @@ $(OutDir_ide_Builders)CCJ.o: $(UPPDIR1)ide/Builders/CCJ.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -2555,6 +2523,7 @@ $(OutDir_ide_Builders)CCJ.o: $(UPPDIR1)ide/Builders/CCJ.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -2583,7 +2552,6 @@ $(OutDir_ide_Builders)CCJ.o: $(UPPDIR1)ide/Builders/CCJ.cpp \
 	$(UPPDIR1)Esc/Esc.h \
 	$(UPPDIR1)ide/Builders/Android.h \
 	$(UPPDIR1)ide/Builders/Build.h \
-	$(UPPDIR1)ide/Builders/BuilderComponents.h \
 	$(UPPDIR1)ide/Builders/Builders.h \
 	$(UPPDIR1)ide/Builders/CCJ.cpp \
 	$(UPPDIR1)ide/Builders/ClangTidy.h \
@@ -2593,7 +2561,6 @@ $(OutDir_ide_Builders)CCJ.o: $(UPPDIR1)ide/Builders/CCJ.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Builders)  $(UPPDIR1)ide/Builders/CCJ.cpp -o $(OutDir_ide_Builders)CCJ.o
@@ -2644,7 +2611,6 @@ $(OutDir_ide_Builders)Install.o: $(UPPDIR1)ide/Builders/Install.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -2659,6 +2625,7 @@ $(OutDir_ide_Builders)Install.o: $(UPPDIR1)ide/Builders/Install.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -2687,7 +2654,6 @@ $(OutDir_ide_Builders)Install.o: $(UPPDIR1)ide/Builders/Install.cpp \
 	$(UPPDIR1)Esc/Esc.h \
 	$(UPPDIR1)ide/Builders/Android.h \
 	$(UPPDIR1)ide/Builders/Build.h \
-	$(UPPDIR1)ide/Builders/BuilderComponents.h \
 	$(UPPDIR1)ide/Builders/Builders.h \
 	$(UPPDIR1)ide/Builders/ClangTidy.h \
 	$(UPPDIR1)ide/Builders/Install.cpp \
@@ -2697,7 +2663,6 @@ $(OutDir_ide_Builders)Install.o: $(UPPDIR1)ide/Builders/Install.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Builders)  $(UPPDIR1)ide/Builders/Install.cpp -o $(OutDir_ide_Builders)Install.o
@@ -2748,7 +2713,6 @@ $(OutDir_ide_Builders)SPDXLicenses.o: $(UPPDIR1)ide/Builders/SPDXLicenses.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -2763,6 +2727,7 @@ $(OutDir_ide_Builders)SPDXLicenses.o: $(UPPDIR1)ide/Builders/SPDXLicenses.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -2791,7 +2756,6 @@ $(OutDir_ide_Builders)SPDXLicenses.o: $(UPPDIR1)ide/Builders/SPDXLicenses.cpp \
 	$(UPPDIR1)Esc/Esc.h \
 	$(UPPDIR1)ide/Builders/Android.h \
 	$(UPPDIR1)ide/Builders/Build.h \
-	$(UPPDIR1)ide/Builders/BuilderComponents.h \
 	$(UPPDIR1)ide/Builders/Builders.h \
 	$(UPPDIR1)ide/Builders/ClangTidy.h \
 	$(UPPDIR1)ide/Builders/SPDXLicenses.cpp \
@@ -2801,7 +2765,6 @@ $(OutDir_ide_Builders)SPDXLicenses.o: $(UPPDIR1)ide/Builders/SPDXLicenses.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Builders)  $(UPPDIR1)ide/Builders/SPDXLicenses.cpp -o $(OutDir_ide_Builders)SPDXLicenses.o
@@ -2852,7 +2815,6 @@ $(OutDir_ide_Builders)SBOM.o: $(UPPDIR1)ide/Builders/SBOM.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -2867,6 +2829,7 @@ $(OutDir_ide_Builders)SBOM.o: $(UPPDIR1)ide/Builders/SBOM.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -2895,7 +2858,6 @@ $(OutDir_ide_Builders)SBOM.o: $(UPPDIR1)ide/Builders/SBOM.cpp \
 	$(UPPDIR1)Esc/Esc.h \
 	$(UPPDIR1)ide/Builders/Android.h \
 	$(UPPDIR1)ide/Builders/Build.h \
-	$(UPPDIR1)ide/Builders/BuilderComponents.h \
 	$(UPPDIR1)ide/Builders/Builders.h \
 	$(UPPDIR1)ide/Builders/ClangTidy.h \
 	$(UPPDIR1)ide/Builders/SBOM.cpp \
@@ -2905,7 +2867,6 @@ $(OutDir_ide_Builders)SBOM.o: $(UPPDIR1)ide/Builders/SBOM.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Builders)  $(UPPDIR1)ide/Builders/SBOM.cpp -o $(OutDir_ide_Builders)SBOM.o
@@ -2956,7 +2917,6 @@ $(OutDir_ide_Builders)ClangTidy.o: $(UPPDIR1)ide/Builders/ClangTidy.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -2971,6 +2931,7 @@ $(OutDir_ide_Builders)ClangTidy.o: $(UPPDIR1)ide/Builders/ClangTidy.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -2999,7 +2960,6 @@ $(OutDir_ide_Builders)ClangTidy.o: $(UPPDIR1)ide/Builders/ClangTidy.cpp \
 	$(UPPDIR1)Esc/Esc.h \
 	$(UPPDIR1)ide/Builders/Android.h \
 	$(UPPDIR1)ide/Builders/Build.h \
-	$(UPPDIR1)ide/Builders/BuilderComponents.h \
 	$(UPPDIR1)ide/Builders/Builders.h \
 	$(UPPDIR1)ide/Builders/ClangTidy.cpp \
 	$(UPPDIR1)ide/Builders/ClangTidy.h \
@@ -3009,7 +2969,6 @@ $(OutDir_ide_Builders)ClangTidy.o: $(UPPDIR1)ide/Builders/ClangTidy.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Builders)  $(UPPDIR1)ide/Builders/ClangTidy.cpp -o $(OutDir_ide_Builders)ClangTidy.o
@@ -3074,6 +3033,7 @@ $(OutDir_ide_Builders)BuilderUtils.o: $(UPPDIR1)ide/Builders/BuilderUtils.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -3202,7 +3162,6 @@ $(OutDir_ide_Core)Ide.o: $(UPPDIR1)ide/Core/Ide.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -3217,6 +3176,7 @@ $(OutDir_ide_Core)Ide.o: $(UPPDIR1)ide/Core/Ide.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -3250,7 +3210,6 @@ $(OutDir_ide_Core)Ide.o: $(UPPDIR1)ide/Core/Ide.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Core)  $(UPPDIR1)ide/Core/Ide.cpp -o $(OutDir_ide_Core)Ide.o
@@ -3301,7 +3260,6 @@ $(OutDir_ide_Core)Cache.o: $(UPPDIR1)ide/Core/Cache.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -3316,6 +3274,7 @@ $(OutDir_ide_Core)Cache.o: $(UPPDIR1)ide/Core/Cache.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -3349,7 +3308,6 @@ $(OutDir_ide_Core)Cache.o: $(UPPDIR1)ide/Core/Cache.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Core)  $(UPPDIR1)ide/Core/Cache.cpp -o $(OutDir_ide_Core)Cache.o
@@ -3400,7 +3358,6 @@ $(OutDir_ide_Core)Core.o: $(UPPDIR1)ide/Core/Core.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -3415,6 +3372,7 @@ $(OutDir_ide_Core)Core.o: $(UPPDIR1)ide/Core/Core.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -3448,7 +3406,6 @@ $(OutDir_ide_Core)Core.o: $(UPPDIR1)ide/Core/Core.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Core)  $(UPPDIR1)ide/Core/Core.cpp -o $(OutDir_ide_Core)Core.o
@@ -3499,7 +3456,6 @@ $(OutDir_ide_Core)Util.o: $(UPPDIR1)ide/Core/Util.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -3514,6 +3470,7 @@ $(OutDir_ide_Core)Util.o: $(UPPDIR1)ide/Core/Util.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -3547,7 +3504,6 @@ $(OutDir_ide_Core)Util.o: $(UPPDIR1)ide/Core/Util.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Core)  $(UPPDIR1)ide/Core/Util.cpp -o $(OutDir_ide_Core)Util.o
@@ -3598,7 +3554,6 @@ $(OutDir_ide_Core)Builder.o: $(UPPDIR1)ide/Core/Builder.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -3613,6 +3568,7 @@ $(OutDir_ide_Core)Builder.o: $(UPPDIR1)ide/Core/Builder.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -3646,7 +3602,6 @@ $(OutDir_ide_Core)Builder.o: $(UPPDIR1)ide/Core/Builder.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Core)  $(UPPDIR1)ide/Core/Builder.cpp -o $(OutDir_ide_Core)Builder.o
@@ -3697,7 +3652,6 @@ $(OutDir_ide_Core)PPinfo.o: $(UPPDIR1)ide/Core/PPinfo.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -3712,6 +3666,7 @@ $(OutDir_ide_Core)PPinfo.o: $(UPPDIR1)ide/Core/PPinfo.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -3745,7 +3700,6 @@ $(OutDir_ide_Core)PPinfo.o: $(UPPDIR1)ide/Core/PPinfo.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Core)  $(UPPDIR1)ide/Core/PPinfo.cpp -o $(OutDir_ide_Core)PPinfo.o
@@ -3796,7 +3750,6 @@ $(OutDir_ide_Core)Assembly.o: $(UPPDIR1)ide/Core/Assembly.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -3811,6 +3764,7 @@ $(OutDir_ide_Core)Assembly.o: $(UPPDIR1)ide/Core/Assembly.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -3844,7 +3798,6 @@ $(OutDir_ide_Core)Assembly.o: $(UPPDIR1)ide/Core/Assembly.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Core)  $(UPPDIR1)ide/Core/Assembly.cpp -o $(OutDir_ide_Core)Assembly.o
@@ -3895,7 +3848,6 @@ $(OutDir_ide_Core)Package.o: $(UPPDIR1)ide/Core/Package.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -3910,6 +3862,7 @@ $(OutDir_ide_Core)Package.o: $(UPPDIR1)ide/Core/Package.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -3943,7 +3896,6 @@ $(OutDir_ide_Core)Package.o: $(UPPDIR1)ide/Core/Package.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Core)  $(UPPDIR1)ide/Core/Package.cpp -o $(OutDir_ide_Core)Package.o
@@ -3994,7 +3946,6 @@ $(OutDir_ide_Core)Workspace.o: $(UPPDIR1)ide/Core/Workspace.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -4009,6 +3960,7 @@ $(OutDir_ide_Core)Workspace.o: $(UPPDIR1)ide/Core/Workspace.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -4042,109 +3994,9 @@ $(OutDir_ide_Core)Workspace.o: $(UPPDIR1)ide/Core/Workspace.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Core)  $(UPPDIR1)ide/Core/Workspace.cpp -o $(OutDir_ide_Core)Workspace.o
-
-$(OutDir_ide_Core)ExtDep.o: $(UPPDIR1)ide/Core/ExtDep.cpp \
-	$(UPPDIR1)Core/Algo.h \
-	$(UPPDIR1)Core/App.h \
-	$(UPPDIR1)Core/AString.hpp \
-	$(UPPDIR1)Core/Atomic.h \
-	$(UPPDIR1)Core/BiCont.h \
-	$(UPPDIR1)Core/BinUndoRedo.h \
-	$(UPPDIR1)Core/Callback.h \
-	$(UPPDIR1)Core/CallbackN.i \
-	$(UPPDIR1)Core/CallbackNP.i \
-	$(UPPDIR1)Core/CallbackR.i \
-	$(UPPDIR1)Core/CharFilter.h \
-	$(UPPDIR1)Core/CharSet.h \
-	$(UPPDIR1)Core/CharSet.i \
-	$(UPPDIR1)Core/CoAlgo.h \
-	$(UPPDIR1)Core/Color.h \
-	$(UPPDIR1)Core/Complex.h \
-	$(UPPDIR1)Core/config.h \
-	$(UPPDIR1)Core/Convert.h \
-	$(UPPDIR1)Core/Convert.hpp \
-	$(UPPDIR1)Core/Core.h \
-	$(UPPDIR1)Core/CoSort.h \
-	$(UPPDIR1)Core/CoWork.h \
-	$(UPPDIR1)Core/Defs.h \
-	$(UPPDIR1)Core/Diag.h \
-	$(UPPDIR1)Core/FileMapping.h \
-	$(UPPDIR1)Core/FilterStream.h \
-	$(UPPDIR1)Core/FixedMap.h \
-	$(UPPDIR1)Core/Fn.h \
-	$(UPPDIR1)Core/Format.h \
-	$(UPPDIR1)Core/Function.h \
-	$(UPPDIR1)Core/Gtypes.h \
-	$(UPPDIR1)Core/Hash.h \
-	$(UPPDIR1)Core/Heap.h \
-	$(UPPDIR1)Core/HttpStatusCode.i \
-	$(UPPDIR1)Core/Huge.h \
-	$(UPPDIR1)Core/i18n.h \
-	$(UPPDIR1)Core/Index.h \
-	$(UPPDIR1)Core/Index.hpp \
-	$(UPPDIR1)Core/Inet.h \
-	$(UPPDIR1)Core/InMap.hpp \
-	$(UPPDIR1)Core/InVector.h \
-	$(UPPDIR1)Core/InVector.hpp \
-	$(UPPDIR1)Core/JSON.h \
-	$(UPPDIR1)Core/Lang.h \
-	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
-	$(UPPDIR1)Core/LocalProcess.h \
-	$(UPPDIR1)Core/Map.h \
-	$(UPPDIR1)Core/Map.hpp \
-	$(UPPDIR1)Core/Mem.h \
-	$(UPPDIR1)Core/Mt.h \
-	$(UPPDIR1)Core/Obsolete.h \
-	$(UPPDIR1)Core/Ops.h \
-	$(UPPDIR1)Core/Other.h \
-	$(UPPDIR1)Core/Other.hpp \
-	$(UPPDIR1)Core/Parser.h \
-	$(UPPDIR1)Core/Path.h \
-	$(UPPDIR1)Core/Profile.h \
-	$(UPPDIR1)Core/Ptr.h \
-	$(UPPDIR1)Core/Range.h \
-	$(UPPDIR1)Core/Sort.h \
-	$(UPPDIR1)Core/Sorted.h \
-	$(UPPDIR1)Core/SplitMerge.h \
-	$(UPPDIR1)Core/Stream.h \
-	$(UPPDIR1)Core/String.h \
-	$(UPPDIR1)Core/t_.h \
-	$(UPPDIR1)Core/TimeDate.h \
-	$(UPPDIR1)Core/Topic.h \
-	$(UPPDIR1)Core/Topt.h \
-	$(UPPDIR1)Core/Tuple.h \
-	$(UPPDIR1)Core/Utf.hpp \
-	$(UPPDIR1)Core/Util.h \
-	$(UPPDIR1)Core/Uuid.h \
-	$(UPPDIR1)Core/Value.h \
-	$(UPPDIR1)Core/Value.hpp \
-	$(UPPDIR1)Core/ValueCache.h \
-	$(UPPDIR1)Core/ValueUtil.h \
-	$(UPPDIR1)Core/ValueUtil.hpp \
-	$(UPPDIR1)Core/Vcont.h \
-	$(UPPDIR1)Core/Vcont.hpp \
-	$(UPPDIR1)Core/Win32Util.h \
-	$(UPPDIR1)Core/XML.h \
-	$(UPPDIR1)Core/Xmlize.h \
-	$(UPPDIR1)Core/Xmlize.hpp \
-	$(UPPDIR1)Core/z.h \
-	$(UPPDIR1)Esc/Esc.h \
-	$(UPPDIR1)ide/Core/Core.h \
-	$(UPPDIR1)ide/Core/ExtDep.cpp \
-	$(UPPDIR1)ide/Core/Host.h \
-	$(UPPDIR1)ide/Core/Logger.h \
-	$(UPPDIR1)plugin/bz2/bz2.h \
-	$(UPPDIR1)plugin/lz4/lz4.h \
-	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
-	$(UPPDIR1)plugin/zstd/zstd.h \
-	$(UPPDIR1)uppconfig.h
-	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Core)  $(UPPDIR1)ide/Core/ExtDep.cpp -o $(OutDir_ide_Core)ExtDep.o
 
 $(OutDir_ide_Core)usc.o: $(UPPDIR1)ide/Core/usc.cpp \
 	$(UPPDIR1)Core/Algo.h \
@@ -4192,7 +4044,6 @@ $(OutDir_ide_Core)usc.o: $(UPPDIR1)ide/Core/usc.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -4207,6 +4058,7 @@ $(OutDir_ide_Core)usc.o: $(UPPDIR1)ide/Core/usc.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -4240,7 +4092,6 @@ $(OutDir_ide_Core)usc.o: $(UPPDIR1)ide/Core/usc.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Core)  $(UPPDIR1)ide/Core/usc.cpp -o $(OutDir_ide_Core)usc.o
@@ -4291,7 +4142,6 @@ $(OutDir_ide_Core)BinObj.o: $(UPPDIR1)ide/Core/BinObj.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -4306,6 +4156,7 @@ $(OutDir_ide_Core)BinObj.o: $(UPPDIR1)ide/Core/BinObj.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -4339,7 +4190,6 @@ $(OutDir_ide_Core)BinObj.o: $(UPPDIR1)ide/Core/BinObj.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Core)  $(UPPDIR1)ide/Core/BinObj.cpp -o $(OutDir_ide_Core)BinObj.o
@@ -4390,7 +4240,6 @@ $(OutDir_ide_Core)Signature.o: $(UPPDIR1)ide/Core/Signature.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -4405,6 +4254,7 @@ $(OutDir_ide_Core)Signature.o: $(UPPDIR1)ide/Core/Signature.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -4438,12 +4288,11 @@ $(OutDir_ide_Core)Signature.o: $(UPPDIR1)ide/Core/Signature.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Core)  $(UPPDIR1)ide/Core/Signature.cpp -o $(OutDir_ide_Core)Signature.o
 
-$(OutDir_ide_Core)Linux.o: $(UPPDIR1)ide/Core/Linux.cpp \
+$(OutDir_ide_Core)ExtDep.o: $(UPPDIR1)ide/Core/ExtDep.cpp \
 	$(UPPDIR1)Core/Algo.h \
 	$(UPPDIR1)Core/App.h \
 	$(UPPDIR1)Core/AString.hpp \
@@ -4489,7 +4338,6 @@ $(OutDir_ide_Core)Linux.o: $(UPPDIR1)ide/Core/Linux.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -4504,6 +4352,7 @@ $(OutDir_ide_Core)Linux.o: $(UPPDIR1)ide/Core/Linux.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -4531,16 +4380,15 @@ $(OutDir_ide_Core)Linux.o: $(UPPDIR1)ide/Core/Linux.cpp \
 	$(UPPDIR1)Core/z.h \
 	$(UPPDIR1)Esc/Esc.h \
 	$(UPPDIR1)ide/Core/Core.h \
+	$(UPPDIR1)ide/Core/ExtDep.cpp \
 	$(UPPDIR1)ide/Core/Host.h \
-	$(UPPDIR1)ide/Core/Linux.cpp \
 	$(UPPDIR1)ide/Core/Logger.h \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
-	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Core)  $(UPPDIR1)ide/Core/Linux.cpp -o $(OutDir_ide_Core)Linux.o
+	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Core)  $(UPPDIR1)ide/Core/ExtDep.cpp -o $(OutDir_ide_Core)ExtDep.o
 
 $(OutDir_ide_Core)Vcpkg.o: $(UPPDIR1)ide/Core/Vcpkg.cpp \
 	$(UPPDIR1)Core/Algo.h \
@@ -4588,7 +4436,6 @@ $(OutDir_ide_Core)Vcpkg.o: $(UPPDIR1)ide/Core/Vcpkg.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -4603,6 +4450,7 @@ $(OutDir_ide_Core)Vcpkg.o: $(UPPDIR1)ide/Core/Vcpkg.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -4636,10 +4484,107 @@ $(OutDir_ide_Core)Vcpkg.o: $(UPPDIR1)ide/Core/Vcpkg.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Core)  $(UPPDIR1)ide/Core/Vcpkg.cpp -o $(OutDir_ide_Core)Vcpkg.o
+
+$(OutDir_ide_Core)Brew.o: $(UPPDIR1)ide/Core/Brew.cpp \
+	$(UPPDIR1)Core/Algo.h \
+	$(UPPDIR1)Core/App.h \
+	$(UPPDIR1)Core/AString.hpp \
+	$(UPPDIR1)Core/Atomic.h \
+	$(UPPDIR1)Core/BiCont.h \
+	$(UPPDIR1)Core/BinUndoRedo.h \
+	$(UPPDIR1)Core/Callback.h \
+	$(UPPDIR1)Core/CallbackN.i \
+	$(UPPDIR1)Core/CallbackNP.i \
+	$(UPPDIR1)Core/CallbackR.i \
+	$(UPPDIR1)Core/CharFilter.h \
+	$(UPPDIR1)Core/CharSet.h \
+	$(UPPDIR1)Core/CharSet.i \
+	$(UPPDIR1)Core/CoAlgo.h \
+	$(UPPDIR1)Core/Color.h \
+	$(UPPDIR1)Core/Complex.h \
+	$(UPPDIR1)Core/config.h \
+	$(UPPDIR1)Core/Convert.h \
+	$(UPPDIR1)Core/Convert.hpp \
+	$(UPPDIR1)Core/Core.h \
+	$(UPPDIR1)Core/CoSort.h \
+	$(UPPDIR1)Core/CoWork.h \
+	$(UPPDIR1)Core/Defs.h \
+	$(UPPDIR1)Core/Diag.h \
+	$(UPPDIR1)Core/FileMapping.h \
+	$(UPPDIR1)Core/FilterStream.h \
+	$(UPPDIR1)Core/FixedMap.h \
+	$(UPPDIR1)Core/Fn.h \
+	$(UPPDIR1)Core/Format.h \
+	$(UPPDIR1)Core/Function.h \
+	$(UPPDIR1)Core/Gtypes.h \
+	$(UPPDIR1)Core/Hash.h \
+	$(UPPDIR1)Core/Heap.h \
+	$(UPPDIR1)Core/HttpStatusCode.i \
+	$(UPPDIR1)Core/Huge.h \
+	$(UPPDIR1)Core/i18n.h \
+	$(UPPDIR1)Core/Index.h \
+	$(UPPDIR1)Core/Index.hpp \
+	$(UPPDIR1)Core/Inet.h \
+	$(UPPDIR1)Core/InMap.hpp \
+	$(UPPDIR1)Core/InVector.h \
+	$(UPPDIR1)Core/InVector.hpp \
+	$(UPPDIR1)Core/JSON.h \
+	$(UPPDIR1)Core/Lang.h \
+	$(UPPDIR1)Core/Lang_s.h \
+	$(UPPDIR1)Core/LocalProcess.h \
+	$(UPPDIR1)Core/Map.h \
+	$(UPPDIR1)Core/Map.hpp \
+	$(UPPDIR1)Core/Mem.h \
+	$(UPPDIR1)Core/Mt.h \
+	$(UPPDIR1)Core/Obsolete.h \
+	$(UPPDIR1)Core/Ops.h \
+	$(UPPDIR1)Core/Other.h \
+	$(UPPDIR1)Core/Other.hpp \
+	$(UPPDIR1)Core/Parser.h \
+	$(UPPDIR1)Core/Path.h \
+	$(UPPDIR1)Core/Profile.h \
+	$(UPPDIR1)Core/Ptr.h \
+	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
+	$(UPPDIR1)Core/Sort.h \
+	$(UPPDIR1)Core/Sorted.h \
+	$(UPPDIR1)Core/SplitMerge.h \
+	$(UPPDIR1)Core/Stream.h \
+	$(UPPDIR1)Core/String.h \
+	$(UPPDIR1)Core/t_.h \
+	$(UPPDIR1)Core/TimeDate.h \
+	$(UPPDIR1)Core/Topic.h \
+	$(UPPDIR1)Core/Topt.h \
+	$(UPPDIR1)Core/Tuple.h \
+	$(UPPDIR1)Core/Utf.hpp \
+	$(UPPDIR1)Core/Util.h \
+	$(UPPDIR1)Core/Uuid.h \
+	$(UPPDIR1)Core/Value.h \
+	$(UPPDIR1)Core/Value.hpp \
+	$(UPPDIR1)Core/ValueCache.h \
+	$(UPPDIR1)Core/ValueUtil.h \
+	$(UPPDIR1)Core/ValueUtil.hpp \
+	$(UPPDIR1)Core/Vcont.h \
+	$(UPPDIR1)Core/Vcont.hpp \
+	$(UPPDIR1)Core/Win32Util.h \
+	$(UPPDIR1)Core/XML.h \
+	$(UPPDIR1)Core/Xmlize.h \
+	$(UPPDIR1)Core/Xmlize.hpp \
+	$(UPPDIR1)Core/z.h \
+	$(UPPDIR1)Esc/Esc.h \
+	$(UPPDIR1)ide/Core/Brew.cpp \
+	$(UPPDIR1)ide/Core/Core.h \
+	$(UPPDIR1)ide/Core/Host.h \
+	$(UPPDIR1)ide/Core/Logger.h \
+	$(UPPDIR1)plugin/bz2/bz2.h \
+	$(UPPDIR1)plugin/lz4/lz4.h \
+	$(UPPDIR1)plugin/lzma/lzma.h \
+	$(UPPDIR1)plugin/zstd/zstd.h \
+	$(UPPDIR1)uppconfig.h
+	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Core)  $(UPPDIR1)ide/Core/Brew.cpp -o $(OutDir_ide_Core)Brew.o
 
 $(OutDir_ide_Core)Host.o: $(UPPDIR1)ide/Core/Host.cpp \
 	$(UPPDIR1)Core/Algo.h \
@@ -4687,7 +4632,6 @@ $(OutDir_ide_Core)Host.o: $(UPPDIR1)ide/Core/Host.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -4702,6 +4646,7 @@ $(OutDir_ide_Core)Host.o: $(UPPDIR1)ide/Core/Host.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -4735,7 +4680,6 @@ $(OutDir_ide_Core)Host.o: $(UPPDIR1)ide/Core/Host.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Core)  $(UPPDIR1)ide/Core/Host.cpp -o $(OutDir_ide_Core)Host.o
@@ -4800,6 +4744,7 @@ $(OutDir_ide_Core)Logger.o: $(UPPDIR1)ide/Core/Logger.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -4840,12 +4785,12 @@ $(OutDir_ide_Core)Core.a: \
 	$(OutDir_ide_Core)Assembly.o \
 	$(OutDir_ide_Core)Package.o \
 	$(OutDir_ide_Core)Workspace.o \
-	$(OutDir_ide_Core)ExtDep.o \
 	$(OutDir_ide_Core)usc.o \
 	$(OutDir_ide_Core)BinObj.o \
 	$(OutDir_ide_Core)Signature.o \
-	$(OutDir_ide_Core)Linux.o \
+	$(OutDir_ide_Core)ExtDep.o \
 	$(OutDir_ide_Core)Vcpkg.o \
+	$(OutDir_ide_Core)Brew.o \
 	$(OutDir_ide_Core)Host.o \
 	$(OutDir_ide_Core)Logger.o
 	$(AR) $(OutDir_ide_Core)Core.a \
@@ -4858,12 +4803,12 @@ $(OutDir_ide_Core)Core.a: \
 		$(OutDir_ide_Core)Assembly.o \
 		$(OutDir_ide_Core)Package.o \
 		$(OutDir_ide_Core)Workspace.o \
-		$(OutDir_ide_Core)ExtDep.o \
 		$(OutDir_ide_Core)usc.o \
 		$(OutDir_ide_Core)BinObj.o \
 		$(OutDir_ide_Core)Signature.o \
-		$(OutDir_ide_Core)Linux.o \
+		$(OutDir_ide_Core)ExtDep.o \
 		$(OutDir_ide_Core)Vcpkg.o \
+		$(OutDir_ide_Core)Brew.o \
 		$(OutDir_ide_Core)Host.o \
 		$(OutDir_ide_Core)Logger.o
 
@@ -4916,7 +4861,6 @@ $(OutDir_ide_Android)Android.o: $(UPPDIR1)ide/Android/Android.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -4931,6 +4875,7 @@ $(OutDir_ide_Android)Android.o: $(UPPDIR1)ide/Android/Android.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -4967,7 +4912,6 @@ $(OutDir_ide_Android)Android.o: $(UPPDIR1)ide/Android/Android.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Android)  $(UPPDIR1)ide/Android/Android.cpp -o $(OutDir_ide_Android)Android.o
@@ -5018,7 +4962,6 @@ $(OutDir_ide_Android)AndroidSDK.o: $(UPPDIR1)ide/Android/AndroidSDK.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -5033,6 +4976,7 @@ $(OutDir_ide_Android)AndroidSDK.o: $(UPPDIR1)ide/Android/AndroidSDK.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -5069,10 +5013,6 @@ $(OutDir_ide_Android)AndroidSDK.o: $(UPPDIR1)ide/Android/AndroidSDK.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/pcre/lib/pcre.h \
-	$(UPPDIR1)plugin/pcre/Pcre.h \
-	$(UPPDIR1)plugin/pcre/RegExp.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Android)  $(UPPDIR1)ide/Android/AndroidSDK.cpp -o $(OutDir_ide_Android)AndroidSDK.o
@@ -5123,7 +5063,6 @@ $(OutDir_ide_Android)AndroidNDK.o: $(UPPDIR1)ide/Android/AndroidNDK.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -5138,6 +5077,7 @@ $(OutDir_ide_Android)AndroidNDK.o: $(UPPDIR1)ide/Android/AndroidNDK.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -5174,7 +5114,6 @@ $(OutDir_ide_Android)AndroidNDK.o: $(UPPDIR1)ide/Android/AndroidNDK.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Android)  $(UPPDIR1)ide/Android/AndroidNDK.cpp -o $(OutDir_ide_Android)AndroidNDK.o
@@ -5225,7 +5164,6 @@ $(OutDir_ide_Android)Apk.o: $(UPPDIR1)ide/Android/Apk.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -5240,6 +5178,7 @@ $(OutDir_ide_Android)Apk.o: $(UPPDIR1)ide/Android/Apk.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -5276,7 +5215,6 @@ $(OutDir_ide_Android)Apk.o: $(UPPDIR1)ide/Android/Apk.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Android)  $(UPPDIR1)ide/Android/Apk.cpp -o $(OutDir_ide_Android)Apk.o
@@ -5327,7 +5265,6 @@ $(OutDir_ide_Android)AndroidManifest.o: $(UPPDIR1)ide/Android/AndroidManifest.cp
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -5342,6 +5279,7 @@ $(OutDir_ide_Android)AndroidManifest.o: $(UPPDIR1)ide/Android/AndroidManifest.cp
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -5378,7 +5316,6 @@ $(OutDir_ide_Android)AndroidManifest.o: $(UPPDIR1)ide/Android/AndroidManifest.cp
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Android)  $(UPPDIR1)ide/Android/AndroidManifest.cpp -o $(OutDir_ide_Android)AndroidManifest.o
@@ -5429,7 +5366,6 @@ $(OutDir_ide_Android)Adb.o: $(UPPDIR1)ide/Android/Adb.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -5444,6 +5380,7 @@ $(OutDir_ide_Android)Adb.o: $(UPPDIR1)ide/Android/Adb.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -5480,7 +5417,6 @@ $(OutDir_ide_Android)Adb.o: $(UPPDIR1)ide/Android/Adb.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Android)  $(UPPDIR1)ide/Android/Adb.cpp -o $(OutDir_ide_Android)Adb.o
@@ -5531,7 +5467,6 @@ $(OutDir_ide_Android)LogCat.o: $(UPPDIR1)ide/Android/LogCat.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -5546,6 +5481,7 @@ $(OutDir_ide_Android)LogCat.o: $(UPPDIR1)ide/Android/LogCat.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -5580,7 +5516,6 @@ $(OutDir_ide_Android)LogCat.o: $(UPPDIR1)ide/Android/LogCat.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Android)  $(UPPDIR1)ide/Android/LogCat.cpp -o $(OutDir_ide_Android)LogCat.o
@@ -5631,7 +5566,6 @@ $(OutDir_ide_Android)NDKBuild.o: $(UPPDIR1)ide/Android/NDKBuild.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -5646,6 +5580,7 @@ $(OutDir_ide_Android)NDKBuild.o: $(UPPDIR1)ide/Android/NDKBuild.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -5680,7 +5615,6 @@ $(OutDir_ide_Android)NDKBuild.o: $(UPPDIR1)ide/Android/NDKBuild.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Android)  $(UPPDIR1)ide/Android/NDKBuild.cpp -o $(OutDir_ide_Android)NDKBuild.o
@@ -5753,7 +5687,6 @@ $(OutDir_ide_Java)JavaVersion.o: $(UPPDIR1)ide/Java/JavaVersion.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -5768,6 +5701,7 @@ $(OutDir_ide_Java)JavaVersion.o: $(UPPDIR1)ide/Java/JavaVersion.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -5802,7 +5736,6 @@ $(OutDir_ide_Java)JavaVersion.o: $(UPPDIR1)ide/Java/JavaVersion.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Java)  $(UPPDIR1)ide/Java/JavaVersion.cpp -o $(OutDir_ide_Java)JavaVersion.o
@@ -5853,7 +5786,6 @@ $(OutDir_ide_Java)Java.o: $(UPPDIR1)ide/Java/Java.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -5868,6 +5800,7 @@ $(OutDir_ide_Java)Java.o: $(UPPDIR1)ide/Java/Java.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -5902,7 +5835,6 @@ $(OutDir_ide_Java)Java.o: $(UPPDIR1)ide/Java/Java.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Java)  $(UPPDIR1)ide/Java/Java.cpp -o $(OutDir_ide_Java)Java.o
@@ -5953,7 +5885,6 @@ $(OutDir_ide_Java)Jdk.o: $(UPPDIR1)ide/Java/Jdk.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -5968,6 +5899,7 @@ $(OutDir_ide_Java)Jdk.o: $(UPPDIR1)ide/Java/Jdk.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -6002,7 +5934,6 @@ $(OutDir_ide_Java)Jdk.o: $(UPPDIR1)ide/Java/Jdk.cpp \
 	$(UPPDIR1)plugin/bz2/bz2.h \
 	$(UPPDIR1)plugin/lz4/lz4.h \
 	$(UPPDIR1)plugin/lzma/lzma.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_ide_Java)  $(UPPDIR1)ide/Java/Jdk.cpp -o $(OutDir_ide_Java)Jdk.o
@@ -6018,10 +5949,6 @@ $(OutDir_ide_Java)Java.a: \
 
 $(OutDir_plugin_png):
 	mkdir -p $(OutDir_plugin_png)
-
-$(OutDir_plugin_png)pnglib.o: $(UPPDIR1)plugin/png/pnglib.c \
-	$(UPPDIR1)plugin/png/pnglib.c
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_png)  $(UPPDIR1)plugin/png/pnglib.c -o $(OutDir_plugin_png)pnglib.o
 
 $(OutDir_plugin_png)pngupp.o: $(UPPDIR1)plugin/png/pngupp.cpp \
 	$(UPPDIR1)Core/Algo.h \
@@ -6083,6 +6010,7 @@ $(OutDir_plugin_png)pngupp.o: $(UPPDIR1)plugin/png/pngupp.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -6125,113 +6053,9 @@ $(OutDir_plugin_png)pngupp.o: $(UPPDIR1)plugin/png/pngupp.cpp \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_plugin_png)  $(UPPDIR1)plugin/png/pngupp.cpp -o $(OutDir_plugin_png)pngupp.o
 
-$(OutDir_plugin_png)pngreg.o: $(UPPDIR1)plugin/png/pngreg.icpp \
-	$(UPPDIR1)Core/Algo.h \
-	$(UPPDIR1)Core/App.h \
-	$(UPPDIR1)Core/AString.hpp \
-	$(UPPDIR1)Core/Atomic.h \
-	$(UPPDIR1)Core/BiCont.h \
-	$(UPPDIR1)Core/BinUndoRedo.h \
-	$(UPPDIR1)Core/Callback.h \
-	$(UPPDIR1)Core/CallbackN.i \
-	$(UPPDIR1)Core/CallbackNP.i \
-	$(UPPDIR1)Core/CallbackR.i \
-	$(UPPDIR1)Core/CharFilter.h \
-	$(UPPDIR1)Core/CharSet.h \
-	$(UPPDIR1)Core/CharSet.i \
-	$(UPPDIR1)Core/CoAlgo.h \
-	$(UPPDIR1)Core/Color.h \
-	$(UPPDIR1)Core/Complex.h \
-	$(UPPDIR1)Core/config.h \
-	$(UPPDIR1)Core/Convert.h \
-	$(UPPDIR1)Core/Convert.hpp \
-	$(UPPDIR1)Core/Core.h \
-	$(UPPDIR1)Core/CoSort.h \
-	$(UPPDIR1)Core/CoWork.h \
-	$(UPPDIR1)Core/Defs.h \
-	$(UPPDIR1)Core/Diag.h \
-	$(UPPDIR1)Core/FileMapping.h \
-	$(UPPDIR1)Core/FilterStream.h \
-	$(UPPDIR1)Core/FixedMap.h \
-	$(UPPDIR1)Core/Fn.h \
-	$(UPPDIR1)Core/Format.h \
-	$(UPPDIR1)Core/Function.h \
-	$(UPPDIR1)Core/Gtypes.h \
-	$(UPPDIR1)Core/Hash.h \
-	$(UPPDIR1)Core/Heap.h \
-	$(UPPDIR1)Core/HttpStatusCode.i \
-	$(UPPDIR1)Core/Huge.h \
-	$(UPPDIR1)Core/i18n.h \
-	$(UPPDIR1)Core/Index.h \
-	$(UPPDIR1)Core/Index.hpp \
-	$(UPPDIR1)Core/Inet.h \
-	$(UPPDIR1)Core/InMap.hpp \
-	$(UPPDIR1)Core/InVector.h \
-	$(UPPDIR1)Core/InVector.hpp \
-	$(UPPDIR1)Core/JSON.h \
-	$(UPPDIR1)Core/Lang.h \
-	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/LocalProcess.h \
-	$(UPPDIR1)Core/Map.h \
-	$(UPPDIR1)Core/Map.hpp \
-	$(UPPDIR1)Core/Mem.h \
-	$(UPPDIR1)Core/Mt.h \
-	$(UPPDIR1)Core/Obsolete.h \
-	$(UPPDIR1)Core/Ops.h \
-	$(UPPDIR1)Core/Other.h \
-	$(UPPDIR1)Core/Other.hpp \
-	$(UPPDIR1)Core/Parser.h \
-	$(UPPDIR1)Core/Path.h \
-	$(UPPDIR1)Core/Profile.h \
-	$(UPPDIR1)Core/Ptr.h \
-	$(UPPDIR1)Core/Range.h \
-	$(UPPDIR1)Core/Sort.h \
-	$(UPPDIR1)Core/Sorted.h \
-	$(UPPDIR1)Core/SplitMerge.h \
-	$(UPPDIR1)Core/Stream.h \
-	$(UPPDIR1)Core/String.h \
-	$(UPPDIR1)Core/t_.h \
-	$(UPPDIR1)Core/TimeDate.h \
-	$(UPPDIR1)Core/Topic.h \
-	$(UPPDIR1)Core/Topt.h \
-	$(UPPDIR1)Core/Tuple.h \
-	$(UPPDIR1)Core/Utf.hpp \
-	$(UPPDIR1)Core/Util.h \
-	$(UPPDIR1)Core/Uuid.h \
-	$(UPPDIR1)Core/Value.h \
-	$(UPPDIR1)Core/Value.hpp \
-	$(UPPDIR1)Core/ValueCache.h \
-	$(UPPDIR1)Core/ValueUtil.h \
-	$(UPPDIR1)Core/ValueUtil.hpp \
-	$(UPPDIR1)Core/Vcont.h \
-	$(UPPDIR1)Core/Vcont.hpp \
-	$(UPPDIR1)Core/Win32Util.h \
-	$(UPPDIR1)Core/XML.h \
-	$(UPPDIR1)Core/Xmlize.h \
-	$(UPPDIR1)Core/Xmlize.hpp \
-	$(UPPDIR1)Core/z.h \
-	$(UPPDIR1)Draw/Cham.h \
-	$(UPPDIR1)Draw/DDARasterizer.h \
-	$(UPPDIR1)Draw/Display.h \
-	$(UPPDIR1)Draw/Draw.h \
-	$(UPPDIR1)Draw/DrawImg.iml \
-	$(UPPDIR1)Draw/FontInt.h \
-	$(UPPDIR1)Draw/Image.h \
-	$(UPPDIR1)Draw/ImageOp.h \
-	$(UPPDIR1)Draw/iml_header.h \
-	$(UPPDIR1)Draw/Raster.h \
-	$(UPPDIR1)Draw/SDraw.h \
-	$(UPPDIR1)Draw/SIMD.h \
-	$(UPPDIR1)plugin/png/png.h \
-	$(UPPDIR1)plugin/png/pngreg.icpp \
-	$(UPPDIR1)uppconfig.h
-	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_plugin_png)  $(UPPDIR1)plugin/png/pngreg.icpp -o $(OutDir_plugin_png)pngreg.o
-
 $(OutDir_plugin_png)png.a: \
-	$(OutDir_plugin_png)pnglib.o \
 	$(OutDir_plugin_png)pngupp.o
 	$(AR) $(OutDir_plugin_png)png.a \
-		$(OutDir_plugin_png)pnglib.o \
 		$(OutDir_plugin_png)pngupp.o
 
 $(OutDir_Draw):
@@ -6297,6 +6121,7 @@ $(OutDir_Draw)Font.o: $(UPPDIR1)Draw/Font.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -6398,6 +6223,7 @@ $(OutDir_Draw)FontCR.o: $(UPPDIR1)Draw/FontCR.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -6500,6 +6326,7 @@ $(OutDir_Draw)FontWin32.o: $(UPPDIR1)Draw/FontWin32.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -6601,6 +6428,7 @@ $(OutDir_Draw)FontFc.o: $(UPPDIR1)Draw/FontFc.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -6642,7 +6470,7 @@ $(OutDir_Draw)FontFc.o: $(UPPDIR1)Draw/FontFc.cpp \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_Draw)  $(UPPDIR1)Draw/FontFc.cpp -o $(OutDir_Draw)FontFc.o
 
-$(OutDir_Draw)FontCocoNOMM.o: $(UPPDIR1)Draw/FontCocoNOMM.cpp \
+$(OutDir_Draw)NoFont.o: $(UPPDIR1)Draw/NoFont.cpp \
 	$(UPPDIR1)Core/Algo.h \
 	$(UPPDIR1)Core/App.h \
 	$(UPPDIR1)Core/AString.hpp \
@@ -6702,6 +6530,7 @@ $(OutDir_Draw)FontCocoNOMM.o: $(UPPDIR1)Draw/FontCocoNOMM.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -6732,16 +6561,16 @@ $(OutDir_Draw)FontCocoNOMM.o: $(UPPDIR1)Draw/FontCocoNOMM.cpp \
 	$(UPPDIR1)Draw/Display.h \
 	$(UPPDIR1)Draw/Draw.h \
 	$(UPPDIR1)Draw/DrawImg.iml \
-	$(UPPDIR1)Draw/FontCocoNOMM.cpp \
 	$(UPPDIR1)Draw/FontInt.h \
 	$(UPPDIR1)Draw/Image.h \
 	$(UPPDIR1)Draw/ImageOp.h \
 	$(UPPDIR1)Draw/iml_header.h \
+	$(UPPDIR1)Draw/NoFont.cpp \
 	$(UPPDIR1)Draw/Raster.h \
 	$(UPPDIR1)Draw/SDraw.h \
 	$(UPPDIR1)Draw/SIMD.h \
 	$(UPPDIR1)uppconfig.h
-	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_Draw)  $(UPPDIR1)Draw/FontCocoNOMM.cpp -o $(OutDir_Draw)FontCocoNOMM.o
+	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_Draw)  $(UPPDIR1)Draw/NoFont.cpp -o $(OutDir_Draw)NoFont.o
 
 $(OutDir_Draw)Draw.o: $(UPPDIR1)Draw/Draw.cpp \
 	$(UPPDIR1)Core/Algo.h \
@@ -6803,6 +6632,7 @@ $(OutDir_Draw)Draw.o: $(UPPDIR1)Draw/Draw.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -6904,6 +6734,7 @@ $(OutDir_Draw)DrawText.o: $(UPPDIR1)Draw/DrawText.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -7005,6 +6836,7 @@ $(OutDir_Draw)DrawData.o: $(UPPDIR1)Draw/DrawData.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -7106,6 +6938,7 @@ $(OutDir_Draw)Drawing.o: $(UPPDIR1)Draw/Drawing.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -7207,6 +7040,7 @@ $(OutDir_Draw)ImageAnyDraw.o: $(UPPDIR1)Draw/ImageAnyDraw.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -7308,6 +7142,7 @@ $(OutDir_Draw)DrawUtil.o: $(UPPDIR1)Draw/DrawUtil.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -7409,6 +7244,7 @@ $(OutDir_Draw)DrawTextUtil.o: $(UPPDIR1)Draw/DrawTextUtil.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -7510,6 +7346,7 @@ $(OutDir_Draw)Display.o: $(UPPDIR1)Draw/Display.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -7612,6 +7449,7 @@ $(OutDir_Draw)Image.o: $(UPPDIR1)Draw/Image.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -7713,6 +7551,7 @@ $(OutDir_Draw)ImageBlit.o: $(UPPDIR1)Draw/ImageBlit.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -7814,6 +7653,7 @@ $(OutDir_Draw)RasterFormat.o: $(UPPDIR1)Draw/RasterFormat.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -7915,6 +7755,7 @@ $(OutDir_Draw)RasterWrite.o: $(UPPDIR1)Draw/RasterWrite.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -8016,6 +7857,7 @@ $(OutDir_Draw)Palette.o: $(UPPDIR1)Draw/Palette.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -8117,6 +7959,7 @@ $(OutDir_Draw)Raster.o: $(UPPDIR1)Draw/Raster.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -8218,6 +8061,7 @@ $(OutDir_Draw)RasterEncoder.o: $(UPPDIR1)Draw/RasterEncoder.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -8319,6 +8163,7 @@ $(OutDir_Draw)ImageOp.o: $(UPPDIR1)Draw/ImageOp.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -8420,6 +8265,7 @@ $(OutDir_Draw)ImageChOp.o: $(UPPDIR1)Draw/ImageChOp.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -8521,6 +8367,7 @@ $(OutDir_Draw)Mify.o: $(UPPDIR1)Draw/Mify.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -8622,6 +8469,7 @@ $(OutDir_Draw)ImageScale.o: $(UPPDIR1)Draw/ImageScale.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -8723,6 +8571,7 @@ $(OutDir_Draw)RescaleFilter.o: $(UPPDIR1)Draw/RescaleFilter.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -8824,6 +8673,7 @@ $(OutDir_Draw)MakeCache.o: $(UPPDIR1)Draw/MakeCache.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -8925,6 +8775,7 @@ $(OutDir_Draw)DrawRasterData.o: $(UPPDIR1)Draw/DrawRasterData.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -9026,6 +8877,7 @@ $(OutDir_Draw)Uhd.o: $(UPPDIR1)Draw/Uhd.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -9127,6 +8979,7 @@ $(OutDir_Draw)Iml.o: $(UPPDIR1)Draw/Iml.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -9228,6 +9081,7 @@ $(OutDir_Draw)DDARasterizer.o: $(UPPDIR1)Draw/DDARasterizer.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -9329,6 +9183,7 @@ $(OutDir_Draw)SDrawClip.o: $(UPPDIR1)Draw/SDrawClip.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -9430,6 +9285,7 @@ $(OutDir_Draw)SDrawPut.o: $(UPPDIR1)Draw/SDrawPut.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -9531,6 +9387,7 @@ $(OutDir_Draw)SDrawText.o: $(UPPDIR1)Draw/SDrawText.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -9632,6 +9489,7 @@ $(OutDir_Draw)SDraw.o: $(UPPDIR1)Draw/SDraw.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -9733,6 +9591,7 @@ $(OutDir_Draw)SImageDraw.o: $(UPPDIR1)Draw/SImageDraw.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -9834,6 +9693,7 @@ $(OutDir_Draw)Cham.o: $(UPPDIR1)Draw/Cham.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -9935,6 +9795,7 @@ $(OutDir_Draw)SColors.o: $(UPPDIR1)Draw/SColors.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -9981,7 +9842,7 @@ $(OutDir_Draw)Draw.a: \
 	$(OutDir_Draw)FontCR.o \
 	$(OutDir_Draw)FontWin32.o \
 	$(OutDir_Draw)FontFc.o \
-	$(OutDir_Draw)FontCocoNOMM.o \
+	$(OutDir_Draw)NoFont.o \
 	$(OutDir_Draw)Draw.o \
 	$(OutDir_Draw)DrawText.o \
 	$(OutDir_Draw)DrawData.o \
@@ -10019,7 +9880,7 @@ $(OutDir_Draw)Draw.a: \
 		$(OutDir_Draw)FontCR.o \
 		$(OutDir_Draw)FontWin32.o \
 		$(OutDir_Draw)FontFc.o \
-		$(OutDir_Draw)FontCocoNOMM.o \
+		$(OutDir_Draw)NoFont.o \
 		$(OutDir_Draw)Draw.o \
 		$(OutDir_Draw)DrawText.o \
 		$(OutDir_Draw)DrawData.o \
@@ -10116,6 +9977,7 @@ $(OutDir_Esc)EscValue.o: $(UPPDIR1)Esc/EscValue.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -10206,6 +10068,7 @@ $(OutDir_Esc)EscArray.o: $(UPPDIR1)Esc/EscArray.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -10296,6 +10159,7 @@ $(OutDir_Esc)EscMap.o: $(UPPDIR1)Esc/EscMap.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -10386,6 +10250,7 @@ $(OutDir_Esc)Esc.o: $(UPPDIR1)Esc/Esc.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -10476,6 +10341,7 @@ $(OutDir_Esc)EscRun.o: $(UPPDIR1)Esc/EscRun.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -10566,6 +10432,7 @@ $(OutDir_Esc)EscStdLib.o: $(UPPDIR1)Esc/EscStdLib.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -10656,6 +10523,7 @@ $(OutDir_Esc)Value.o: $(UPPDIR1)Esc/Value.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -10766,6 +10634,7 @@ $(OutDir_plugin_bz2)bz2upp.o: $(UPPDIR1)plugin/bz2/bz2upp.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -10796,16 +10665,10 @@ $(OutDir_plugin_bz2)bz2upp.o: $(UPPDIR1)plugin/bz2/bz2upp.cpp \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_plugin_bz2)  $(UPPDIR1)plugin/bz2/bz2upp.cpp -o $(OutDir_plugin_bz2)bz2upp.o
 
-$(OutDir_plugin_bz2)bzlib.o: $(UPPDIR1)plugin/bz2/bzlib.c \
-	$(UPPDIR1)plugin/bz2/bzlib.c
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_bz2)  $(UPPDIR1)plugin/bz2/bzlib.c -o $(OutDir_plugin_bz2)bzlib.o
-
 $(OutDir_plugin_bz2)bz2.a: \
-	$(OutDir_plugin_bz2)bz2upp.o \
-	$(OutDir_plugin_bz2)bzlib.o
+	$(OutDir_plugin_bz2)bz2upp.o
 	$(AR) $(OutDir_plugin_bz2)bz2.a \
-		$(OutDir_plugin_bz2)bz2upp.o \
-		$(OutDir_plugin_bz2)bzlib.o
+		$(OutDir_plugin_bz2)bz2upp.o
 
 $(OutDir_plugin_lzma):
 	mkdir -p $(OutDir_plugin_lzma)
@@ -10870,6 +10733,7 @@ $(OutDir_plugin_lzma)lzma.o: $(UPPDIR1)plugin/lzma/lzma.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -10895,62 +10759,15 @@ $(OutDir_plugin_lzma)lzma.o: $(UPPDIR1)plugin/lzma/lzma.cpp \
 	$(UPPDIR1)Core/Xmlize.h \
 	$(UPPDIR1)Core/Xmlize.hpp \
 	$(UPPDIR1)Core/z.h \
-	$(UPPDIR1)plugin/lzma/lib/7zTypes.h \
-	$(UPPDIR1)plugin/lzma/lib/LzmaDec.h \
-	$(UPPDIR1)plugin/lzma/lib/LzmaEnc.h \
 	$(UPPDIR1)plugin/lzma/lzma.cpp \
 	$(UPPDIR1)plugin/lzma/lzma.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_plugin_lzma)  $(UPPDIR1)plugin/lzma/lzma.cpp -o $(OutDir_plugin_lzma)lzma.o
 
-$(OutDir_plugin_lzma)LzFind.o: $(UPPDIR1)plugin/lzma/lib/LzFind.c \
-	$(UPPDIR1)plugin/lzma/lib/7zTypes.h \
-	$(UPPDIR1)plugin/lzma/lib/Compiler.h \
-	$(UPPDIR1)plugin/lzma/lib/CpuArch.h \
-	$(UPPDIR1)plugin/lzma/lib/LzFind.c \
-	$(UPPDIR1)plugin/lzma/lib/LzFind.h \
-	$(UPPDIR1)plugin/lzma/lib/LzHash.h \
-	$(UPPDIR1)plugin/lzma/lib/Precomp.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_lzma)  $(UPPDIR1)plugin/lzma/lib/LzFind.c -o $(OutDir_plugin_lzma)LzFind.o
-
-$(OutDir_plugin_lzma)LzmaDec.o: $(UPPDIR1)plugin/lzma/lib/LzmaDec.c \
-	$(UPPDIR1)plugin/lzma/lib/7zTypes.h \
-	$(UPPDIR1)plugin/lzma/lib/Compiler.h \
-	$(UPPDIR1)plugin/lzma/lib/LzmaDec.c \
-	$(UPPDIR1)plugin/lzma/lib/LzmaDec.h \
-	$(UPPDIR1)plugin/lzma/lib/Precomp.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_lzma)  $(UPPDIR1)plugin/lzma/lib/LzmaDec.c -o $(OutDir_plugin_lzma)LzmaDec.o
-
-$(OutDir_plugin_lzma)LzmaEnc.o: $(UPPDIR1)plugin/lzma/lib/LzmaEnc.c \
-	$(UPPDIR1)plugin/lzma/lib/7zTypes.h \
-	$(UPPDIR1)plugin/lzma/lib/Compiler.h \
-	$(UPPDIR1)plugin/lzma/lib/CpuArch.h \
-	$(UPPDIR1)plugin/lzma/lib/LzFind.h \
-	$(UPPDIR1)plugin/lzma/lib/LzmaEnc.c \
-	$(UPPDIR1)plugin/lzma/lib/LzmaEnc.h \
-	$(UPPDIR1)plugin/lzma/lib/Precomp.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_lzma)  $(UPPDIR1)plugin/lzma/lib/LzmaEnc.c -o $(OutDir_plugin_lzma)LzmaEnc.o
-
-$(OutDir_plugin_lzma)CpuArch.o: $(UPPDIR1)plugin/lzma/lib/CpuArch.c \
-	$(UPPDIR1)plugin/lzma/lib/7zTypes.h \
-	$(UPPDIR1)plugin/lzma/lib/Compiler.h \
-	$(UPPDIR1)plugin/lzma/lib/CpuArch.c \
-	$(UPPDIR1)plugin/lzma/lib/CpuArch.h \
-	$(UPPDIR1)plugin/lzma/lib/Precomp.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_lzma)  $(UPPDIR1)plugin/lzma/lib/CpuArch.c -o $(OutDir_plugin_lzma)CpuArch.o
-
 $(OutDir_plugin_lzma)lzma.a: \
-	$(OutDir_plugin_lzma)lzma.o \
-	$(OutDir_plugin_lzma)LzFind.o \
-	$(OutDir_plugin_lzma)LzmaDec.o \
-	$(OutDir_plugin_lzma)LzmaEnc.o \
-	$(OutDir_plugin_lzma)CpuArch.o
+	$(OutDir_plugin_lzma)lzma.o
 	$(AR) $(OutDir_plugin_lzma)lzma.a \
-		$(OutDir_plugin_lzma)lzma.o \
-		$(OutDir_plugin_lzma)LzFind.o \
-		$(OutDir_plugin_lzma)LzmaDec.o \
-		$(OutDir_plugin_lzma)LzmaEnc.o \
-		$(OutDir_plugin_lzma)CpuArch.o
+		$(OutDir_plugin_lzma)lzma.o
 
 $(OutDir_plugin_lz4):
 	mkdir -p $(OutDir_plugin_lz4)
@@ -11001,7 +10818,6 @@ $(OutDir_plugin_lz4)Compress.o: $(UPPDIR1)plugin/lz4/Compress.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -11016,6 +10832,7 @@ $(OutDir_plugin_lz4)Compress.o: $(UPPDIR1)plugin/lz4/Compress.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -11092,7 +10909,6 @@ $(OutDir_plugin_lz4)Decompress.o: $(UPPDIR1)plugin/lz4/Decompress.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -11107,6 +10923,7 @@ $(OutDir_plugin_lz4)Decompress.o: $(UPPDIR1)plugin/lz4/Decompress.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -11183,7 +11000,6 @@ $(OutDir_plugin_lz4)util.o: $(UPPDIR1)plugin/lz4/util.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -11198,6 +11014,7 @@ $(OutDir_plugin_lz4)util.o: $(UPPDIR1)plugin/lz4/util.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -11300,6 +11117,7 @@ $(OutDir_plugin_zstd)Compress.o: $(UPPDIR1)plugin/zstd/Compress.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -11326,101 +11144,9 @@ $(OutDir_plugin_zstd)Compress.o: $(UPPDIR1)plugin/zstd/Compress.cpp \
 	$(UPPDIR1)Core/Xmlize.hpp \
 	$(UPPDIR1)Core/z.h \
 	$(UPPDIR1)plugin/zstd/Compress.cpp \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/Compress.cpp -o $(OutDir_plugin_zstd)Compress.o
-
-$(OutDir_plugin_zstd)Decompress.o: $(UPPDIR1)plugin/zstd/Decompress.cpp \
-	$(UPPDIR1)Core/Algo.h \
-	$(UPPDIR1)Core/App.h \
-	$(UPPDIR1)Core/AString.hpp \
-	$(UPPDIR1)Core/Atomic.h \
-	$(UPPDIR1)Core/BiCont.h \
-	$(UPPDIR1)Core/BinUndoRedo.h \
-	$(UPPDIR1)Core/Callback.h \
-	$(UPPDIR1)Core/CallbackN.i \
-	$(UPPDIR1)Core/CallbackNP.i \
-	$(UPPDIR1)Core/CallbackR.i \
-	$(UPPDIR1)Core/CharFilter.h \
-	$(UPPDIR1)Core/CharSet.h \
-	$(UPPDIR1)Core/CharSet.i \
-	$(UPPDIR1)Core/CoAlgo.h \
-	$(UPPDIR1)Core/Color.h \
-	$(UPPDIR1)Core/Complex.h \
-	$(UPPDIR1)Core/config.h \
-	$(UPPDIR1)Core/Convert.h \
-	$(UPPDIR1)Core/Convert.hpp \
-	$(UPPDIR1)Core/Core.h \
-	$(UPPDIR1)Core/CoSort.h \
-	$(UPPDIR1)Core/CoWork.h \
-	$(UPPDIR1)Core/Defs.h \
-	$(UPPDIR1)Core/Diag.h \
-	$(UPPDIR1)Core/FileMapping.h \
-	$(UPPDIR1)Core/FilterStream.h \
-	$(UPPDIR1)Core/FixedMap.h \
-	$(UPPDIR1)Core/Fn.h \
-	$(UPPDIR1)Core/Format.h \
-	$(UPPDIR1)Core/Function.h \
-	$(UPPDIR1)Core/Gtypes.h \
-	$(UPPDIR1)Core/Hash.h \
-	$(UPPDIR1)Core/Heap.h \
-	$(UPPDIR1)Core/HttpStatusCode.i \
-	$(UPPDIR1)Core/Huge.h \
-	$(UPPDIR1)Core/i18n.h \
-	$(UPPDIR1)Core/Index.h \
-	$(UPPDIR1)Core/Index.hpp \
-	$(UPPDIR1)Core/Inet.h \
-	$(UPPDIR1)Core/InMap.hpp \
-	$(UPPDIR1)Core/InVector.h \
-	$(UPPDIR1)Core/InVector.hpp \
-	$(UPPDIR1)Core/JSON.h \
-	$(UPPDIR1)Core/Lang.h \
-	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/LocalProcess.h \
-	$(UPPDIR1)Core/Map.h \
-	$(UPPDIR1)Core/Map.hpp \
-	$(UPPDIR1)Core/Mem.h \
-	$(UPPDIR1)Core/Mt.h \
-	$(UPPDIR1)Core/Obsolete.h \
-	$(UPPDIR1)Core/Ops.h \
-	$(UPPDIR1)Core/Other.h \
-	$(UPPDIR1)Core/Other.hpp \
-	$(UPPDIR1)Core/Parser.h \
-	$(UPPDIR1)Core/Path.h \
-	$(UPPDIR1)Core/Profile.h \
-	$(UPPDIR1)Core/Ptr.h \
-	$(UPPDIR1)Core/Range.h \
-	$(UPPDIR1)Core/Sort.h \
-	$(UPPDIR1)Core/Sorted.h \
-	$(UPPDIR1)Core/SplitMerge.h \
-	$(UPPDIR1)Core/Stream.h \
-	$(UPPDIR1)Core/String.h \
-	$(UPPDIR1)Core/t_.h \
-	$(UPPDIR1)Core/TimeDate.h \
-	$(UPPDIR1)Core/Topic.h \
-	$(UPPDIR1)Core/Topt.h \
-	$(UPPDIR1)Core/Tuple.h \
-	$(UPPDIR1)Core/Utf.hpp \
-	$(UPPDIR1)Core/Util.h \
-	$(UPPDIR1)Core/Uuid.h \
-	$(UPPDIR1)Core/Value.h \
-	$(UPPDIR1)Core/Value.hpp \
-	$(UPPDIR1)Core/ValueCache.h \
-	$(UPPDIR1)Core/ValueUtil.h \
-	$(UPPDIR1)Core/ValueUtil.hpp \
-	$(UPPDIR1)Core/Vcont.h \
-	$(UPPDIR1)Core/Vcont.hpp \
-	$(UPPDIR1)Core/Win32Util.h \
-	$(UPPDIR1)Core/XML.h \
-	$(UPPDIR1)Core/Xmlize.h \
-	$(UPPDIR1)Core/Xmlize.hpp \
-	$(UPPDIR1)Core/z.h \
-	$(UPPDIR1)plugin/zstd/Decompress.cpp \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
-	$(UPPDIR1)plugin/zstd/zstd.h \
-	$(UPPDIR1)uppconfig.h
-	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/Decompress.cpp -o $(OutDir_plugin_zstd)Decompress.o
 
 $(OutDir_plugin_zstd)Util.o: $(UPPDIR1)plugin/zstd/Util.cpp \
 	$(UPPDIR1)Core/Algo.h \
@@ -11482,6 +11208,7 @@ $(OutDir_plugin_zstd)Util.o: $(UPPDIR1)plugin/zstd/Util.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -11507,479 +11234,110 @@ $(OutDir_plugin_zstd)Util.o: $(UPPDIR1)plugin/zstd/Util.cpp \
 	$(UPPDIR1)Core/Xmlize.h \
 	$(UPPDIR1)Core/Xmlize.hpp \
 	$(UPPDIR1)Core/z.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
 	$(UPPDIR1)plugin/zstd/Util.cpp \
 	$(UPPDIR1)plugin/zstd/zstd.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/Util.cpp -o $(OutDir_plugin_zstd)Util.o
 
-$(OutDir_plugin_zstd)huf_decompress.o: $(UPPDIR1)plugin/zstd/lib/huf_decompress.c \
-	$(UPPDIR1)plugin/zstd/lib/bits.h \
-	$(UPPDIR1)plugin/zstd/lib/bitstream.h \
-	$(UPPDIR1)plugin/zstd/lib/compiler.h \
-	$(UPPDIR1)plugin/zstd/lib/cpu.h \
-	$(UPPDIR1)plugin/zstd/lib/debug.h \
-	$(UPPDIR1)plugin/zstd/lib/error_private.h \
-	$(UPPDIR1)plugin/zstd/lib/fse.h \
-	$(UPPDIR1)plugin/zstd/lib/huf.h \
-	$(UPPDIR1)plugin/zstd/lib/huf_decompress.c \
-	$(UPPDIR1)plugin/zstd/lib/mem.h \
-	$(UPPDIR1)plugin/zstd/lib/portability_macros.h \
-	$(UPPDIR1)plugin/zstd/lib/xxhash.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_deps.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_errors.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_internal.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/huf_decompress.c -o $(OutDir_plugin_zstd)huf_decompress.o
-
-$(OutDir_plugin_zstd)zstd_ddict.o: $(UPPDIR1)plugin/zstd/lib/zstd_ddict.c \
-	$(UPPDIR1)plugin/zstd/lib/allocations.h \
-	$(UPPDIR1)plugin/zstd/lib/compiler.h \
-	$(UPPDIR1)plugin/zstd/lib/cpu.h \
-	$(UPPDIR1)plugin/zstd/lib/debug.h \
-	$(UPPDIR1)plugin/zstd/lib/error_private.h \
-	$(UPPDIR1)plugin/zstd/lib/fse.h \
-	$(UPPDIR1)plugin/zstd/lib/huf.h \
-	$(UPPDIR1)plugin/zstd/lib/mem.h \
-	$(UPPDIR1)plugin/zstd/lib/portability_macros.h \
-	$(UPPDIR1)plugin/zstd/lib/xxhash.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_ddict.c \
-	$(UPPDIR1)plugin/zstd/lib/zstd_ddict.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_decompress_internal.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_deps.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_errors.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_internal.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/zstd_ddict.c -o $(OutDir_plugin_zstd)zstd_ddict.o
-
-$(OutDir_plugin_zstd)zstd_decompress.o: $(UPPDIR1)plugin/zstd/lib/zstd_decompress.c \
-	$(UPPDIR1)plugin/zstd/lib/zstd_decompress.c
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/zstd_decompress.c -o $(OutDir_plugin_zstd)zstd_decompress.o
-
-$(OutDir_plugin_zstd)zstd_decompress_block.o: $(UPPDIR1)plugin/zstd/lib/zstd_decompress_block.c \
-	$(UPPDIR1)plugin/zstd/lib/bits.h \
-	$(UPPDIR1)plugin/zstd/lib/compiler.h \
-	$(UPPDIR1)plugin/zstd/lib/cpu.h \
-	$(UPPDIR1)plugin/zstd/lib/debug.h \
-	$(UPPDIR1)plugin/zstd/lib/error_private.h \
-	$(UPPDIR1)plugin/zstd/lib/fse.h \
-	$(UPPDIR1)plugin/zstd/lib/huf.h \
-	$(UPPDIR1)plugin/zstd/lib/mem.h \
-	$(UPPDIR1)plugin/zstd/lib/portability_macros.h \
-	$(UPPDIR1)plugin/zstd/lib/xxhash.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_ddict.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_decompress_block.c \
-	$(UPPDIR1)plugin/zstd/lib/zstd_decompress_block.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_decompress_internal.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_deps.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_errors.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_internal.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/zstd_decompress_block.c -o $(OutDir_plugin_zstd)zstd_decompress_block.o
-
-$(OutDir_plugin_zstd)entropy_common.o: $(UPPDIR1)plugin/zstd/lib/entropy_common.c \
-	$(UPPDIR1)plugin/zstd/lib/bits.h \
-	$(UPPDIR1)plugin/zstd/lib/compiler.h \
-	$(UPPDIR1)plugin/zstd/lib/debug.h \
-	$(UPPDIR1)plugin/zstd/lib/entropy_common.c \
-	$(UPPDIR1)plugin/zstd/lib/error_private.h \
-	$(UPPDIR1)plugin/zstd/lib/fse.h \
-	$(UPPDIR1)plugin/zstd/lib/huf.h \
-	$(UPPDIR1)plugin/zstd/lib/mem.h \
-	$(UPPDIR1)plugin/zstd/lib/portability_macros.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_deps.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_errors.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/entropy_common.c -o $(OutDir_plugin_zstd)entropy_common.o
-
-$(OutDir_plugin_zstd)fse_compress.o: $(UPPDIR1)plugin/zstd/lib/fse_compress.c \
-	$(UPPDIR1)plugin/zstd/lib/bits.h \
-	$(UPPDIR1)plugin/zstd/lib/bitstream.h \
-	$(UPPDIR1)plugin/zstd/lib/compiler.h \
-	$(UPPDIR1)plugin/zstd/lib/debug.h \
-	$(UPPDIR1)plugin/zstd/lib/error_private.h \
-	$(UPPDIR1)plugin/zstd/lib/fse.h \
-	$(UPPDIR1)plugin/zstd/lib/fse_compress.c \
-	$(UPPDIR1)plugin/zstd/lib/hist.h \
-	$(UPPDIR1)plugin/zstd/lib/mem.h \
-	$(UPPDIR1)plugin/zstd/lib/portability_macros.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_deps.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_errors.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/fse_compress.c -o $(OutDir_plugin_zstd)fse_compress.o
-
-$(OutDir_plugin_zstd)fse_decompress.o: $(UPPDIR1)plugin/zstd/lib/fse_decompress.c \
-	$(UPPDIR1)plugin/zstd/lib/bits.h \
-	$(UPPDIR1)plugin/zstd/lib/bitstream.h \
-	$(UPPDIR1)plugin/zstd/lib/compiler.h \
-	$(UPPDIR1)plugin/zstd/lib/debug.h \
-	$(UPPDIR1)plugin/zstd/lib/error_private.h \
-	$(UPPDIR1)plugin/zstd/lib/fse.h \
-	$(UPPDIR1)plugin/zstd/lib/fse_decompress.c \
-	$(UPPDIR1)plugin/zstd/lib/mem.h \
-	$(UPPDIR1)plugin/zstd/lib/portability_macros.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_deps.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_errors.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/fse_decompress.c -o $(OutDir_plugin_zstd)fse_decompress.o
-
-$(OutDir_plugin_zstd)huf_compress.o: $(UPPDIR1)plugin/zstd/lib/huf_compress.c \
-	$(UPPDIR1)plugin/zstd/lib/bits.h \
-	$(UPPDIR1)plugin/zstd/lib/bitstream.h \
-	$(UPPDIR1)plugin/zstd/lib/compiler.h \
-	$(UPPDIR1)plugin/zstd/lib/debug.h \
-	$(UPPDIR1)plugin/zstd/lib/error_private.h \
-	$(UPPDIR1)plugin/zstd/lib/fse.h \
-	$(UPPDIR1)plugin/zstd/lib/hist.h \
-	$(UPPDIR1)plugin/zstd/lib/huf.h \
-	$(UPPDIR1)plugin/zstd/lib/huf_compress.c \
-	$(UPPDIR1)plugin/zstd/lib/mem.h \
-	$(UPPDIR1)plugin/zstd/lib/portability_macros.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_deps.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_errors.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/huf_compress.c -o $(OutDir_plugin_zstd)huf_compress.o
-
-$(OutDir_plugin_zstd)zstd_common.o: $(UPPDIR1)plugin/zstd/lib/zstd_common.c \
-	$(UPPDIR1)plugin/zstd/lib/compiler.h \
-	$(UPPDIR1)plugin/zstd/lib/cpu.h \
-	$(UPPDIR1)plugin/zstd/lib/debug.h \
-	$(UPPDIR1)plugin/zstd/lib/error_private.h \
-	$(UPPDIR1)plugin/zstd/lib/fse.h \
-	$(UPPDIR1)plugin/zstd/lib/huf.h \
-	$(UPPDIR1)plugin/zstd/lib/mem.h \
-	$(UPPDIR1)plugin/zstd/lib/portability_macros.h \
-	$(UPPDIR1)plugin/zstd/lib/xxhash.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_common.c \
-	$(UPPDIR1)plugin/zstd/lib/zstd_deps.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_errors.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_internal.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/zstd_common.c -o $(OutDir_plugin_zstd)zstd_common.o
-
-$(OutDir_plugin_zstd)zstd_compress.o: $(UPPDIR1)plugin/zstd/lib/zstd_compress.c \
-	$(UPPDIR1)plugin/zstd/lib/allocations.h \
-	$(UPPDIR1)plugin/zstd/lib/bits.h \
-	$(UPPDIR1)plugin/zstd/lib/clevels.h \
-	$(UPPDIR1)plugin/zstd/lib/compiler.h \
-	$(UPPDIR1)plugin/zstd/lib/cpu.h \
-	$(UPPDIR1)plugin/zstd/lib/debug.h \
-	$(UPPDIR1)plugin/zstd/lib/error_private.h \
-	$(UPPDIR1)plugin/zstd/lib/fse.h \
-	$(UPPDIR1)plugin/zstd/lib/hist.h \
-	$(UPPDIR1)plugin/zstd/lib/huf.h \
-	$(UPPDIR1)plugin/zstd/lib/mem.h \
-	$(UPPDIR1)plugin/zstd/lib/portability_macros.h \
-	$(UPPDIR1)plugin/zstd/lib/xxhash.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_compress.c \
-	$(UPPDIR1)plugin/zstd/lib/zstd_compress_internal.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_compress_literals.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_compress_sequences.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_compress_superblock.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_cwksp.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_deps.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_double_fast.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_errors.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_fast.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_internal.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_lazy.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_ldm.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_opt.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/zstd_compress.c -o $(OutDir_plugin_zstd)zstd_compress.o
-
-$(OutDir_plugin_zstd)zstd_opt.o: $(UPPDIR1)plugin/zstd/lib/zstd_opt.c \
-	$(UPPDIR1)plugin/zstd/lib/allocations.h \
-	$(UPPDIR1)plugin/zstd/lib/bits.h \
-	$(UPPDIR1)plugin/zstd/lib/compiler.h \
-	$(UPPDIR1)plugin/zstd/lib/cpu.h \
-	$(UPPDIR1)plugin/zstd/lib/debug.h \
-	$(UPPDIR1)plugin/zstd/lib/error_private.h \
-	$(UPPDIR1)plugin/zstd/lib/fse.h \
-	$(UPPDIR1)plugin/zstd/lib/hist.h \
-	$(UPPDIR1)plugin/zstd/lib/huf.h \
-	$(UPPDIR1)plugin/zstd/lib/mem.h \
-	$(UPPDIR1)plugin/zstd/lib/portability_macros.h \
-	$(UPPDIR1)plugin/zstd/lib/xxhash.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_compress_internal.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_cwksp.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_deps.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_errors.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_internal.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_opt.c \
-	$(UPPDIR1)plugin/zstd/lib/zstd_opt.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/zstd_opt.c -o $(OutDir_plugin_zstd)zstd_opt.o
-
-$(OutDir_plugin_zstd)zstdmt_compress.o: $(UPPDIR1)plugin/zstd/lib/zstdmt_compress.c \
-	$(UPPDIR1)plugin/zstd/lib/allocations.h \
-	$(UPPDIR1)plugin/zstd/lib/bits.h \
-	$(UPPDIR1)plugin/zstd/lib/compiler.h \
-	$(UPPDIR1)plugin/zstd/lib/cpu.h \
-	$(UPPDIR1)plugin/zstd/lib/debug.h \
-	$(UPPDIR1)plugin/zstd/lib/error_private.h \
-	$(UPPDIR1)plugin/zstd/lib/fse.h \
-	$(UPPDIR1)plugin/zstd/lib/huf.h \
-	$(UPPDIR1)plugin/zstd/lib/mem.h \
-	$(UPPDIR1)plugin/zstd/lib/pool.h \
-	$(UPPDIR1)plugin/zstd/lib/portability_macros.h \
-	$(UPPDIR1)plugin/zstd/lib/threading.h \
-	$(UPPDIR1)plugin/zstd/lib/xxhash.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_compress_internal.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_cwksp.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_deps.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_errors.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_internal.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_ldm.h \
-	$(UPPDIR1)plugin/zstd/lib/zstdmt_compress.c \
-	$(UPPDIR1)plugin/zstd/lib/zstdmt_compress.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/zstdmt_compress.c -o $(OutDir_plugin_zstd)zstdmt_compress.o
-
-$(OutDir_plugin_zstd)zstd_lazy.o: $(UPPDIR1)plugin/zstd/lib/zstd_lazy.c \
-	$(UPPDIR1)plugin/zstd/lib/allocations.h \
-	$(UPPDIR1)plugin/zstd/lib/bits.h \
-	$(UPPDIR1)plugin/zstd/lib/compiler.h \
-	$(UPPDIR1)plugin/zstd/lib/cpu.h \
-	$(UPPDIR1)plugin/zstd/lib/debug.h \
-	$(UPPDIR1)plugin/zstd/lib/error_private.h \
-	$(UPPDIR1)plugin/zstd/lib/fse.h \
-	$(UPPDIR1)plugin/zstd/lib/huf.h \
-	$(UPPDIR1)plugin/zstd/lib/mem.h \
-	$(UPPDIR1)plugin/zstd/lib/portability_macros.h \
-	$(UPPDIR1)plugin/zstd/lib/xxhash.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_compress_internal.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_cwksp.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_deps.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_errors.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_internal.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_lazy.c \
-	$(UPPDIR1)plugin/zstd/lib/zstd_lazy.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/zstd_lazy.c -o $(OutDir_plugin_zstd)zstd_lazy.o
-
-$(OutDir_plugin_zstd)zstd_ldm.o: $(UPPDIR1)plugin/zstd/lib/zstd_ldm.c \
-	$(UPPDIR1)plugin/zstd/lib/allocations.h \
-	$(UPPDIR1)plugin/zstd/lib/bits.h \
-	$(UPPDIR1)plugin/zstd/lib/compiler.h \
-	$(UPPDIR1)plugin/zstd/lib/cpu.h \
-	$(UPPDIR1)plugin/zstd/lib/debug.h \
-	$(UPPDIR1)plugin/zstd/lib/error_private.h \
-	$(UPPDIR1)plugin/zstd/lib/fse.h \
-	$(UPPDIR1)plugin/zstd/lib/huf.h \
-	$(UPPDIR1)plugin/zstd/lib/mem.h \
-	$(UPPDIR1)plugin/zstd/lib/portability_macros.h \
-	$(UPPDIR1)plugin/zstd/lib/xxhash.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_compress_internal.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_cwksp.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_deps.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_double_fast.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_errors.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_fast.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_internal.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_ldm.c \
-	$(UPPDIR1)plugin/zstd/lib/zstd_ldm.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_ldm_geartab.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/zstd_ldm.c -o $(OutDir_plugin_zstd)zstd_ldm.o
-
-$(OutDir_plugin_zstd)zstd_fast.o: $(UPPDIR1)plugin/zstd/lib/zstd_fast.c \
-	$(UPPDIR1)plugin/zstd/lib/allocations.h \
-	$(UPPDIR1)plugin/zstd/lib/bits.h \
-	$(UPPDIR1)plugin/zstd/lib/compiler.h \
-	$(UPPDIR1)plugin/zstd/lib/cpu.h \
-	$(UPPDIR1)plugin/zstd/lib/debug.h \
-	$(UPPDIR1)plugin/zstd/lib/error_private.h \
-	$(UPPDIR1)plugin/zstd/lib/fse.h \
-	$(UPPDIR1)plugin/zstd/lib/huf.h \
-	$(UPPDIR1)plugin/zstd/lib/mem.h \
-	$(UPPDIR1)plugin/zstd/lib/portability_macros.h \
-	$(UPPDIR1)plugin/zstd/lib/xxhash.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_compress_internal.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_cwksp.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_deps.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_errors.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_fast.c \
-	$(UPPDIR1)plugin/zstd/lib/zstd_fast.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_internal.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/zstd_fast.c -o $(OutDir_plugin_zstd)zstd_fast.o
-
-$(OutDir_plugin_zstd)error_private.o: $(UPPDIR1)plugin/zstd/lib/error_private.c \
-	$(UPPDIR1)plugin/zstd/lib/compiler.h \
-	$(UPPDIR1)plugin/zstd/lib/debug.h \
-	$(UPPDIR1)plugin/zstd/lib/error_private.c \
-	$(UPPDIR1)plugin/zstd/lib/error_private.h \
-	$(UPPDIR1)plugin/zstd/lib/portability_macros.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_deps.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_errors.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/error_private.c -o $(OutDir_plugin_zstd)error_private.o
-
-$(OutDir_plugin_zstd)hist.o: $(UPPDIR1)plugin/zstd/lib/hist.c \
-	$(UPPDIR1)plugin/zstd/lib/compiler.h \
-	$(UPPDIR1)plugin/zstd/lib/debug.h \
-	$(UPPDIR1)plugin/zstd/lib/error_private.h \
-	$(UPPDIR1)plugin/zstd/lib/hist.c \
-	$(UPPDIR1)plugin/zstd/lib/hist.h \
-	$(UPPDIR1)plugin/zstd/lib/mem.h \
-	$(UPPDIR1)plugin/zstd/lib/portability_macros.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_deps.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_errors.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/hist.c -o $(OutDir_plugin_zstd)hist.o
-
-$(OutDir_plugin_zstd)pool.o: $(UPPDIR1)plugin/zstd/lib/pool.c \
-	$(UPPDIR1)plugin/zstd/lib/allocations.h \
-	$(UPPDIR1)plugin/zstd/lib/compiler.h \
-	$(UPPDIR1)plugin/zstd/lib/debug.h \
-	$(UPPDIR1)plugin/zstd/lib/pool.c \
-	$(UPPDIR1)plugin/zstd/lib/pool.h \
-	$(UPPDIR1)plugin/zstd/lib/portability_macros.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_deps.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/pool.c -o $(OutDir_plugin_zstd)pool.o
-
-$(OutDir_plugin_zstd)zstd_double_fast.o: $(UPPDIR1)plugin/zstd/lib/zstd_double_fast.c \
-	$(UPPDIR1)plugin/zstd/lib/allocations.h \
-	$(UPPDIR1)plugin/zstd/lib/bits.h \
-	$(UPPDIR1)plugin/zstd/lib/compiler.h \
-	$(UPPDIR1)plugin/zstd/lib/cpu.h \
-	$(UPPDIR1)plugin/zstd/lib/debug.h \
-	$(UPPDIR1)plugin/zstd/lib/error_private.h \
-	$(UPPDIR1)plugin/zstd/lib/fse.h \
-	$(UPPDIR1)plugin/zstd/lib/huf.h \
-	$(UPPDIR1)plugin/zstd/lib/mem.h \
-	$(UPPDIR1)plugin/zstd/lib/portability_macros.h \
-	$(UPPDIR1)plugin/zstd/lib/xxhash.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_compress_internal.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_cwksp.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_deps.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_double_fast.c \
-	$(UPPDIR1)plugin/zstd/lib/zstd_double_fast.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_errors.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_internal.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/zstd_double_fast.c -o $(OutDir_plugin_zstd)zstd_double_fast.o
-
-$(OutDir_plugin_zstd)zstd_compress_superblock.o: $(UPPDIR1)plugin/zstd/lib/zstd_compress_superblock.c \
-	$(UPPDIR1)plugin/zstd/lib/allocations.h \
-	$(UPPDIR1)plugin/zstd/lib/bits.h \
-	$(UPPDIR1)plugin/zstd/lib/compiler.h \
-	$(UPPDIR1)plugin/zstd/lib/cpu.h \
-	$(UPPDIR1)plugin/zstd/lib/debug.h \
-	$(UPPDIR1)plugin/zstd/lib/error_private.h \
-	$(UPPDIR1)plugin/zstd/lib/fse.h \
-	$(UPPDIR1)plugin/zstd/lib/hist.h \
-	$(UPPDIR1)plugin/zstd/lib/huf.h \
-	$(UPPDIR1)plugin/zstd/lib/mem.h \
-	$(UPPDIR1)plugin/zstd/lib/portability_macros.h \
-	$(UPPDIR1)plugin/zstd/lib/xxhash.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_compress_internal.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_compress_literals.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_compress_sequences.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_compress_superblock.c \
-	$(UPPDIR1)plugin/zstd/lib/zstd_compress_superblock.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_cwksp.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_deps.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_errors.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_internal.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/zstd_compress_superblock.c -o $(OutDir_plugin_zstd)zstd_compress_superblock.o
-
-$(OutDir_plugin_zstd)zstd_compress_sequences.o: $(UPPDIR1)plugin/zstd/lib/zstd_compress_sequences.c \
-	$(UPPDIR1)plugin/zstd/lib/compiler.h \
-	$(UPPDIR1)plugin/zstd/lib/cpu.h \
-	$(UPPDIR1)plugin/zstd/lib/debug.h \
-	$(UPPDIR1)plugin/zstd/lib/error_private.h \
-	$(UPPDIR1)plugin/zstd/lib/fse.h \
-	$(UPPDIR1)plugin/zstd/lib/huf.h \
-	$(UPPDIR1)plugin/zstd/lib/mem.h \
-	$(UPPDIR1)plugin/zstd/lib/portability_macros.h \
-	$(UPPDIR1)plugin/zstd/lib/xxhash.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_compress_sequences.c \
-	$(UPPDIR1)plugin/zstd/lib/zstd_compress_sequences.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_deps.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_errors.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_internal.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/zstd_compress_sequences.c -o $(OutDir_plugin_zstd)zstd_compress_sequences.o
-
-$(OutDir_plugin_zstd)zstd_compress_literals.o: $(UPPDIR1)plugin/zstd/lib/zstd_compress_literals.c \
-	$(UPPDIR1)plugin/zstd/lib/allocations.h \
-	$(UPPDIR1)plugin/zstd/lib/bits.h \
-	$(UPPDIR1)plugin/zstd/lib/compiler.h \
-	$(UPPDIR1)plugin/zstd/lib/cpu.h \
-	$(UPPDIR1)plugin/zstd/lib/debug.h \
-	$(UPPDIR1)plugin/zstd/lib/error_private.h \
-	$(UPPDIR1)plugin/zstd/lib/fse.h \
-	$(UPPDIR1)plugin/zstd/lib/huf.h \
-	$(UPPDIR1)plugin/zstd/lib/mem.h \
-	$(UPPDIR1)plugin/zstd/lib/portability_macros.h \
-	$(UPPDIR1)plugin/zstd/lib/xxhash.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_compress_internal.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_compress_literals.c \
-	$(UPPDIR1)plugin/zstd/lib/zstd_compress_literals.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_cwksp.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_deps.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_errors.h \
-	$(UPPDIR1)plugin/zstd/lib/zstd_internal.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/zstd_compress_literals.c -o $(OutDir_plugin_zstd)zstd_compress_literals.o
-
-$(OutDir_plugin_zstd)xxhash.o: $(UPPDIR1)plugin/zstd/lib/xxhash.c \
-	$(UPPDIR1)plugin/zstd/lib/xxhash.c \
-	$(UPPDIR1)plugin/zstd/lib/xxhash.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/lib/xxhash.c -o $(OutDir_plugin_zstd)xxhash.o
+$(OutDir_plugin_zstd)Decompress.o: $(UPPDIR1)plugin/zstd/Decompress.cpp \
+	$(UPPDIR1)Core/Algo.h \
+	$(UPPDIR1)Core/App.h \
+	$(UPPDIR1)Core/AString.hpp \
+	$(UPPDIR1)Core/Atomic.h \
+	$(UPPDIR1)Core/BiCont.h \
+	$(UPPDIR1)Core/BinUndoRedo.h \
+	$(UPPDIR1)Core/Callback.h \
+	$(UPPDIR1)Core/CallbackN.i \
+	$(UPPDIR1)Core/CallbackNP.i \
+	$(UPPDIR1)Core/CallbackR.i \
+	$(UPPDIR1)Core/CharFilter.h \
+	$(UPPDIR1)Core/CharSet.h \
+	$(UPPDIR1)Core/CharSet.i \
+	$(UPPDIR1)Core/CoAlgo.h \
+	$(UPPDIR1)Core/Color.h \
+	$(UPPDIR1)Core/Complex.h \
+	$(UPPDIR1)Core/config.h \
+	$(UPPDIR1)Core/Convert.h \
+	$(UPPDIR1)Core/Convert.hpp \
+	$(UPPDIR1)Core/Core.h \
+	$(UPPDIR1)Core/CoSort.h \
+	$(UPPDIR1)Core/CoWork.h \
+	$(UPPDIR1)Core/Defs.h \
+	$(UPPDIR1)Core/Diag.h \
+	$(UPPDIR1)Core/FileMapping.h \
+	$(UPPDIR1)Core/FilterStream.h \
+	$(UPPDIR1)Core/FixedMap.h \
+	$(UPPDIR1)Core/Fn.h \
+	$(UPPDIR1)Core/Format.h \
+	$(UPPDIR1)Core/Function.h \
+	$(UPPDIR1)Core/Gtypes.h \
+	$(UPPDIR1)Core/Hash.h \
+	$(UPPDIR1)Core/Heap.h \
+	$(UPPDIR1)Core/HttpStatusCode.i \
+	$(UPPDIR1)Core/Huge.h \
+	$(UPPDIR1)Core/i18n.h \
+	$(UPPDIR1)Core/Index.h \
+	$(UPPDIR1)Core/Index.hpp \
+	$(UPPDIR1)Core/Inet.h \
+	$(UPPDIR1)Core/InMap.hpp \
+	$(UPPDIR1)Core/InVector.h \
+	$(UPPDIR1)Core/InVector.hpp \
+	$(UPPDIR1)Core/JSON.h \
+	$(UPPDIR1)Core/Lang.h \
+	$(UPPDIR1)Core/Lang_s.h \
+	$(UPPDIR1)Core/LocalProcess.h \
+	$(UPPDIR1)Core/Map.h \
+	$(UPPDIR1)Core/Map.hpp \
+	$(UPPDIR1)Core/Mem.h \
+	$(UPPDIR1)Core/Mt.h \
+	$(UPPDIR1)Core/Obsolete.h \
+	$(UPPDIR1)Core/Ops.h \
+	$(UPPDIR1)Core/Other.h \
+	$(UPPDIR1)Core/Other.hpp \
+	$(UPPDIR1)Core/Parser.h \
+	$(UPPDIR1)Core/Path.h \
+	$(UPPDIR1)Core/Profile.h \
+	$(UPPDIR1)Core/Ptr.h \
+	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
+	$(UPPDIR1)Core/Sort.h \
+	$(UPPDIR1)Core/Sorted.h \
+	$(UPPDIR1)Core/SplitMerge.h \
+	$(UPPDIR1)Core/Stream.h \
+	$(UPPDIR1)Core/String.h \
+	$(UPPDIR1)Core/t_.h \
+	$(UPPDIR1)Core/TimeDate.h \
+	$(UPPDIR1)Core/Topic.h \
+	$(UPPDIR1)Core/Topt.h \
+	$(UPPDIR1)Core/Tuple.h \
+	$(UPPDIR1)Core/Utf.hpp \
+	$(UPPDIR1)Core/Util.h \
+	$(UPPDIR1)Core/Uuid.h \
+	$(UPPDIR1)Core/Value.h \
+	$(UPPDIR1)Core/Value.hpp \
+	$(UPPDIR1)Core/ValueCache.h \
+	$(UPPDIR1)Core/ValueUtil.h \
+	$(UPPDIR1)Core/ValueUtil.hpp \
+	$(UPPDIR1)Core/Vcont.h \
+	$(UPPDIR1)Core/Vcont.hpp \
+	$(UPPDIR1)Core/Win32Util.h \
+	$(UPPDIR1)Core/XML.h \
+	$(UPPDIR1)Core/Xmlize.h \
+	$(UPPDIR1)Core/Xmlize.hpp \
+	$(UPPDIR1)Core/z.h \
+	$(UPPDIR1)plugin/zstd/Decompress.cpp \
+	$(UPPDIR1)plugin/zstd/zstd.h \
+	$(UPPDIR1)uppconfig.h
+	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_plugin_zstd)  $(UPPDIR1)plugin/zstd/Decompress.cpp -o $(OutDir_plugin_zstd)Decompress.o
 
 $(OutDir_plugin_zstd)zstd.a: \
 	$(OutDir_plugin_zstd)Compress.o \
-	$(OutDir_plugin_zstd)Decompress.o \
 	$(OutDir_plugin_zstd)Util.o \
-	$(OutDir_plugin_zstd)huf_decompress.o \
-	$(OutDir_plugin_zstd)zstd_ddict.o \
-	$(OutDir_plugin_zstd)zstd_decompress.o \
-	$(OutDir_plugin_zstd)zstd_decompress_block.o \
-	$(OutDir_plugin_zstd)entropy_common.o \
-	$(OutDir_plugin_zstd)fse_compress.o \
-	$(OutDir_plugin_zstd)fse_decompress.o \
-	$(OutDir_plugin_zstd)huf_compress.o \
-	$(OutDir_plugin_zstd)zstd_common.o \
-	$(OutDir_plugin_zstd)zstd_compress.o \
-	$(OutDir_plugin_zstd)zstd_opt.o \
-	$(OutDir_plugin_zstd)zstdmt_compress.o \
-	$(OutDir_plugin_zstd)zstd_lazy.o \
-	$(OutDir_plugin_zstd)zstd_ldm.o \
-	$(OutDir_plugin_zstd)zstd_fast.o \
-	$(OutDir_plugin_zstd)error_private.o \
-	$(OutDir_plugin_zstd)hist.o \
-	$(OutDir_plugin_zstd)pool.o \
-	$(OutDir_plugin_zstd)zstd_double_fast.o \
-	$(OutDir_plugin_zstd)zstd_compress_superblock.o \
-	$(OutDir_plugin_zstd)zstd_compress_sequences.o \
-	$(OutDir_plugin_zstd)zstd_compress_literals.o \
-	$(OutDir_plugin_zstd)xxhash.o
+	$(OutDir_plugin_zstd)Decompress.o
 	$(AR) $(OutDir_plugin_zstd)zstd.a \
 		$(OutDir_plugin_zstd)Compress.o \
-		$(OutDir_plugin_zstd)Decompress.o \
 		$(OutDir_plugin_zstd)Util.o \
-		$(OutDir_plugin_zstd)huf_decompress.o \
-		$(OutDir_plugin_zstd)zstd_ddict.o \
-		$(OutDir_plugin_zstd)zstd_decompress.o \
-		$(OutDir_plugin_zstd)zstd_decompress_block.o \
-		$(OutDir_plugin_zstd)entropy_common.o \
-		$(OutDir_plugin_zstd)fse_compress.o \
-		$(OutDir_plugin_zstd)fse_decompress.o \
-		$(OutDir_plugin_zstd)huf_compress.o \
-		$(OutDir_plugin_zstd)zstd_common.o \
-		$(OutDir_plugin_zstd)zstd_compress.o \
-		$(OutDir_plugin_zstd)zstd_opt.o \
-		$(OutDir_plugin_zstd)zstdmt_compress.o \
-		$(OutDir_plugin_zstd)zstd_lazy.o \
-		$(OutDir_plugin_zstd)zstd_ldm.o \
-		$(OutDir_plugin_zstd)zstd_fast.o \
-		$(OutDir_plugin_zstd)error_private.o \
-		$(OutDir_plugin_zstd)hist.o \
-		$(OutDir_plugin_zstd)pool.o \
-		$(OutDir_plugin_zstd)zstd_double_fast.o \
-		$(OutDir_plugin_zstd)zstd_compress_superblock.o \
-		$(OutDir_plugin_zstd)zstd_compress_sequences.o \
-		$(OutDir_plugin_zstd)zstd_compress_literals.o \
-		$(OutDir_plugin_zstd)xxhash.o
+		$(OutDir_plugin_zstd)Decompress.o
 
 $(OutDir_Core):
 	mkdir -p $(OutDir_Core)
@@ -12045,6 +11403,7 @@ $(OutDir_Core)Cpu.o: $(UPPDIR1)Core/Cpu.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -12134,6 +11493,7 @@ $(OutDir_Core)Mem.o: $(UPPDIR1)Core/Mem.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -12222,6 +11582,7 @@ $(OutDir_Core)SIMD.o: $(UPPDIR1)Core/SIMD.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/SIMD.cpp \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
@@ -12312,6 +11673,7 @@ $(OutDir_Core)Mt.o: $(UPPDIR1)Core/Mt.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -12401,6 +11763,7 @@ $(OutDir_Core)heaputil.o: $(UPPDIR1)Core/heaputil.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -12490,6 +11853,7 @@ $(OutDir_Core)hheap.o: $(UPPDIR1)Core/hheap.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -12578,6 +11942,7 @@ $(OutDir_Core)sheap.o: $(UPPDIR1)Core/sheap.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/sheap.cpp \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
@@ -12668,6 +12033,7 @@ $(OutDir_Core)lheap.o: $(UPPDIR1)Core/lheap.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -12757,6 +12123,7 @@ $(OutDir_Core)heap.o: $(UPPDIR1)Core/heap.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -12846,6 +12213,7 @@ $(OutDir_Core)heapdbg.o: $(UPPDIR1)Core/heapdbg.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -12934,6 +12302,7 @@ $(OutDir_Core)StringFind.o: $(UPPDIR1)Core/StringFind.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -13023,6 +12392,7 @@ $(OutDir_Core)String.o: $(UPPDIR1)Core/String.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -13112,6 +12482,7 @@ $(OutDir_Core)WString.o: $(UPPDIR1)Core/WString.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -13201,6 +12572,7 @@ $(OutDir_Core)SplitMerge.o: $(UPPDIR1)Core/SplitMerge.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.cpp \
@@ -13290,6 +12662,7 @@ $(OutDir_Core)Utf.o: $(UPPDIR1)Core/Utf.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -13379,6 +12752,7 @@ $(OutDir_Core)UnicodeInfo.o: $(UPPDIR1)Core/UnicodeInfo.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -13469,6 +12843,7 @@ $(OutDir_Core)CharSet.o: $(UPPDIR1)Core/CharSet.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -13558,6 +12933,7 @@ $(OutDir_Core)Bom.o: $(UPPDIR1)Core/Bom.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -13585,6 +12961,96 @@ $(OutDir_Core)Bom.o: $(UPPDIR1)Core/Bom.cpp \
 	$(UPPDIR1)Core/z.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_Core)  $(UPPDIR1)Core/Bom.cpp -o $(OutDir_Core)Bom.o
+
+$(OutDir_Core)Regex.o: $(UPPDIR1)Core/Regex.cpp \
+	$(UPPDIR1)Core/Algo.h \
+	$(UPPDIR1)Core/App.h \
+	$(UPPDIR1)Core/AString.hpp \
+	$(UPPDIR1)Core/Atomic.h \
+	$(UPPDIR1)Core/BiCont.h \
+	$(UPPDIR1)Core/BinUndoRedo.h \
+	$(UPPDIR1)Core/Callback.h \
+	$(UPPDIR1)Core/CallbackN.i \
+	$(UPPDIR1)Core/CallbackNP.i \
+	$(UPPDIR1)Core/CallbackR.i \
+	$(UPPDIR1)Core/CharFilter.h \
+	$(UPPDIR1)Core/CharSet.h \
+	$(UPPDIR1)Core/CharSet.i \
+	$(UPPDIR1)Core/CoAlgo.h \
+	$(UPPDIR1)Core/Color.h \
+	$(UPPDIR1)Core/Complex.h \
+	$(UPPDIR1)Core/config.h \
+	$(UPPDIR1)Core/Convert.h \
+	$(UPPDIR1)Core/Convert.hpp \
+	$(UPPDIR1)Core/Core.h \
+	$(UPPDIR1)Core/CoSort.h \
+	$(UPPDIR1)Core/CoWork.h \
+	$(UPPDIR1)Core/Defs.h \
+	$(UPPDIR1)Core/Diag.h \
+	$(UPPDIR1)Core/FileMapping.h \
+	$(UPPDIR1)Core/FilterStream.h \
+	$(UPPDIR1)Core/FixedMap.h \
+	$(UPPDIR1)Core/Fn.h \
+	$(UPPDIR1)Core/Format.h \
+	$(UPPDIR1)Core/Function.h \
+	$(UPPDIR1)Core/Gtypes.h \
+	$(UPPDIR1)Core/Hash.h \
+	$(UPPDIR1)Core/Heap.h \
+	$(UPPDIR1)Core/HttpStatusCode.i \
+	$(UPPDIR1)Core/Huge.h \
+	$(UPPDIR1)Core/i18n.h \
+	$(UPPDIR1)Core/Index.h \
+	$(UPPDIR1)Core/Index.hpp \
+	$(UPPDIR1)Core/Inet.h \
+	$(UPPDIR1)Core/InMap.hpp \
+	$(UPPDIR1)Core/InVector.h \
+	$(UPPDIR1)Core/InVector.hpp \
+	$(UPPDIR1)Core/JSON.h \
+	$(UPPDIR1)Core/Lang.h \
+	$(UPPDIR1)Core/Lang_s.h \
+	$(UPPDIR1)Core/LocalProcess.h \
+	$(UPPDIR1)Core/Map.h \
+	$(UPPDIR1)Core/Map.hpp \
+	$(UPPDIR1)Core/Mem.h \
+	$(UPPDIR1)Core/Mt.h \
+	$(UPPDIR1)Core/Obsolete.h \
+	$(UPPDIR1)Core/Ops.h \
+	$(UPPDIR1)Core/Other.h \
+	$(UPPDIR1)Core/Other.hpp \
+	$(UPPDIR1)Core/Parser.h \
+	$(UPPDIR1)Core/Path.h \
+	$(UPPDIR1)Core/Profile.h \
+	$(UPPDIR1)Core/Ptr.h \
+	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.cpp \
+	$(UPPDIR1)Core/Regex.h \
+	$(UPPDIR1)Core/Sort.h \
+	$(UPPDIR1)Core/Sorted.h \
+	$(UPPDIR1)Core/SplitMerge.h \
+	$(UPPDIR1)Core/Stream.h \
+	$(UPPDIR1)Core/String.h \
+	$(UPPDIR1)Core/t_.h \
+	$(UPPDIR1)Core/TimeDate.h \
+	$(UPPDIR1)Core/Topic.h \
+	$(UPPDIR1)Core/Topt.h \
+	$(UPPDIR1)Core/Tuple.h \
+	$(UPPDIR1)Core/Utf.hpp \
+	$(UPPDIR1)Core/Util.h \
+	$(UPPDIR1)Core/Uuid.h \
+	$(UPPDIR1)Core/Value.h \
+	$(UPPDIR1)Core/Value.hpp \
+	$(UPPDIR1)Core/ValueCache.h \
+	$(UPPDIR1)Core/ValueUtil.h \
+	$(UPPDIR1)Core/ValueUtil.hpp \
+	$(UPPDIR1)Core/Vcont.h \
+	$(UPPDIR1)Core/Vcont.hpp \
+	$(UPPDIR1)Core/Win32Util.h \
+	$(UPPDIR1)Core/XML.h \
+	$(UPPDIR1)Core/Xmlize.h \
+	$(UPPDIR1)Core/Xmlize.hpp \
+	$(UPPDIR1)Core/z.h \
+	$(UPPDIR1)uppconfig.h
+	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_Core)  $(UPPDIR1)Core/Regex.cpp -o $(OutDir_Core)Regex.o
 
 $(OutDir_Core)Path.o: $(UPPDIR1)Core/Path.cpp \
 	$(UPPDIR1)Core/Algo.h \
@@ -13647,6 +13113,7 @@ $(OutDir_Core)Path.o: $(UPPDIR1)Core/Path.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -13736,6 +13203,7 @@ $(OutDir_Core)NetNode.o: $(UPPDIR1)Core/NetNode.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -13825,6 +13293,7 @@ $(OutDir_Core)App.o: $(UPPDIR1)Core/App.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -13914,6 +13383,7 @@ $(OutDir_Core)Huge.o: $(UPPDIR1)Core/Huge.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -14002,6 +13472,7 @@ $(OutDir_Core)Stream.o: $(UPPDIR1)Core/Stream.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -14092,6 +13563,7 @@ $(OutDir_Core)BlockStream.o: $(UPPDIR1)Core/BlockStream.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -14181,6 +13653,7 @@ $(OutDir_Core)FilterStream.o: $(UPPDIR1)Core/FilterStream.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -14270,6 +13743,7 @@ $(OutDir_Core)FileMapping.o: $(UPPDIR1)Core/FileMapping.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -14359,6 +13833,7 @@ $(OutDir_Core)Log.o: $(UPPDIR1)Core/Log.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -14448,6 +13923,7 @@ $(OutDir_Core)Debug.o: $(UPPDIR1)Core/Debug.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -14537,6 +14013,7 @@ $(OutDir_Core)Ini.o: $(UPPDIR1)Core/Ini.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -14625,6 +14102,7 @@ $(OutDir_Core)StringsStream.o: $(UPPDIR1)Core/StringsStream.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -14714,6 +14192,7 @@ $(OutDir_Core)Util.o: $(UPPDIR1)Core/Util.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -14804,6 +14283,7 @@ $(OutDir_Core)mathutil.o: $(UPPDIR1)Core/mathutil.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -14893,6 +14373,7 @@ $(OutDir_Core)Random.o: $(UPPDIR1)Core/Random.cpp \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Random.cpp \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -14981,6 +14462,7 @@ $(OutDir_Core)Speller.o: $(UPPDIR1)Core/Speller.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/Speller.cpp \
@@ -15071,6 +14553,7 @@ $(OutDir_Core)LocalProcess.o: $(UPPDIR1)Core/LocalProcess.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -15160,6 +14643,7 @@ $(OutDir_Core)BinUndoRedo.o: $(UPPDIR1)Core/BinUndoRedo.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -15249,6 +14733,7 @@ $(OutDir_Core)PackedData.o: $(UPPDIR1)Core/PackedData.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -15337,6 +14822,7 @@ $(OutDir_Core)Vcont.o: $(UPPDIR1)Core/Vcont.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -15427,6 +14913,7 @@ $(OutDir_Core)Index.o: $(UPPDIR1)Core/Index.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -15515,6 +15002,7 @@ $(OutDir_Core)TimeDate.o: $(UPPDIR1)Core/TimeDate.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -15604,6 +15092,7 @@ $(OutDir_Core)Value.o: $(UPPDIR1)Core/Value.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -15693,6 +15182,7 @@ $(OutDir_Core)ValueUtil.o: $(UPPDIR1)Core/ValueUtil.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -15783,6 +15273,7 @@ $(OutDir_Core)Format.o: $(UPPDIR1)Core/Format.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -15873,6 +15364,7 @@ $(OutDir_Core)CvFlt.o: $(UPPDIR1)Core/CvFlt.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -15962,6 +15454,7 @@ $(OutDir_Core)Convert.o: $(UPPDIR1)Core/Convert.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -16051,6 +15544,7 @@ $(OutDir_Core)Color.o: $(UPPDIR1)Core/Color.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -16140,6 +15634,7 @@ $(OutDir_Core)Gtypes.o: $(UPPDIR1)Core/Gtypes.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -16229,6 +15724,7 @@ $(OutDir_Core)t.o: $(UPPDIR1)Core/t.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -16320,6 +15816,7 @@ $(OutDir_Core)Lang.o: $(UPPDIR1)Core/Lang.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -16409,6 +15906,7 @@ $(OutDir_Core)LangInfo.o: $(UPPDIR1)Core/LangInfo.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -16498,6 +15996,7 @@ $(OutDir_Core)parser.o: $(UPPDIR1)Core/parser.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -16586,6 +16085,7 @@ $(OutDir_Core)XML.o: $(UPPDIR1)Core/XML.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -16675,6 +16175,7 @@ $(OutDir_Core)Xmlize.o: $(UPPDIR1)Core/Xmlize.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -16765,6 +16266,7 @@ $(OutDir_Core)JSON.o: $(UPPDIR1)Core/JSON.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -16853,6 +16355,7 @@ $(OutDir_Core)Uuid.o: $(UPPDIR1)Core/Uuid.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -16943,6 +16446,7 @@ $(OutDir_Core)Ptr.o: $(UPPDIR1)Core/Ptr.cpp \
 	$(UPPDIR1)Core/Ptr.cpp \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -17017,7 +16521,6 @@ $(OutDir_Core)z.o: $(UPPDIR1)Core/z.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/lz4.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -17032,6 +16535,7 @@ $(OutDir_Core)z.o: $(UPPDIR1)Core/z.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -17060,10 +16564,6 @@ $(OutDir_Core)z.o: $(UPPDIR1)Core/z.cpp \
 	$(UPPDIR1)Core/z.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_Core)  $(UPPDIR1)Core/z.cpp -o $(OutDir_Core)z.o
-
-$(OutDir_Core)lz4.o: $(UPPDIR1)Core/lib/lz4.c \
-	$(UPPDIR1)Core/lib/lz4.c
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_Core)  $(UPPDIR1)Core/lib/lz4.c -o $(OutDir_Core)lz4.o
 
 $(OutDir_Core)Topic.o: $(UPPDIR1)Core/Topic.cpp \
 	$(UPPDIR1)Core/Algo.h \
@@ -17125,6 +16625,7 @@ $(OutDir_Core)Topic.o: $(UPPDIR1)Core/Topic.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -17215,6 +16716,7 @@ $(OutDir_Core)CoWork.o: $(UPPDIR1)Core/CoWork.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -17303,6 +16805,7 @@ $(OutDir_Core)ValueCache.o: $(UPPDIR1)Core/ValueCache.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -17393,6 +16896,7 @@ $(OutDir_Core)MD5.o: $(UPPDIR1)Core/MD5.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -17481,6 +16985,7 @@ $(OutDir_Core)SHA1.o: $(UPPDIR1)Core/SHA1.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/SHA1.cpp \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
@@ -17570,6 +17075,7 @@ $(OutDir_Core)SHA256.o: $(UPPDIR1)Core/SHA256.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/SHA256.cpp \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
@@ -17598,11 +17104,6 @@ $(OutDir_Core)SHA256.o: $(UPPDIR1)Core/SHA256.cpp \
 	$(UPPDIR1)Core/z.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_Core)  $(UPPDIR1)Core/SHA256.cpp -o $(OutDir_Core)SHA256.o
-
-$(OutDir_Core)xxhash.o: $(UPPDIR1)Core/lib/xxhash.c \
-	$(UPPDIR1)Core/lib/xxhash.c \
-	$(UPPDIR1)Core/lib/xxhash.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_Core)  $(UPPDIR1)Core/lib/xxhash.c -o $(OutDir_Core)xxhash.o
 
 $(OutDir_Core)xxHsh.o: $(UPPDIR1)Core/xxHsh.cpp \
 	$(UPPDIR1)Core/Algo.h \
@@ -17650,7 +17151,6 @@ $(OutDir_Core)xxHsh.o: $(UPPDIR1)Core/xxHsh.cpp \
 	$(UPPDIR1)Core/JSON.h \
 	$(UPPDIR1)Core/Lang.h \
 	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/lib/xxhash.h \
 	$(UPPDIR1)Core/LocalProcess.h \
 	$(UPPDIR1)Core/Map.h \
 	$(UPPDIR1)Core/Map.hpp \
@@ -17665,6 +17165,7 @@ $(OutDir_Core)xxHsh.o: $(UPPDIR1)Core/xxHsh.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -17693,6 +17194,10 @@ $(OutDir_Core)xxHsh.o: $(UPPDIR1)Core/xxHsh.cpp \
 	$(UPPDIR1)Core/z.h \
 	$(UPPDIR1)uppconfig.h
 	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_Core)  $(UPPDIR1)Core/xxHsh.cpp -o $(OutDir_Core)xxHsh.o
+
+$(OutDir_Core)xxHash_chk.o: $(UPPDIR1)Core/xxHash_chk.cpp \
+	$(UPPDIR1)Core/xxHash_chk.cpp
+	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_Core)  $(UPPDIR1)Core/xxHash_chk.cpp -o $(OutDir_Core)xxHash_chk.o
 
 $(OutDir_Core)InetUtil.o: $(UPPDIR1)Core/InetUtil.cpp \
 	$(UPPDIR1)Core/Algo.h \
@@ -17755,6 +17260,7 @@ $(OutDir_Core)InetUtil.o: $(UPPDIR1)Core/InetUtil.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -17844,6 +17350,7 @@ $(OutDir_Core)MIME.o: $(UPPDIR1)Core/MIME.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -17932,6 +17439,7 @@ $(OutDir_Core)Socket.o: $(UPPDIR1)Core/Socket.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Socket.cpp \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
@@ -18022,6 +17530,7 @@ $(OutDir_Core)Http.o: $(UPPDIR1)Core/Http.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -18110,6 +17619,7 @@ $(OutDir_Core)WebSocket.o: $(UPPDIR1)Core/WebSocket.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -18200,6 +17710,7 @@ $(OutDir_Core)Dli.o: $(UPPDIR1)Core/Dli.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -18288,6 +17799,7 @@ $(OutDir_Core)Win32Util.o: $(UPPDIR1)Core/Win32Util.cpp \
 	$(UPPDIR1)Core/Profile.h \
 	$(UPPDIR1)Core/Ptr.h \
 	$(UPPDIR1)Core/Range.h \
+	$(UPPDIR1)Core/Regex.h \
 	$(UPPDIR1)Core/Sort.h \
 	$(UPPDIR1)Core/Sorted.h \
 	$(UPPDIR1)Core/SplitMerge.h \
@@ -18336,6 +17848,7 @@ $(OutDir_Core)Core.a: \
 	$(OutDir_Core)UnicodeInfo.o \
 	$(OutDir_Core)CharSet.o \
 	$(OutDir_Core)Bom.o \
+	$(OutDir_Core)Regex.o \
 	$(OutDir_Core)Path.o \
 	$(OutDir_Core)NetNode.o \
 	$(OutDir_Core)App.o \
@@ -18375,15 +17888,14 @@ $(OutDir_Core)Core.a: \
 	$(OutDir_Core)Uuid.o \
 	$(OutDir_Core)Ptr.o \
 	$(OutDir_Core)z.o \
-	$(OutDir_Core)lz4.o \
 	$(OutDir_Core)Topic.o \
 	$(OutDir_Core)CoWork.o \
 	$(OutDir_Core)ValueCache.o \
 	$(OutDir_Core)MD5.o \
 	$(OutDir_Core)SHA1.o \
 	$(OutDir_Core)SHA256.o \
-	$(OutDir_Core)xxhash.o \
 	$(OutDir_Core)xxHsh.o \
+	$(OutDir_Core)xxHash_chk.o \
 	$(OutDir_Core)InetUtil.o \
 	$(OutDir_Core)MIME.o \
 	$(OutDir_Core)Socket.o \
@@ -18410,6 +17922,7 @@ $(OutDir_Core)Core.a: \
 		$(OutDir_Core)UnicodeInfo.o \
 		$(OutDir_Core)CharSet.o \
 		$(OutDir_Core)Bom.o \
+		$(OutDir_Core)Regex.o \
 		$(OutDir_Core)Path.o \
 		$(OutDir_Core)NetNode.o \
 		$(OutDir_Core)App.o \
@@ -18449,15 +17962,14 @@ $(OutDir_Core)Core.a: \
 		$(OutDir_Core)Uuid.o \
 		$(OutDir_Core)Ptr.o \
 		$(OutDir_Core)z.o \
-		$(OutDir_Core)lz4.o \
 		$(OutDir_Core)Topic.o \
 		$(OutDir_Core)CoWork.o \
 		$(OutDir_Core)ValueCache.o \
 		$(OutDir_Core)MD5.o \
 		$(OutDir_Core)SHA1.o \
 		$(OutDir_Core)SHA256.o \
-		$(OutDir_Core)xxhash.o \
 		$(OutDir_Core)xxHsh.o \
+		$(OutDir_Core)xxHash_chk.o \
 		$(OutDir_Core)InetUtil.o \
 		$(OutDir_Core)MIME.o \
 		$(OutDir_Core)Socket.o \
@@ -18465,136 +17977,6 @@ $(OutDir_Core)Core.a: \
 		$(OutDir_Core)WebSocket.o \
 		$(OutDir_Core)Dli.o \
 		$(OutDir_Core)Win32Util.o
-
-$(OutDir_plugin_pcre):
-	mkdir -p $(OutDir_plugin_pcre)
-
-$(OutDir_plugin_pcre)RegExp.o: $(UPPDIR1)plugin/pcre/RegExp.cpp \
-	$(UPPDIR1)Core/Algo.h \
-	$(UPPDIR1)Core/App.h \
-	$(UPPDIR1)Core/AString.hpp \
-	$(UPPDIR1)Core/Atomic.h \
-	$(UPPDIR1)Core/BiCont.h \
-	$(UPPDIR1)Core/BinUndoRedo.h \
-	$(UPPDIR1)Core/Callback.h \
-	$(UPPDIR1)Core/CallbackN.i \
-	$(UPPDIR1)Core/CallbackNP.i \
-	$(UPPDIR1)Core/CallbackR.i \
-	$(UPPDIR1)Core/CharFilter.h \
-	$(UPPDIR1)Core/CharSet.h \
-	$(UPPDIR1)Core/CharSet.i \
-	$(UPPDIR1)Core/CoAlgo.h \
-	$(UPPDIR1)Core/Color.h \
-	$(UPPDIR1)Core/Complex.h \
-	$(UPPDIR1)Core/config.h \
-	$(UPPDIR1)Core/Convert.h \
-	$(UPPDIR1)Core/Convert.hpp \
-	$(UPPDIR1)Core/Core.h \
-	$(UPPDIR1)Core/CoSort.h \
-	$(UPPDIR1)Core/CoWork.h \
-	$(UPPDIR1)Core/Defs.h \
-	$(UPPDIR1)Core/Diag.h \
-	$(UPPDIR1)Core/FileMapping.h \
-	$(UPPDIR1)Core/FilterStream.h \
-	$(UPPDIR1)Core/FixedMap.h \
-	$(UPPDIR1)Core/Fn.h \
-	$(UPPDIR1)Core/Format.h \
-	$(UPPDIR1)Core/Function.h \
-	$(UPPDIR1)Core/Gtypes.h \
-	$(UPPDIR1)Core/Hash.h \
-	$(UPPDIR1)Core/Heap.h \
-	$(UPPDIR1)Core/HttpStatusCode.i \
-	$(UPPDIR1)Core/Huge.h \
-	$(UPPDIR1)Core/i18n.h \
-	$(UPPDIR1)Core/Index.h \
-	$(UPPDIR1)Core/Index.hpp \
-	$(UPPDIR1)Core/Inet.h \
-	$(UPPDIR1)Core/InMap.hpp \
-	$(UPPDIR1)Core/InVector.h \
-	$(UPPDIR1)Core/InVector.hpp \
-	$(UPPDIR1)Core/JSON.h \
-	$(UPPDIR1)Core/Lang.h \
-	$(UPPDIR1)Core/Lang_s.h \
-	$(UPPDIR1)Core/LocalProcess.h \
-	$(UPPDIR1)Core/Map.h \
-	$(UPPDIR1)Core/Map.hpp \
-	$(UPPDIR1)Core/Mem.h \
-	$(UPPDIR1)Core/Mt.h \
-	$(UPPDIR1)Core/Obsolete.h \
-	$(UPPDIR1)Core/Ops.h \
-	$(UPPDIR1)Core/Other.h \
-	$(UPPDIR1)Core/Other.hpp \
-	$(UPPDIR1)Core/Parser.h \
-	$(UPPDIR1)Core/Path.h \
-	$(UPPDIR1)Core/Profile.h \
-	$(UPPDIR1)Core/Ptr.h \
-	$(UPPDIR1)Core/Range.h \
-	$(UPPDIR1)Core/Sort.h \
-	$(UPPDIR1)Core/Sorted.h \
-	$(UPPDIR1)Core/SplitMerge.h \
-	$(UPPDIR1)Core/Stream.h \
-	$(UPPDIR1)Core/String.h \
-	$(UPPDIR1)Core/t_.h \
-	$(UPPDIR1)Core/TimeDate.h \
-	$(UPPDIR1)Core/Topic.h \
-	$(UPPDIR1)Core/Topt.h \
-	$(UPPDIR1)Core/Tuple.h \
-	$(UPPDIR1)Core/Utf.hpp \
-	$(UPPDIR1)Core/Util.h \
-	$(UPPDIR1)Core/Uuid.h \
-	$(UPPDIR1)Core/Value.h \
-	$(UPPDIR1)Core/Value.hpp \
-	$(UPPDIR1)Core/ValueCache.h \
-	$(UPPDIR1)Core/ValueUtil.h \
-	$(UPPDIR1)Core/ValueUtil.hpp \
-	$(UPPDIR1)Core/Vcont.h \
-	$(UPPDIR1)Core/Vcont.hpp \
-	$(UPPDIR1)Core/Win32Util.h \
-	$(UPPDIR1)Core/XML.h \
-	$(UPPDIR1)Core/Xmlize.h \
-	$(UPPDIR1)Core/Xmlize.hpp \
-	$(UPPDIR1)Core/z.h \
-	$(UPPDIR1)plugin/pcre/lib/pcre.h \
-	$(UPPDIR1)plugin/pcre/Pcre.h \
-	$(UPPDIR1)plugin/pcre/RegExp.cpp \
-	$(UPPDIR1)plugin/pcre/RegExp.h \
-	$(UPPDIR1)uppconfig.h
-	$(CXX) -c -x c++ $(CXXFLAGS) $(CINC) $(Macro_plugin_pcre)  $(UPPDIR1)plugin/pcre/RegExp.cpp -o $(OutDir_plugin_pcre)RegExp.o
-
-$(OutDir_plugin_pcre)lib.o: $(UPPDIR1)plugin/pcre/lib.c \
-	$(UPPDIR1)plugin/pcre/lib.c \
-	$(UPPDIR1)plugin/pcre/lib/pcre.h \
-	$(UPPDIR1)plugin/pcre/lib/pcre_byte_order.c \
-	$(UPPDIR1)plugin/pcre/lib/pcre_chartables.c \
-	$(UPPDIR1)plugin/pcre/lib/pcre_compile.c \
-	$(UPPDIR1)plugin/pcre/lib/pcre_config.c \
-	$(UPPDIR1)plugin/pcre/lib/pcre_dfa_exec.c \
-	$(UPPDIR1)plugin/pcre/lib/pcre_exec.c \
-	$(UPPDIR1)plugin/pcre/lib/pcre_fullinfo.c \
-	$(UPPDIR1)plugin/pcre/lib/pcre_get.c \
-	$(UPPDIR1)plugin/pcre/lib/pcre_globals.c \
-	$(UPPDIR1)plugin/pcre/lib/pcre_internal.h \
-	$(UPPDIR1)plugin/pcre/lib/pcre_jit_compile.c \
-	$(UPPDIR1)plugin/pcre/lib/pcre_maketables.c \
-	$(UPPDIR1)plugin/pcre/lib/pcre_newline.c \
-	$(UPPDIR1)plugin/pcre/lib/pcre_ord2utf8.c \
-	$(UPPDIR1)plugin/pcre/lib/pcre_refcount.c \
-	$(UPPDIR1)plugin/pcre/lib/pcre_string_utils.c \
-	$(UPPDIR1)plugin/pcre/lib/pcre_study.c \
-	$(UPPDIR1)plugin/pcre/lib/pcre_tables.c \
-	$(UPPDIR1)plugin/pcre/lib/pcre_ucd.c \
-	$(UPPDIR1)plugin/pcre/lib/pcre_valid_utf8.c \
-	$(UPPDIR1)plugin/pcre/lib/pcre_version.c \
-	$(UPPDIR1)plugin/pcre/lib/pcre_xclass.c \
-	$(UPPDIR1)plugin/pcre/lib/ucp.h
-	$(CXX) -c -x c $(CFLAGS) $(CINC) $(Macro_plugin_pcre)  $(UPPDIR1)plugin/pcre/lib.c -o $(OutDir_plugin_pcre)lib.o
-
-$(OutDir_plugin_pcre)pcre.a: \
-	$(OutDir_plugin_pcre)RegExp.o \
-	$(OutDir_plugin_pcre)lib.o
-	$(AR) $(OutDir_plugin_pcre)pcre.a \
-		$(OutDir_plugin_pcre)RegExp.o \
-		$(OutDir_plugin_pcre)lib.o
 
 .PHONY: clean
 clean:

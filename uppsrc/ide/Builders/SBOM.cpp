@@ -82,11 +82,12 @@ Array<SBOMComponent> MakeBuild::CreateSBOMComponents(const String& triplet, Gate
 			m.homepage = origin;
 		}
 
-		String ts, hash;
-		if(SplitTo(TrimBoth(Sys(git + "log -1 --date=unix --format=\"%h %cd\"")), " ", hash, ts)) {
+		String ts, hash, sha1;
+		if(SplitTo(TrimBoth(Sys(git + "log -1 --date=unix --format=\"%h %H %cd\"")), " ", hash, sha1, ts)) {
 			m.version = Format8601Z(Atoi64(ts) + Time(1970, 1, 1)) + "#" + hash;
 			if(m.originUrl.GetCount())
-				m.sourceDistributions << m.originUrl + "@" + hash;
+				//m.sourceDistributions << m.originUrl + "@" + hash;
+				m.sourceDistributions << MakeTuple<String, String, String>(m.originUrl + "@" + hash, "SHA-1", sha1);
 		}
 
 		m.licenses << Nvl(pk.license_id, "BSD-2-Clause");
@@ -114,25 +115,28 @@ Array<SBOMComponent> MakeBuild::CreateSBOMComponents(const String& triplet, Gate
 		SBOMComponent& m = cs.Add();
 		m.external = i < direct_n ? 1 : 2;
 		m.bom_ref = m.name = name;
-		String depends, archAndSource;
-		SplitTo(Sys("dpkg-query -W -f='${Depends}\n${Version}\n${Homepage}\n${Architecture} ${Source}' " + name), '\n', false,
-		        depends, m.version, m.homepage, archAndSource);
-		
-		int sp = archAndSource.Find(' ');
-		String arch    = archAndSource.Left(sp);                    // sp<0 → whole string is arch
-		String source  = sp >= 0 ? archAndSource.Mid(sp + 1) : "";
+		String depends, arch, source;
+		SplitTo(Sys((IsRPM() ? "rpm -q --qf '%{REQUIRES}\n%{VERSION}-%{RELEASE}\n%{URL}\n%{ARCH}\n%{SOURCERPM}' "
+		                      : "dpkg-query -W -f='${Depends}\n${Version}\n${Homepage}\n${Architecture}\n${Source}' ") + name),
+		                     '\n', false,
+		        depends, m.version, m.homepage, arch, source);
 		
 		String distro = "debian";
-		String osr = LoadFile("/etc/os-release");
+		static String osr = LoadFile("/etc/os-release");
+
 		for(String l : Split(osr, '\n'))
 			if(l.TrimStart("ID="))
 				distro = TrimBoth(l);
-		
-		m.purl = "pkg:deb/" + distro + "/" + name + "@" + m.version + "?arch=" + arch;
+		distro.TrimStart("\"");
+		distro.TrimEnd("\"");
+		m.purl << "pkg:" << (IsRPM() ? "rpm/" : "deb/")
+		       << distro << "/" << name << "@" << m.version << "?arch=" << arch;
 		if(source.GetCount() && source != name)
 			m.purl << "&source=" + source;
 		
 		for(String dep : Split(depends, ',')) {
+			if(*dep == '/')
+				continue;
 			int q = dep.Find('(');
 			if(q >= 0)
 				dep.Trim(q);
@@ -183,7 +187,8 @@ Array<SBOMComponent> MakeBuild::CreateSBOMComponents(const String& triplet, Gate
 					if(id.StartsWith("SPDXRef-resource-")) {
 						String url = p["downloadLocation"];
 						if(!IsNull(url) && url != "NONE")
-							component.sourceDistributions << url;
+							for(Value ch : p["checksums"])
+								component.sourceDistributions << MakeTuple<String, String, String>(~url, ~ch["algorithm"], ~ch["checksumValue"]);
 					}
 				}
 				break;
@@ -291,12 +296,21 @@ String MakeBuild::CreateSBOM(const Array<SBOMComponent>& cs, int mode)
 		if(!IsNull(c.originUrl))
 			extRefs << Json("type", "distribution")
 			               ("url", c.originUrl);
-		
-		for(const String& url : c.sourceDistributions)
-			if(!IsNull(url))
-				extRefs << Json("type", "source-distribution")
-				               ("url", url);
 
+		auto SourceRef = [](const auto& s) {
+			Json r;
+			r("type", "source-distribution")("url", s.a);
+			String alg = ToUpper(s.b); // Fix found SPDX algos to CycloneDX (Uppercase + dash)
+			alg = alg.GetCount()>3 && alg[3]!='-' && alg.StartsWith("SHA") ? "SHA-" + alg.Mid(3) : alg;
+			if(alg.GetCount() && s.c.GetCount()) r("hashes", JsonArray() << Json("alg", alg)("content", s.c));
+			return r;
+		};
+		
+		for(const auto& s : c.sourceDistributions)
+		    if(!IsNull(s.a))
+		        extRefs << SourceRef(s);
+    
+    
 		if(!IsNull(c.purl))
 			component("purl", c.purl);
 

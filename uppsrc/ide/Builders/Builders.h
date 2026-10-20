@@ -5,7 +5,6 @@
 #include <plugin/bz2/bz2.h>
 
 #include "Android.h"
-#include "BuilderComponents.h"
 #include "Build.h"
 
 void PutCompileTime(int time, int count);
@@ -15,6 +14,28 @@ String BrcToC(CParser& binscript, String basedir);
 Vector<String> RepoInfo(const String& package);
 
 String MakeIdent(const char *name);
+
+
+struct Blitz {
+	bool   build;
+	int    count;
+	String path;
+	String object;
+	String info;
+};
+
+String BlitzBaseFile();
+void   ResetBlitz();
+void   InitBlitz();
+
+void BlitzFile(String& blitz, const String& sourceFile, const Vector<String>& defines, int index);
+
+Blitz MakeBlitzStep(
+	Builder& b,
+	Vector<String>& sfile, Vector<String>& soptions,
+	Vector<String>& obj, Vector<String>& immfile,
+	const char *objext, const Index<String>& noblitz,
+	const String& package = Null, const String& blitzFileName = "$blitz");
 
 struct CppBuilder : Builder {
 	String GetTargetExt() const override;
@@ -71,6 +92,8 @@ struct CppBuilder : Builder {
 	CppBuilder() : wspc(GetIdeWorkspace()) {}
 };
 
+void MkBuildInfo(Stream& info);
+
 String SourceToObjName(const String& package, const String& srcfile_);
 
 struct GccBuilder : CppBuilder {
@@ -108,6 +131,7 @@ struct MscBuilder : CppBuilder {
 	bool   IsMsc89() const;
 	bool   IsMsc86() const;
 	bool   IsMscArm() const;
+	bool   IsMscArm64() const;
 	bool   IsMsc64() const;
 	bool   CreateLib(const String& product, const Vector<String>& obj,
 	                 const Vector<String>& all_uses, const Vector<String>& all_libraries,

@@ -5,17 +5,18 @@ flags(NOTMFC) "!GUI !CONSOLE";
 uses
 	Sql;
 
-library(LINUX) dl;
+library
+	sqlite3;
 
-options
-	"-maes -msse4 -DSQLITE_CORE -DSQLITE_ENABLE_FTS4 -DSQLITE_ENABLE_FTS3_PARENTHESIS -DSQLITE_ENABLE_UUID";
+external_dependency(VCPKG) sqlite3;
 
-link(OSX) "-framework Security";
+external_dependency(DPKG) libsqlite3-dev;
+
+external_dependency(RPM) sqlite-devel;
 
 file
 	Sqlite3.h,
 	Sqlite3Schema.h,
 	Sqlite3upp.cpp,
-	lib.c,
 	Copying;
 

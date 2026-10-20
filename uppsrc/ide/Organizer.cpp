@@ -131,20 +131,28 @@ ExtDepDlg::ExtDepDlg()
 	CtrlLayoutOKCancel(*this, "External dependency");
 	when.AddList("VCPKG");
 	when.AddList("DPKG");
-	when.AddList("POSIX");
+	when.AddList("RPM");
+	when.AddList("BREW");
 	when.Appending(" ");
 
-#ifdef PLATFORM_WIN32
-	when <<= "VCPKG";
-#else
-	when <<= "DPKG";
-#endif
+	when <<= ExternalDependenciesManagerId();
 	
 	text.SetFilter([](int c) { return c == ' ' ? 0 : c; });
 	
 	for(String id : SPDXLicenses()) // TODO
 		license.AddList(id);
 	license.NullText("resolve automatically");
+	
+	sel_package << [this] {
+		String p;
+#ifdef PLATFORM_WIN32
+		p = VCPKGSelectExternalDependency();
+#else
+		p = SelectExternalDependency();
+#endif
+		if(p.GetCount())
+			text <<= p;
+	};
 }
 
 String ExtDepDlg::GetText() const
@@ -732,12 +740,13 @@ PackageEditor::PackageEditor()
 	Add("Targets", actual.target);
 	Add("Libraries", actual.library);
 	Add("Static libraries", actual.static_library);
+	Add("Dynamic libraries", actual.dynamic_library);
 	Add("Link options", actual.link);
 	Add("Compiler options", actual.option);
 	Add("Internal includes", actual.include);
 	Add("pkg-config", actual.pkg_config);
 	Add("External dependency", actual.external_dependency);
-
+	
 	Init(option);
 	option.WhenCursor = THISBACK(AdjustPackageOptionCursor);
 	option.WhenBar = THISBACK(OptionMenu);
